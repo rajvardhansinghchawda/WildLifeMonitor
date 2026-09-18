@@ -70,9 +70,17 @@ class Analysis(Base):
     )
 
     workspace = relationship("Workspace", back_populates="analyses")
-    layers = relationship("AnalysisLayer", back_populates="analysis", cascade="all, delete-orphan")
+    layers = relationship(
+        "AnalysisLayer",
+        back_populates="analysis",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
     job_attempts = relationship(
-        "JobAttempt", back_populates="analysis", cascade="all, delete-orphan"
+        "JobAttempt",
+        back_populates="analysis",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
     events = relationship("ChangeEvent", back_populates="analysis", cascade="all, delete-orphan")
     artifacts = relationship("Artifact", back_populates="analysis", cascade="all, delete-orphan")

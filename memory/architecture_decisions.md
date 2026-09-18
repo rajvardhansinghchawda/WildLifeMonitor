@@ -41,3 +41,20 @@ This document records the foundational architecture decisions, rationale, trade-
 - **Context:** System design requires reliable dispatch from FastAPI to Celery worker queue without distributed transactions (2PC).
 - **Decision:** Model `outbox` with `published_at` (`TIMESTAMP WITH TIME ZONE`, nullable) and composite index `(published_at, created_at)`.
 - **Consequences:** Transactional consistency between Analysis persistence and job dispatch; fast index scans (`WHERE published_at IS NULL`); audit trail of dispatch latency.
+
+---
+
+## ADR-006: Distributed Leases with Active Heartbeat Renewal and Fencing Tokens
+- **Status:** Accepted
+- **Context:** Long-running geospatial analysis jobs executed by background workers need protection against split-brain finalization if a worker process crashes, hangs, or encounters network partitions.
+- **Decision:** Workers acquire a lease on an analysis by creating an active `JobAttempt` with a short expiration (`lease_expires_at = now() + 30s`) and a monotonically increasing `fencing_token`. Active workers periodically issue heartbeats that actively push `lease_expires_at` forward in PostgreSQL. Before writing results, the worker validates its fencing token against the database. If reconciliation expired or superseded the attempt, finalization is rejected with `FencingTokenExpiredError`.
+- **Consequences:** Eliminates zombie worker race conditions; prevents duplicate layer publication; ensures healthy jobs running longer than 30 seconds are not prematurely reaped.
+
+---
+
+## ADR-007: Cooperative Cancellation and Idempotent Request Replay
+- **Status:** Accepted
+- **Context:** Users require the ability to cancel queued or in-flight analyses, and network retries must not create duplicate jobs.
+- **Decision:** Implement cooperative cancellation where `POST /api/v1/analyses/{id}/cancel` sets `cancel_requested = True` in PostgreSQL and returns 202 Accepted (or 409 if terminal). Workers inspect this flag before and between layer processing steps to halt cleanly. For idempotency, the API caches `Idempotency-Key` along with the request payload snapshot; matching requests replay the original 202 response, while divergent payloads with the same key return 409 Conflict (`IDEMPOTENCYCONFLICT`).
+- **Consequences:** Responsive cancellation without abrupt thread termination; zero duplicate job creation from client retries; robust idempotency semantics.
+

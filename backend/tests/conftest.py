@@ -1,4 +1,5 @@
 import os
+import uuid
 
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
@@ -18,6 +19,7 @@ os.environ["DATABASE_URL"] = TEST_DB_URL
 from app.db.base import Base  # noqa: E402
 from app.db.session import get_db  # noqa: E402
 from app.main import app as fastapi_app  # noqa: E402
+from app.models.workspace import Membership, RoleEnum, Workspace  # noqa: E402
 
 
 def get_test_engine():
@@ -80,3 +82,34 @@ async def client():
         yield ac
     fastapi_app.dependency_overrides.clear()
     await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def async_client(client: AsyncClient):
+    """Alias for client."""
+    return client
+
+
+@pytest_asyncio.fixture
+async def test_workspace(db_session: AsyncSession) -> uuid.UUID:
+    """Create a test workspace and analyst membership for tests."""
+    ws_id = uuid.uuid4()
+    ws = Workspace(id=ws_id, name=f"Test Workspace {ws_id.hex[:6]}")
+    membership = Membership(
+        workspace_id=ws_id,
+        user_id="test-analyst",
+        role=RoleEnum.ANALYST.value,
+    )
+    db_session.add(ws)
+    db_session.add(membership)
+    await db_session.commit()
+    return ws_id
+
+
+@pytest_asyncio.fixture
+async def auth_headers(test_workspace: uuid.UUID) -> dict:
+    """Provide valid authentication and workspace headers for test requests."""
+    return {
+        "Authorization": "Bearer dev-user:test-analyst",
+        "X-Workspace-ID": str(test_workspace),
+    }

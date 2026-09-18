@@ -36,3 +36,26 @@ This document records the architectural, data model, security, and operational i
 ### Regression Controls & Verification
 - **Automated CI**: GitHub Actions workflow and Docker compose test environment ensure any future PR breaks will be caught before merging.
 - **Test Suite**: 11 automated tests covering configuration, migrations, health probes, RBAC, persistence, and workspace isolation.
+
+---
+
+## Phase 2: Asynchronous Execution Core
+
+### Architectural & System Impact
+- **Decoupled Execution Topology**: FastAPI HTTP process is completely decoupled from heavy analytical processing via the Transactional Outbox pattern. Enqueuing occurs within the primary database transaction boundary.
+- **Fail-Safe Dispatcher**: The dispatcher worker operates with at-least-once delivery semantics (`published_at` recorded post-dispatch). Downstream workers are idempotent.
+- **Leasing & Zombie Mitigation**: Active heartbeat renewal prevents premature job expiration while strictly protecting against split-brain execution via monotonically increasing fencing tokens.
+
+### Data Model & Persistence Impact
+- **Atomic Persistence**: Analysis and Outbox records commit in a single PostgreSQL transaction.
+- **Relationship Eager Loading**: Configured `lazy="selectin"` on `Analysis.layers` and `JobAttempt` relationships, preventing `MissingGreenlet` errors in asynchronous ORM query execution.
+- **Distributed Attempt Tracking**: Every analysis execution attempt is assigned a durable `JobAttempt` row tracking worker ID, attempt number, lease expiration, heartbeat timestamps, and fencing tokens.
+
+### Security & Operational Impact
+- **Strict Input Sanitization**: Rejection of self-intersecting geometries (`INVALIDGEOMETRY`), antimeridian crossings (`UNSUPPORTEDGEOMETRY`), oversized AOIs (`AOITOOLARGE`), and vertex flooding (`TOOMANYVERTICES`) guards compute infrastructure from denial-of-service.
+- **Active Job Throttling**: Workspace concurrency limit (`MAX_ACTIVE_JOBS_PER_WORKSPACE=2`) prevents single-tenant quota monopolization.
+- **Cooperative Cancellation**: Immediate responsiveness (`cancel_requested` flag) enables rapid resource reclamation without orphan process leaks.
+
+### Regression Controls & Verification
+- **Test Coverage**: 30 automated tests in PostgreSQL 16 + PostGIS + Redis Docker environment covering input validation, idempotency, lifecycle transitions, heartbeat lease extensions, worker crash recovery, and fencing token rejection.
+

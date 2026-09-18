@@ -64,13 +64,15 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         else:
             error_code = "HTTPERROR"
 
+    details = getattr(exc, "details", {})
+    retryable = getattr(exc, "retryable", exc.status_code in [502, 503, 504])
     envelope = ErrorEnvelope(
         error=ErrorDetail(
             code=error_code,
             message=str(exc.detail),
-            details={},
+            details=details,
             request_id=req_id,
-            retryable=exc.status_code in [502, 503, 504],
+            retryable=retryable,
         )
     )
     return JSONResponse(

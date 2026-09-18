@@ -26,3 +26,5 @@ secrets/
 *.log
 volumes/
 data/
+scratch_git.ps1
+
