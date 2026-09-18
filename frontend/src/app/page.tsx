@@ -31,6 +31,7 @@ import {
   Volume2,
   Share2,
   CheckCircle2,
+  Menu,
 } from 'lucide-react';
 import {
   getPublicOverview,
@@ -73,6 +74,8 @@ export default function PublicDemoPage() {
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeNav, setActiveNav] = useState('home');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Load overview & demonstrations
   const loadData = async () => {
@@ -139,6 +142,8 @@ export default function PublicDemoPage() {
   }, [activeDemo]);
 
   const scrollToSection = (id: string) => {
+    setActiveNav(id);
+    setMobileMenuOpen(false);
     const element = document.getElementById(id);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
@@ -155,59 +160,178 @@ export default function PublicDemoPage() {
 
   return (
     <div className="min-h-screen bg-[#0b0f14] text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950">
-      {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-50 h-16 border-b border-slate-800/80 bg-slate-900/90 backdrop-blur-md px-6 lg:px-10 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-emerald-950/90 border border-emerald-500/60 flex items-center justify-center text-emerald-400 shadow-md shadow-emerald-950/40">
-            <TreePine className="w-5 h-5" />
+      {/* ========================================================================= */}
+      {/* 1. TOP NAVIGATION BAR                                                     */}
+      {/* ========================================================================= */}
+      <header className="fixed top-0 inset-x-0 z-50 h-16 bg-black/35 backdrop-blur-md border-b border-white/10 px-6 lg:px-12 flex items-center justify-between transition-all">
+        {/* Brand Logo & Tagline */}
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="w-9 h-9 rounded-full bg-[#1a6b3c]/80 border-2 border-[#2ecc71]/70 flex items-center justify-center text-[#2ecc71] shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+            <TreePine className="w-4 h-4" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-mono font-bold tracking-wider text-sm text-white">
-                WILDLIFE WATCH
-              </span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-mono">
-                PUBLIC DEMO
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 hidden sm:block">
-              Multi-Spectral Habitat Telemetry & Change Verification
-            </p>
+          <div className="flex flex-col">
+            <span className="font-bold text-base tracking-tight text-white leading-tight">
+              Wildlife Watch
+            </span>
+            <span className="text-[10px] text-slate-300 font-medium tracking-wider">
+              Monitor • Protect • Conserve
+            </span>
           </div>
         </Link>
 
-        <div className="flex items-center gap-4">
-          {/* Live Engine Status Pill */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-950/80 border border-slate-800 text-xs font-mono">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                overview?.system_status === 'operational'
-                  ? 'bg-emerald-400 animate-pulse'
-                  : 'bg-amber-400'
-              }`}
-            />
-            <span className="text-slate-300">
-              {overview?.system_status === 'operational'
-                ? 'SATELLITE ENGINE ONLINE'
-                : 'CONNECTING...'}
-            </span>
-          </div>
+        {/* Center Navigation Links (Desktop) */}
+        <nav className="hidden md:flex items-center gap-1">
+          {[
+            { id: 'home', label: 'Home', href: '/' },
+            { id: 'about', label: 'About Us', href: '/about' },
+            { id: 'features', label: 'Features', href: '/features' },
+            { id: 'impact', label: 'Impact', href: '/#impact' },
+            { id: 'blogs', label: 'Blogs', href: '/blogs' },
+            { id: 'contact', label: 'Contact', href: '/#contact' },
+          ].map((item) => {
+            const isActive = activeNav === item.id;
+            if (item.href.startsWith('/#')) {
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => scrollToSection(item.href.replace('/#', ''))}
+                  className="relative px-4 py-2 text-sm font-semibold tracking-wide transition-all text-white/80 hover:text-white"
+                >
+                  {item.label}
+                </button>
+              );
+            }
+            if (item.href === '/') {
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => scrollToSection('home')}
+                  className={`relative px-4 py-2 text-sm font-semibold tracking-wide transition-all ${
+                    isActive ? 'text-white bg-[#2ecc71] rounded-sm' : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              );
+            }
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                className="relative px-4 py-2 text-sm font-semibold transition-colors text-white/80 hover:text-white tracking-wide"
+              >
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
 
+        {/* Right Action Icons & Buttons */}
+        <div className="hidden sm:flex items-center gap-3">
+          {/* Quick Search Button */}
+          <button
+            onClick={() => setSearchModalOpen(true)}
+            aria-label="Search reserves and incidents"
+            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
+          >
+            <Search className="w-4 h-4" />
+          </button>
+
+          {/* Login Button */}
           <Link
             href="/login"
-            className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition-colors"
+            className="px-4 py-1.5 rounded-sm bg-white/10 hover:bg-white/20 border border-white/20 text-sm font-semibold text-white transition-all"
           >
-            Ranger Sign In
+            Login
+          </Link>
+
+          {/* Get Started Button */}
+          <Link
+            href="/explore"
+            className="px-4 py-1.5 rounded-sm bg-[#2ecc71] hover:bg-[#27b360] text-slate-950 text-sm font-bold tracking-tight shadow-lg shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95"
+          >
+            Get Started
           </Link>
         </div>
+
+        {/* Mobile Hamburger Toggle */}
+        <div className="flex sm:hidden items-center gap-2">
+          <button
+            onClick={() => setSearchModalOpen(true)}
+            className="p-2 text-white"
+          >
+            <Search className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 text-white"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </header>
+
+      {/* Mobile Menu Dropdown */}
+      {mobileMenuOpen && (
+        <div className="fixed top-16 inset-x-0 z-40 bg-black/95 border-b border-white/10 p-6 space-y-4 backdrop-blur-2xl md:hidden">
+          <div className="flex flex-col gap-3">
+            {[
+              { id: 'home', label: 'Home', href: '/' },
+              { id: 'about', label: 'About Us', href: '/about' },
+              { id: 'features', label: 'Features', href: '/features' },
+              { id: 'impact', label: 'Impact', href: '/#impact' },
+              { id: 'blogs', label: 'Blogs', href: '/blogs' },
+              { id: 'contact', label: 'Contact', href: '/#contact' },
+            ].map((item) => {
+              if (item.href.startsWith('/#')) {
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      scrollToSection(item.href.replace('/#', ''));
+                    }}
+                    className="text-left py-2 text-sm font-semibold text-white/80 hover:text-[#2ecc71] tracking-wide"
+                  >
+                    {item.label}
+                  </button>
+                );
+              }
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-left py-2 text-sm font-semibold text-white/80 hover:text-[#2ecc71] tracking-wide"
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </div>
+          <div className="pt-4 border-t border-white/10 flex gap-3">
+            <Link
+              href="/login"
+              className="flex-1 py-2 rounded-sm text-center bg-white/10 text-white text-sm font-semibold"
+            >
+              Login
+            </Link>
+            <Link
+              href="/explore"
+              className="flex-1 py-2 rounded-sm text-center bg-[#2ecc71] text-slate-950 text-sm font-bold"
+            >
+              Get Started
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 2. CINEMATIC HERO SECTION (MATCHING MOCKUP)                               */}
       {/* ========================================================================= */}
       <section
         id="home"
-        className="relative min-h-[calc(100vh-4rem)] w-full flex flex-col justify-between overflow-hidden"
+        className="relative min-h-screen w-full flex flex-col justify-between pt-16 overflow-hidden"
       >
         {/* Deer Landscape Background */}
         <div className="absolute inset-0 z-0">
@@ -225,7 +349,7 @@ export default function PublicDemoPage() {
         </div>
 
         {/* Top-right brand badge (like World Animal Protection logo in reference) */}
-        <div className="absolute top-6 right-6 z-10 flex flex-col items-center text-center select-none pointer-events-none">
+        <div className="absolute top-20 right-6 z-10 flex flex-col items-center text-center select-none pointer-events-none">
           <div className="w-10 h-10 rounded-full bg-[#2ecc71]/20 border-2 border-[#2ecc71]/60 flex items-center justify-center text-[#2ecc71] mb-1">
             <TreePine className="w-5 h-5" />
           </div>
