@@ -1,4 +1,6 @@
-from typing import Dict, Optional
+import uuid
+from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 import jwt
 from fastapi import Depends, Header, HTTPException, status
@@ -9,7 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.db.session import get_db
-from app.models.workspace import Membership, RoleEnum
+from app.models.user import User
+from app.models.workspace import Membership, RoleEnum, Workspace
 
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -36,6 +39,7 @@ class WorkspaceContext(BaseModel):
 
 async def get_current_principal(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_scheme),
+    db: AsyncSession = Depends(get_db),
 ) -> UserPrincipal:
     """
     Resolves the authenticated user principal depending on AUTH_MODE.
@@ -54,6 +58,32 @@ async def get_current_principal(
                 user_id = token.split(":", 1)[1]
                 return UserPrincipal(user_id=user_id, email=f"{user_id}@codeniti.local")
         return UserPrincipal(user_id="dev-analyst-01", email="analyst@codeniti.local")
+
+    elif settings.AUTH_MODE.lower() == "local":
+        # Self-issued OAuth2 (password flow) access tokens, verified against the users table
+        from app.services.auth_service import decode_access_token
+
+        if not credentials or not credentials.credentials:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing bearer authentication token.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        payload = decode_access_token(credentials.credentials)
+        try:
+            user_uuid = uuid.UUID(str(payload["sub"]))
+        except (ValueError, KeyError):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token subject."
+            )
+        user = await db.get(User, user_uuid)
+        if not user or not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Account not found or disabled.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return UserPrincipal(user_id=str(user.id), email=str(user.email), claims=dict(payload))
 
     elif settings.AUTH_MODE.lower() == "oidc":
         if not credentials or not credentials.credentials:
@@ -162,3 +192,49 @@ def require_role(min_role: RoleEnum):
         return context
 
     return role_checker
+
+
+async def get_current_user(
+    principal: UserPrincipal = Depends(get_current_principal),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Resolve the persisted User row (AUTH_MODE=local only)."""
+    if settings.AUTH_MODE.lower() != "local":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This endpoint requires AUTH_MODE=local (self-issued OAuth2/JWT identities).",
+        )
+    user = await db.get(User, uuid.UUID(principal.user_id))
+    if not user or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account not found.")
+    return user
+
+
+@dataclass
+class ReadScope:
+    """Workspaces a caller may READ from: their own plus curated (public) workspaces."""
+
+    context: WorkspaceContext
+    own_workspace_id: uuid.UUID
+    public_workspace_ids: List[uuid.UUID]
+
+    @property
+    def workspace_ids(self) -> List[uuid.UUID]:
+        return [self.own_workspace_id, *self.public_workspace_ids]
+
+    def is_read_only(self, workspace_id: uuid.UUID) -> bool:
+        return workspace_id != self.own_workspace_id
+
+
+async def get_read_scope(
+    context: WorkspaceContext = Depends(require_role(RoleEnum.VIEWER)),
+    db: AsyncSession = Depends(get_db),
+) -> ReadScope:
+    result = await db.execute(select(Workspace.id).where(Workspace.is_public.is_(True)))
+    public_ids = [row[0] for row in result.all()]
+    own_id = uuid.UUID(context.workspace_id)
+    return ReadScope(
+        context=context,
+        own_workspace_id=own_id,
+        public_workspace_ids=[pid for pid in public_ids if pid != own_id],
+    )

@@ -1,7 +1,8 @@
 from datetime import date
+import uuid
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class DateWindow(BaseModel):
@@ -10,11 +11,23 @@ class DateWindow(BaseModel):
 
 
 class AnalysisCreateRequest(BaseModel):
-    aoi: Dict[str, Any] = Field(..., description="GeoJSON geometry representing Study AOI")
+    aoi: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="GeoJSON geometry representing Study AOI (omit when area_id is given)",
+    )
+    area_id: Optional[uuid.UUID] = Field(
+        default=None, description="Protected-area catalog id; its analysis AOI is used if aoi is omitted"
+    )
     baseline: DateWindow = Field(..., description="Baseline observation window")
     comparison: DateWindow = Field(..., description="Comparison observation window")
     layers: List[str] = Field(default=["vegetation"], description="Requested change layers")
     configuration_id: str = Field(default="mvp-v1", description="Configuration identifier")
+
+    @model_validator(mode="after")
+    def require_aoi_or_area(self) -> "AnalysisCreateRequest":
+        if self.aoi is None and self.area_id is None:
+            raise ValueError("Provide either 'aoi' (GeoJSON) or 'area_id'.")
+        return self
 
 
 class AnalysisCreateResponse(BaseModel):

@@ -6,13 +6,7 @@ from alembic.config import Config
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
-TEST_DB_URL = os.environ.get(
-    "TEST_DATABASE_URL",
-    os.environ.get(
-        "DATABASE_URL",
-        "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/wildlife",
-    ),
-)
+TEST_DB_URL = os.environ["DATABASE_URL"]  # set to the dedicated test DB by tests/conftest.py
 
 
 def get_alembic_config() -> Config:
@@ -25,66 +19,81 @@ def get_alembic_config() -> Config:
     return cfg
 
 
+CORE_TABLES = "('workspaces', 'analyses', 'change_events', 'artifacts', 'outbox')"
+PORTAL_TABLES = "('users', 'refresh_tokens', 'protected_areas', 'alerts', 'reports')"
+
+
 @pytest.mark.asyncio
 async def test_migration_lifecycle_apply_and_rollback():
     """
-    Validates complete Alembic migration lifecycle:
+    Validates complete Alembic migration lifecycle on the dedicated test database:
+    0. Reset schema (tables were pre-created by create_all for other tests)
     1. Upgrade to head
-    2. Assert required tables exist in PostgreSQL
-    3. Downgrade to base (rollback verification)
-    4. Assert tables dropped cleanly
-    5. Re-apply upgrade to head
+    2. Assert required tables / indexes exist in PostgreSQL
+    3. Downgrade to base (rollback verification) and assert tables dropped
+    4. Re-apply upgrade to head
     """
     alembic_cfg = get_alembic_config()
     engine = create_async_engine(TEST_DB_URL, echo=False)
+
+    async with engine.begin() as conn:
+        await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE;"))
+        await conn.execute(text("CREATE SCHEMA public;"))
+        await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
 
     # 1. Upgrade head
     command.upgrade(alembic_cfg, "head")
 
     async with engine.connect() as conn:
-        # Check tables in database
         result = await conn.execute(
             text(
                 "SELECT table_name FROM information_schema.tables "
-                "WHERE table_schema = 'public' AND table_name IN "
-                "('workspaces', 'analyses', 'change_events', 'artifacts', 'outbox');"
+                f"WHERE table_schema = 'public' AND table_name IN {CORE_TABLES};"
             )
         )
         tables = [row[0] for row in result.fetchall()]
-        assert "workspaces" in tables
-        assert "analyses" in tables
-        assert "change_events" in tables
-        assert "artifacts" in tables
-        assert "outbox" in tables
+        for expected in ("workspaces", "analyses", "change_events", "artifacts", "outbox"):
+            assert expected in tables
 
-        # Verify required indexes from dsabackendoptimisation.md exist
+        portal = await conn.execute(
+            text(
+                "SELECT table_name FROM information_schema.tables "
+                f"WHERE table_schema = 'public' AND table_name IN {PORTAL_TABLES};"
+            )
+        )
+        assert len(portal.fetchall()) == 5
+
+        # Required indexes from dsabackendoptimisation.md
         idx_result = await conn.execute(
             text(
                 "SELECT indexname FROM pg_indexes WHERE schemaname = 'public' AND "
                 "indexname IN ('analyses_workspace_created_idx', 'events_geom_gist_idx', "
-                "'events_workspace_analysis_idx', 'events_priority_idx', 'outbox_published_created_idx');"
+                "'events_workspace_analysis_idx', 'events_priority_idx', "
+                "'outbox_published_created_idx', 'protected_areas_boundary_gist_idx');"
             )
         )
         indexes = [row[0] for row in idx_result.fetchall()]
-        assert "analyses_workspace_created_idx" in indexes
-        assert "events_geom_gist_idx" in indexes
-        assert "events_workspace_analysis_idx" in indexes
-        assert "events_priority_idx" in indexes
-        assert "outbox_published_created_idx" in indexes
+        for expected_idx in (
+            "analyses_workspace_created_idx",
+            "events_geom_gist_idx",
+            "events_workspace_analysis_idx",
+            "events_priority_idx",
+            "outbox_published_created_idx",
+            "protected_areas_boundary_gist_idx",
+        ):
+            assert expected_idx in indexes
 
     # 2. Downgrade to base (Rollback verification)
     command.downgrade(alembic_cfg, "base")
 
     async with engine.connect() as conn:
-        result_after_rollback = await conn.execute(
+        after = await conn.execute(
             text(
-                "SELECT table_name FROM information_schema.tables "
-                "WHERE table_schema = 'public' AND table_name IN "
-                "('workspaces', 'analyses', 'change_events', 'artifacts', 'outbox');"
+                "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' "
+                f"AND table_name IN {CORE_TABLES};"
             )
         )
-        tables_after_rollback = [row[0] for row in result_after_rollback.fetchall()]
-        assert len(tables_after_rollback) == 0
+        assert len(after.fetchall()) == 0
 
     # 3. Re-apply upgrade head
     command.upgrade(alembic_cfg, "head")

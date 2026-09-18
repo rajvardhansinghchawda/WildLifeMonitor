@@ -28,6 +28,11 @@ dependencies = [
     # Google Earth Engine provider
     "earthengine-api>=0.1.370",
     "google-auth>=2.35.0",
+    "bcrypt>=5.0.0",
+    "python-multipart>=0.0.20",
+    "pillow>=11.0.0",
+    "numpy>=2.0.0",
+    "requests>=2.32.0",
 ]
 
 [project.optional-dependencies]

@@ -46,6 +46,20 @@ class ArtifactService:
             region_name="us-east-1",
         )
 
+    def _get_presign_client(self):
+        """Client used ONLY to sign browser-facing URLs (public endpoint host is part of the signature)."""
+        public = settings.OBJECT_STORAGE_PUBLIC_ENDPOINT
+        if not public or self._s3 is not None:
+            return self._get_s3_client()
+        return boto3.client(
+            "s3",
+            endpoint_url=public,
+            aws_access_key_id=settings.OBJECT_STORAGE_ACCESS_KEY,
+            aws_secret_access_key=settings.OBJECT_STORAGE_SECRET_KEY,
+            config=botocore.client.Config(signature_version="s3v4"),
+            region_name="us-east-1",
+        )
+
     def _ensure_bucket_exists(self, client: Any, bucket: str) -> None:
         try:
             client.head_bucket(Bucket=bucket)
@@ -67,6 +81,7 @@ class ArtifactService:
         layer_id: Optional[uuid.UUID] = None,
         mime_type: str = "application/octet-stream",
         simulate_corrupt_checksum: bool = False,
+        extra_metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """Upload artifact bytes to S3 and persist database record upon checksum validation."""
         bucket = settings.OBJECT_STORAGE_BUCKET
@@ -125,7 +140,11 @@ class ArtifactService:
             checksum_sha256=sha256,
             media_type=mime_type,
             byte_size=len(content_bytes),
-            artifact_metadata={"artifact_type": artifact_type, "filename": filename},
+            artifact_metadata={
+                **(extra_metadata or {}),
+                "artifact_type": artifact_type,
+                "filename": filename,
+            },
         )
         session.add(artifact)
         await session.flush()
@@ -145,6 +164,7 @@ class ArtifactService:
             "storage_uri": storage_uri,
             "checksum": sha256,
             "filename": filename,
+            "role": (extra_metadata or {}).get("role"),
         }
 
     async def publish_layer_manifest_and_raster(
@@ -199,7 +219,7 @@ class ArtifactService:
         expires_in_seconds: int = 900,
     ) -> str:
         """Generate short-lived authorized presigned URL for display artifact."""
-        client = self._get_s3_client()
+        client = self._get_presign_client()
         return str(
             client.generate_presigned_url(
                 "get_object",

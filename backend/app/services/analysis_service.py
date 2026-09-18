@@ -38,6 +38,7 @@ class AnalysisService:
         user_id: str,
         request: AnalysisCreateRequest,
         idempotency_key: Optional[str] = None,
+        area_id: Optional[uuid.UUID] = None,
     ) -> Tuple[AnalysisCreateResponse, List[str]]:
         """Validate submission, resolve idempotency, enforce limits, and atomically persist."""
         # 1. Validate AOI geometry
@@ -147,6 +148,7 @@ class AnalysisService:
                 requested_layers=request.layers,
                 configuration_id=request.configuration_id,
                 idempotency_key=idempotency_key,
+                area_id=area_id,
             )
 
             response = AnalysisCreateResponse(

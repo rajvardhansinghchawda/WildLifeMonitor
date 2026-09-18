@@ -15,13 +15,11 @@ from app.core.metrics import JOB_DURATION_SECONDS, VALID_DATA_COVERAGE_FRACTION
 from app.db.session import async_session_factory
 from app.models.analysis import JobStatusEnum, LayerStatusEnum
 from app.providers.base import AnalysisContext, AnalysisRequestData, ChangeProvider
-from app.providers.fixture_builtup_provider import FixtureBuiltupProvider
+from app.providers.factory import build_providers
 from app.providers.fixture_processor import FixtureProcessor
-from app.providers.fixture_vegetation_provider import FixtureVegetationProvider
-from app.providers.fixture_water_provider import FixtureWaterProvider
-from app.providers.gfw_provider import GFWProvider
 from app.repositories.analysis_repository import AnalysisRepository
 from app.repositories.job_attempt_repository import JobAttemptRepository
+from app.services.alert_service import AlertService
 from app.services.artifact_service import ArtifactService
 from app.services.context_enrichment_service import ContextEnrichmentService
 from app.services.event_extraction_service import EventExtractionService
@@ -47,23 +45,15 @@ class AnalysisWorker:
         self.analysis_repo = AnalysisRepository()
         self.attempt_repo = JobAttemptRepository()
         self.fixture_processor = FixtureProcessor()
-        self.vegetation_provider = FixtureVegetationProvider()
-        self.water_provider = FixtureWaterProvider()
-        self.builtup_provider = FixtureBuiltupProvider()
-        self.gfw_provider = GFWProvider()
         self.artifact_service = ArtifactService()
         self.event_service = EventExtractionService()
         self.context_service = ContextEnrichmentService()
         self.priority_service = PriorityService()
+        self.alert_service = AlertService()
         self.rate_limiter = ProviderRateLimiter()
 
-        self.providers: Dict[str, ChangeProvider] = {
-            "vegetation": self.vegetation_provider,
-            "water": self.water_provider,
-            "builtup": self.builtup_provider,
-            "forestalerts": self.gfw_provider,
-            "gfw": self.gfw_provider,
-        }
+        # Real Earth Engine providers unless PROVIDER_MODE=fixture (automated tests only)
+        self.providers: Dict[str, ChangeProvider] = build_providers()
 
     async def execute_job_message(
         self,
@@ -247,6 +237,8 @@ class AnalysisWorker:
                     layer.quality_label = layer_result.quality_label  # type: ignore[assignment]
                     layer.metrics = layer_result.metrics  # type: ignore[assignment]
                     layer.method_version = layer_result.method_version  # type: ignore[assignment]
+                    layer.warnings = list(layer_result.warnings)  # type: ignore[assignment]
+                    layer.provenance = dict(layer_result.provenance)  # type: ignore[assignment]
                     if (
                         layer_result.metrics
                         and layer_result.metrics.get("validpixelfraction") is not None
@@ -259,16 +251,18 @@ class AnalysisWorker:
                         layer.error_details = layer_result.error_details  # type: ignore[assignment]
 
                     if layer_result.status == LayerStatusEnum.READY.value:
-                        # Context enrichment (batched spatial-tree search)
-                        enriched_events, context_warnings = (
-                            self.context_service.enrich_events_batch(
-                                events=layer_result.events,
-                                aoi=context.aoi,
-                            )
+                        # Context enrichment (batched spatial-tree search; real Overpass data)
+                        enriched_events, context_warnings = await asyncio.to_thread(
+                            self.context_service.enrich_events_batch,
+                            layer_result.events,
+                            context.aoi,
+                        )
+
+                        layer.warnings = list(layer_result.warnings) + list(  # type: ignore[assignment]
+                            context_warnings
                         )
 
                         # Publish artifacts to object storage with SHA256 validation
-                        mock_tif_bytes = b"II*\x00\x08\x00\x00\x00" + b"\x00" * 100
                         manifest_payload = {
                             "analysis_id": str(analysis.id),
                             "attempt_id": str(attempt.id),
@@ -278,16 +272,32 @@ class AnalysisWorker:
                             "provenance": layer_result.provenance,
                             "warnings": layer_result.warnings + context_warnings,
                         }
+                        fixture_raster: Optional[bytes] = None
+                        if not layer_result.payloads and settings.PROVIDER_MODE == "fixture":
+                            fixture_raster = b"II*    " + b" " * 100
                         await self.artifact_service.publish_layer_manifest_and_raster(
                             session=session,
                             analysis_id=cast(uuid.UUID, analysis.id),
                             attempt_id=cast(uuid.UUID, attempt.id),
                             layer_type=str(layer.layer_type),
                             manifest_data=manifest_payload,
-                            raster_bytes=mock_tif_bytes,
+                            raster_bytes=fixture_raster,
                             workspace_id=cast(uuid.UUID, analysis.workspace_id),
                             layer_id=cast(uuid.UUID, layer.id),
                         )
+                        for payload in layer_result.payloads:
+                            await self.artifact_service.publish_artifact(
+                                session=session,
+                                analysis_id=cast(uuid.UUID, analysis.id),
+                                attempt_id=cast(uuid.UUID, attempt.id),
+                                artifact_type=f"{layer.layer_type}_{payload['role']}",
+                                filename=payload["filename"],
+                                content_bytes=payload["content"],
+                                workspace_id=cast(uuid.UUID, analysis.workspace_id),
+                                layer_id=cast(uuid.UUID, layer.id),
+                                mime_type=payload["media_type"],
+                                extra_metadata=payload.get("metadata"),
+                            )
 
                         # Persist ChangeEvents idempotently
                         await self.event_service.persist_events_idempotent(
@@ -333,6 +343,12 @@ class AnalysisWorker:
                 session=session,
                 analysis_id=cast(uuid.UUID, analysis.id),
                 workspace_id=cast(uuid.UUID, analysis.workspace_id),
+            )
+
+            # Derive severity-banded alerts from the persisted events (never hand-authored)
+            await self.alert_service.create_alerts_for_analysis(
+                session=session,
+                analysis_id=cast(uuid.UUID, analysis.id),
             )
 
             # Resolve Job Status per systemdesign.md rules:

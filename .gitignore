@@ -4,6 +4,12 @@ env/
 venv/
 ENV/
 
+# Node / frontend
+node_modules/
+.next/
+dist/
+out/
+
 # Byte-compiled / cache files
 __pycache__/
 *.py[cod]

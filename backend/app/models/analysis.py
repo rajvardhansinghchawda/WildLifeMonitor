@@ -43,6 +43,14 @@ class Analysis(Base):
         index=True,
     )
 
+    # Optional link to the protected-area catalog entry this analysis was run for
+    area_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("protected_areas.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
     # Inputs snapshot — immutable per systemdesign.md
     aoi_snapshot = Column(JSONB, nullable=False)
     baseline_start = Column(Date, nullable=False)
@@ -101,6 +109,8 @@ class AnalysisLayer(Base):
 
     quality_label = Column(String(50), nullable=True)
     metrics = Column(JSONB, nullable=True)
+    warnings = Column(JSONB, nullable=True)
+    provenance = Column(JSONB, nullable=True)
 
     # Classified error fields per backendhandoverfile.md Layer-result contract
     error_code = Column(String(100), nullable=True)

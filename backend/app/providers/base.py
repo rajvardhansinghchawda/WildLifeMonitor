@@ -56,6 +56,9 @@ class LayerResult:
     error_code: Optional[str] = None
     error_details: Optional[Dict[str, Any]] = None
     artifacts: List[Dict[str, Any]] = field(default_factory=list)
+    # Binary outputs to publish (real rasters / overlays): each item is
+    # {role, filename, content(bytes), media_type, metadata{bounds, legend, ...}}
+    payloads: List[Dict[str, Any]] = field(default_factory=list)
     events: List[Dict[str, Any]] = field(default_factory=list)
     provenance: Dict[str, Any] = field(default_factory=dict)
     warnings: List[str] = field(default_factory=list)

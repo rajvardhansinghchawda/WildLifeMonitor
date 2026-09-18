@@ -100,11 +100,13 @@ class AnalysisRepository:
         requested_layers: List[str],
         configuration_id: str,
         idempotency_key: Optional[str] = None,
+        area_id: Optional[uuid.UUID] = None,
     ) -> Tuple[Analysis, Outbox]:
         """Atomically persist Analysis, AnalysisLayer rows, and Outbox entry in one transaction."""
         analysis = Analysis(
             id=uuid.uuid4(),
             workspace_id=workspace_id,
+            area_id=area_id,
             created_by=created_by,
             aoi_snapshot=aoi_snapshot,
             baseline_start=baseline_start,

@@ -10,13 +10,19 @@ from sqlalchemy.pool import NullPool
 # Set test environment defaults
 os.environ["APP_ENV"] = "development"
 os.environ["AUTH_MODE"] = "development"
-TEST_DB_URL = os.environ.get(
-    "TEST_DATABASE_URL",
-    os.environ.get(
-        "DATABASE_URL",
-        "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/wildlife",
-    ),
+os.environ["PROVIDER_MODE"] = "fixture"
+
+_BASE_URL = os.environ.get(
+    "DATABASE_URL",
+    "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/wildlife",
 )
+# Tests run against a DEDICATED database so real (curated/precomputed) data in the
+# application database is never wiped by migration-lifecycle tests.
+TEST_DB_NAME = "wildlife_test"
+TEST_DB_URL = os.environ.get(
+    "TEST_DATABASE_URL", _BASE_URL.rsplit("/", 1)[0] + "/" + TEST_DB_NAME
+)
+ADMIN_DB_URL = TEST_DB_URL.rsplit("/", 1)[0] + "/postgres"
 os.environ["DATABASE_URL"] = TEST_DB_URL
 
 from app.db.base import Base  # noqa: E402
@@ -34,11 +40,26 @@ def get_test_engine():
     )
 
 
+async def ensure_test_database() -> None:
+    admin = create_async_engine(ADMIN_DB_URL, isolation_level="AUTOCOMMIT", poolclass=NullPool)
+    db_name = TEST_DB_URL.rsplit("/", 1)[1]
+    async with admin.connect() as conn:
+        exists = await conn.execute(
+            text("SELECT 1 FROM pg_database WHERE datname = :n"), {"n": db_name}
+        )
+        if not exists.scalar():
+            await conn.execute(text(f'CREATE DATABASE "{db_name}"'))
+    await admin.dispose()
+
+
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_database():
-    """Ensure PostGIS extension and baseline tables exist for the test session."""
+    """Create the dedicated test DB, reset its schema, and build all tables."""
+    await ensure_test_database()
     engine = get_test_engine()
     async with engine.begin() as conn:
+        await conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE;"))
+        await conn.execute(text("CREATE SCHEMA public;"))
         await conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
         await conn.run_sync(Base.metadata.create_all)
     await engine.dispose()

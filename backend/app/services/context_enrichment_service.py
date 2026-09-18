@@ -1,10 +1,16 @@
 import logging
 import math
+import threading
+import time
 from typing import Any, Dict, List, Optional, Tuple
+
+import requests
 
 from shapely import STRtree
 from shapely.geometry import LineString, Point, shape
 from shapely.geometry.base import BaseGeometry
+
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +41,24 @@ class ContextEnrichmentService:
     - Context failures produce warnings and never invalidate an otherwise-ready change layer.
     """
 
-    CONTEXT_SOURCE = "cached_osm_overpass_v1"
+    CONTEXT_SOURCE = "cached_osm_overpass_v1"  # fixture mode (tests) only
+    LIVE_CONTEXT_SOURCE = "openstreetmap_overpass_live"
+    OVERPASS_MIRRORS = (
+        "https://overpass-api.de/api/interpreter",
+        "https://lz4.overpass-api.de/api/interpreter",
+        "https://overpass.kumi.systems/api/interpreter",
+    )
+    CACHE_TTL_SECONDS = 24 * 3600
+    _cache: Dict[str, Tuple[float, Tuple[List[BaseGeometry], List[BaseGeometry]]]] = {}
+    _cache_lock = threading.Lock()
+
+    @property
+    def context_source(self) -> str:
+        return (
+            self.CONTEXT_SOURCE
+            if settings.PROVIDER_MODE.lower() == "fixture"
+            else self.LIVE_CONTEXT_SOURCE
+        )
     DISCLAIMER = (
         "Distances indicate proximity to nearest known features in the cached OpenStreetMap Overpass source; "
         "absence of features in this source is not proof that no road or settlement exists in the physical world."
@@ -55,6 +78,8 @@ class ContextEnrichmentService:
         self.query_count += 1
         geom = shape(aoi)
         min_lon, min_lat, max_lon, max_lat = geom.bounds
+        if settings.PROVIDER_MODE.lower() != "fixture":
+            return self._fetch_overpass(min_lon, min_lat, max_lon, max_lat)
 
         # Generate representative cached OSM roads and settlements within or near the AOI
         # Road: diagonal highway crossing the AOI
@@ -70,6 +95,64 @@ class ContextEnrichmentService:
         )
         settlements: List[BaseGeometry] = [settlement1]
 
+        return roads, settlements
+
+    def _fetch_overpass(
+        self, min_lon: float, min_lat: float, max_lon: float, max_lat: float
+    ) -> Tuple[List[BaseGeometry], List[BaseGeometry]]:
+        """Fetch REAL roads and settlements around the AOI from OpenStreetMap (Overpass)."""
+        pad = settings.CONTEXT_BUFFER_KM / 111.0
+        south, west, north, east = min_lat - pad, min_lon - pad, max_lat + pad, max_lon + pad
+        key = f"{south:.3f},{west:.3f},{north:.3f},{east:.3f}"
+        now = time.time()
+        with self._cache_lock:
+            hit = self._cache.get(key)
+            if hit and now - hit[0] < self.CACHE_TTL_SECONDS:
+                return hit[1]
+
+        query = (
+            "[out:json][timeout:90];("
+            'way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|'
+            'residential|track|service|road|living_street)$"]'
+            f"({south},{west},{north},{east});"
+            'node["place"~"^(city|town|village|hamlet|isolated_dwelling)$"]'
+            f"({south},{west},{north},{east});"
+            ");out geom;"
+        )
+        endpoints = [settings.OVERPASS_ENDPOINT] + [
+            m for m in self.OVERPASS_MIRRORS if m != settings.OVERPASS_ENDPOINT
+        ]
+        last_error: Optional[Exception] = None
+        payload: Optional[Dict[str, Any]] = None
+        for endpoint in endpoints:
+            try:
+                response = requests.post(
+                    endpoint,
+                    data={"data": query},
+                    headers={"User-Agent": "CodeNiti-WildlifeMonitor/1.0 (conservation research)"},
+                    timeout=120,
+                )
+                if response.status_code == 200:
+                    payload = response.json()
+                    break
+                last_error = RuntimeError(f"Overpass HTTP {response.status_code} from {endpoint}")
+            except (requests.RequestException, ValueError) as exc:
+                last_error = exc
+        if payload is None:
+            raise RuntimeError(f"Overpass unavailable: {last_error}")
+
+        roads: List[BaseGeometry] = []
+        settlements: List[BaseGeometry] = []
+        for element in payload.get("elements", []):
+            if element.get("type") == "way" and element.get("geometry"):
+                coords = [(pt["lon"], pt["lat"]) for pt in element["geometry"]]
+                if len(coords) >= 2:
+                    roads.append(LineString(coords))
+            elif element.get("type") == "node" and "lat" in element and "lon" in element:
+                settlements.append(Point(element["lon"], element["lat"]))
+        with self._cache_lock:
+            self._cache[key] = (now, (roads, settlements))
+        logger.info("Overpass returned %d roads and %d settlements", len(roads), len(settlements))
         return roads, settlements
 
     def enrich_events_batch(
@@ -96,7 +179,7 @@ class ContextEnrichmentService:
             for evt in events:
                 evt["nearest_known_road_distance_m"] = None
                 evt["nearest_known_settlement_distance_m"] = None
-                evt["context_source"] = self.CONTEXT_SOURCE
+                evt["context_source"] = self.context_source
                 evt["context_disclaimer"] = self.DISCLAIMER
             return events, warnings
 
@@ -167,7 +250,7 @@ class ContextEnrichmentService:
 
                 evt["nearest_known_road_distance_m"] = road_dist
                 evt["nearest_known_settlement_distance_m"] = settlement_dist
-                evt["context_source"] = self.CONTEXT_SOURCE
+                evt["context_source"] = self.context_source
                 evt["context_disclaimer"] = self.DISCLAIMER
 
         except Exception as e:
@@ -179,7 +262,7 @@ class ContextEnrichmentService:
             for evt in events:
                 evt["nearest_known_road_distance_m"] = None
                 evt["nearest_known_settlement_distance_m"] = None
-                evt["context_source"] = self.CONTEXT_SOURCE
+                evt["context_source"] = self.context_source
                 evt["context_disclaimer"] = self.DISCLAIMER
 
         return events, warnings

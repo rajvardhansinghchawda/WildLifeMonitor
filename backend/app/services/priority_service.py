@@ -149,6 +149,24 @@ class PriorityService:
         conservation_zones = ws_settings.get("conservation_zones")
         pressure_indicators = ws_settings.get("pressure_indicators")
 
+        # Sensitivity source: workspace-configured zones win; otherwise the real protected-area
+        # boundary (OpenStreetMap) of the area this analysis was run for. No area and no
+        # configured zones -> sensitivity stays missing and the score stays null.
+        if conservation_zones is None:
+            from app.models.analysis import Analysis
+            from app.models.area import ProtectedArea
+
+            analysis = await session.get(Analysis, analysis_id)
+            if analysis is not None and analysis.area_id is not None:
+                area = await session.get(ProtectedArea, analysis.area_id)
+                if area is not None:
+                    conservation_zones = [
+                        {
+                            "name": str(area.name),
+                            "geometry": to_shape(area.boundary).__geo_interface__,
+                        }
+                    ]
+
         # 2. Fetch analysis events
         events_query = select(ChangeEvent).where(
             ChangeEvent.analysis_id == analysis_id,
@@ -197,3 +215,23 @@ class PriorityService:
             conservation_zones is not None,
         )
         return updated_count
+
+
+def compute_magnitude(affected_area_ha: float, mean_ndvi_change: Optional[float]) -> float:
+    """Normalized 0-1 change magnitude (same definition PriorityService uses for its component)."""
+    norm_area = min(1.0, max(0.0, affected_area_ha / 10.0))
+    if mean_ndvi_change is not None:
+        norm_ndvi = min(1.0, max(0.0, abs(mean_ndvi_change) / 0.5))
+        return round(0.5 * norm_ndvi + 0.5 * norm_area, 4)
+    return round(norm_area, 4)
+
+
+def severity_band(magnitude: float) -> str:
+    """Deterministic severity band derived ONLY from change magnitude (transparent, not invented)."""
+    if magnitude < 0.25:
+        return "low"
+    if magnitude < 0.5:
+        return "medium"
+    if magnitude < 0.75:
+        return "high"
+    return "critical"

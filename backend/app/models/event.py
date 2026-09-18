@@ -4,6 +4,7 @@ from enum import Enum
 
 from geoalchemy2 import Geometry
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Index, Integer, String, desc
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -53,6 +54,9 @@ class ChangeEvent(Base):
 
     priority_score = Column(Float, nullable=True)
     priority_method_version = Column(String(50), nullable=True)
+
+    # Extra real, method-specific values (baseline/comparison means, layer type, sensor, ...)
+    properties = Column(JSONB, nullable=True)
 
     nearest_known_road_distance_m = Column(Float, nullable=True)
     nearest_known_settlement_distance_m = Column(Float, nullable=True)

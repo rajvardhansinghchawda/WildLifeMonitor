@@ -37,10 +37,31 @@ class Settings(BaseSettings):
 
     # Authentication & Identity
     AUTH_MODE: str = Field(
-        default="development", description="Authentication mode: development or oidc"
+        default="development",
+        description="Authentication mode: development, local (self-issued OAuth2/JWT) or oidc",
     )
     OIDC_ISSUER: Optional[str] = Field(default=None, description="OIDC token issuer URL")
     OIDC_AUDIENCE: Optional[str] = Field(default=None, description="Expected OIDC token audience")
+
+    # Local OAuth2 (password flow) + JWT settings — AUTH_MODE=local
+    JWT_SECRET: str = Field(
+        default="dev-insecure-change-me-please-0123456789",
+        description="HS256 signing secret for self-issued access tokens",
+    )
+    JWT_ISSUER: str = Field(default="codeniti")
+    ACCESS_TOKEN_TTL_MINUTES: int = Field(default=30)
+    REFRESH_TOKEN_TTL_DAYS: int = Field(default=7)
+
+    # Analysis provider selection: 'gee' (real Earth Engine) or 'fixture' (tests only)
+    PROVIDER_MODE: str = Field(
+        default="gee", description="Analysis provider mode: gee (real data) or fixture (tests)"
+    )
+    # Browser-reachable object-storage endpoint used ONLY for presigned URLs
+    OBJECT_STORAGE_PUBLIC_ENDPOINT: Optional[str] = Field(default=None)
+    FIRMS_MAP_KEY: Optional[str] = Field(default=None, description="NASA FIRMS MAP_KEY")
+    CONTEXT_BUFFER_KM: float = Field(
+        default=5.0, description="Search buffer around AOI for nearest road/settlement (km)"
+    )
 
     # Providers
     GEE_PROJECT_ID: Optional[str] = Field(
@@ -71,7 +92,7 @@ class Settings(BaseSettings):
 
     # Security & CORS
     ALLOWED_ORIGINS: List[str] = Field(
-        default=["http://localhost:5173"],
+        default=["http://localhost:3000", "http://localhost:5173"],
         description="Explicit allowed CORS origins",
     )
 
@@ -86,6 +107,12 @@ class Settings(BaseSettings):
                 "Development authentication mode (AUTH_MODE=development) is strictly forbidden "
                 "when running in production mode (APP_ENV=production)."
             )
+        if (
+            self.APP_ENV.lower() == "production"
+            and self.AUTH_MODE.lower() == "local"
+            and self.JWT_SECRET.startswith("dev-insecure")
+        ):
+            raise ValueError("JWT_SECRET must be overridden when AUTH_MODE=local in production.")
         return self
 
 
