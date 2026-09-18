@@ -3,21 +3,29 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Radio, Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Radio, Lock, Mail, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('sarah.connor@kenyawildlife.org');
-  const [password, setPassword] = useState('password123');
+  const { login } = useAuth();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    setError(null);
+    try {
+      await login(email, password);
       router.push('/dashboard');
-    }, 600);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign-in failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -61,9 +69,6 @@ export default function LoginPage() {
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 font-mono">
                   Access Key / Password
                 </label>
-                <a href="#" className="text-[11px] text-emerald-400 hover:underline">
-                  Forgot key?
-                </a>
               </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -78,20 +83,11 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2">
-              <label className="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
-                <input
-                  type="checkbox"
-                  defaultChecked
-                  className="rounded bg-slate-900 border-slate-800 text-emerald-500 focus:ring-emerald-500/20"
-                />
-                <span>Remember session</span>
-              </label>
-              <span className="text-[10px] text-emerald-400/80 font-mono flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                256-bit Encrypted
-              </span>
-            </div>
+            {error && (
+              <p className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-3 py-2">
+                {error}
+              </p>
+            )}
 
             <button
               type="submit"

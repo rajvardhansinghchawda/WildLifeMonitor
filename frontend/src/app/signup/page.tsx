@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Radio, Lock, Mail, User, Building, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Radio, Lock, Mail, User, Building, ArrowRight } from 'lucide-react';
+import { useAuth } from '@/lib/auth';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -11,18 +12,29 @@ export default function SignupPage() {
     fullName: '',
     email: '',
     organization: '',
-    role: 'PARK_RANGER',
     password: '',
   });
+  const { register } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    setError(null);
+    try {
+      await register({
+        email: formData.email,
+        password: formData.password,
+        full_name: formData.fullName,
+        workspace_name: formData.organization,
+      });
       router.push('/dashboard');
-    }, 600);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Registration failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -55,7 +67,7 @@ export default function SignupPage() {
                   required
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  placeholder="Dr. Sarah Connor"
+                  placeholder="Full name"
                   className="w-full h-9 pl-9 pr-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                 />
               </div>
@@ -89,26 +101,10 @@ export default function SignupPage() {
                   required
                   value={formData.organization}
                   onChange={(e) => setFormData({ ...formData, organization: e.target.value })}
-                  placeholder="Kenya Wildlife Service"
+                  placeholder="Organisation / workspace name"
                   className="w-full h-9 pl-9 pr-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1 font-mono">
-                Deployment Role
-              </label>
-              <select
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                className="w-full h-9 px-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
-              >
-                <option value="PARK_RANGER">Park Ranger (Field Operations)</option>
-                <option value="RESEARCHER">Geospatial Scientist / Researcher</option>
-                <option value="SUPER_ADMIN">Agency Administrator</option>
-                <option value="VIEWER">Conservation Observer / Auditor</option>
-              </select>
             </div>
 
             <div>
@@ -122,12 +118,17 @@ export default function SignupPage() {
                   required
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Minimum 10 characters"
+                  placeholder="Minimum 8 characters"
                   className="w-full h-9 pl-9 pr-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
 
+            {error && (
+              <p className="text-xs text-red-400 bg-red-950/40 border border-red-900/60 rounded-lg px-3 py-2">
+                {error}
+              </p>
+            )}
             <button
               type="submit"
               disabled={isLoading}

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { AuthProvider } from '@/lib/auth';
 
 export const metadata: Metadata = {
   title: 'Wildlife Watch - Wildlife Habitat Monitoring & Change Detection',
@@ -15,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className="bg-[#0b0f14] text-slate-100 min-h-screen">
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
