@@ -1,0 +1,137 @@
+import time
+import uuid
+
+from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from app.api.v1 import api_v1_router
+from app.api.v1.health import router as root_health_router
+from app.core.config import settings
+from app.core.logging import request_id_ctx, setup_logging
+from app.core.metrics import HTTP_REQUEST_DURATION_SECONDS, HTTP_REQUESTS_TOTAL
+from app.schemas.common import ErrorDetail, ErrorEnvelope
+
+# Initialize structured logging
+setup_logging(settings.LOG_LEVEL)
+
+app = FastAPI(
+    title="Wildlife Habitat Monitoring System API",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+)
+
+# CORS Middleware with explicit allowed origins per rules.md
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.middleware("http")
+async def correlation_id_middleware(request: Request, call_next):
+    """Tracks and propagates request_id across async context and response headers,
+    and records HTTP duration/error-rate metrics per backendhandoverfile.md's
+    Observability table."""
+    req_id = request.headers.get("X-Request-ID") or f"req-{uuid.uuid4().hex[:8]}"
+    token = request_id_ctx.set(req_id)
+    route_template = request.url.path
+    start = time.monotonic()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        response.headers["X-Request-ID"] = req_id
+        return response
+    finally:
+        # Prefer the matched route template (e.g. "/api/v1/analyses/{analysis_id}")
+        # over the raw path so metric cardinality doesn't grow with every UUID.
+        route = request.scope.get("route")
+        endpoint_label = getattr(route, "path", route_template)
+        duration = time.monotonic() - start
+        HTTP_REQUESTS_TOTAL.labels(
+            method=request.method,
+            endpoint=endpoint_label,
+            status_code=str(status_code),
+        ).inc()
+        HTTP_REQUEST_DURATION_SECONDS.labels(
+            method=request.method,
+            endpoint=endpoint_label,
+        ).observe(duration)
+        request_id_ctx.reset(token)
+
+
+# Error Envelope Handlers per spec.md
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    req_id = request_id_ctx.get()
+    error_code = getattr(exc, "error_code", None)
+    if not error_code:
+        if exc.status_code == 404:
+            error_code = "NOTFOUND"
+        elif exc.status_code == 403:
+            error_code = "FORBIDDEN"
+        elif exc.status_code == 401:
+            error_code = "UNAUTHORIZED"
+        elif exc.status_code == 409:
+            error_code = "CONFLICT"
+        elif exc.status_code == 501:
+            error_code = "NOTIMPLEMENTED"
+        else:
+            error_code = "HTTPERROR"
+
+    details = getattr(exc, "details", {})
+    retryable = getattr(exc, "retryable", exc.status_code in [502, 503, 504])
+    envelope = ErrorEnvelope(
+        error=ErrorDetail(
+            code=error_code,
+            message=str(exc.detail),
+            details=details,
+            request_id=req_id,
+            retryable=retryable,
+        )
+    )
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=envelope.model_dump(),
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    req_id = request_id_ctx.get()
+    details = {"errors": exc.errors()}
+    envelope = ErrorEnvelope(
+        error=ErrorDetail(
+            code="VALIDATIONERROR",
+            message="Request body or query parameters failed schema validation.",
+            details=details,
+            request_id=req_id,
+            retryable=False,
+        )
+    )
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content=envelope.model_dump(),
+    )
+
+
+# Mount root health probes (for container orchestrators) and API v1 routes
+app.include_router(root_health_router)
+app.include_router(api_v1_router, prefix=settings.API_PREFIX)
+
+
+@app.get("/metrics", tags=["Observability"], include_in_schema=False)
+async def metrics_endpoint():
+    """Prometheus exposition metrics endpoint per backendhandoverfile.md."""
+    from fastapi.responses import Response
+
+    from app.core.metrics import CONTENT_TYPE_LATEST, export_prometheus_metrics
+
+    return Response(content=export_prometheus_metrics(), media_type=CONTENT_TYPE_LATEST)

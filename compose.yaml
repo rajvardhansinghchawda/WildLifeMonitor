@@ -1,0 +1,160 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: codeniti-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: wildlife
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d wildlife"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: codeniti-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  object-storage:
+    image: minio/minio:latest
+    container_name: codeniti-object-storage
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadminpassword
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: codeniti-api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      APP_ENV: development
+      API_PREFIX: /api/v1
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@db:5432/wildlife
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENDPOINT: http://object-storage:9000
+      OBJECT_STORAGE_BUCKET: wildlife-artifacts
+      OBJECT_STORAGE_ACCESS_KEY: minioadmin
+      OBJECT_STORAGE_SECRET_KEY: minioadminpassword
+      AUTH_MODE: local
+      JWT_SECRET: ${JWT_SECRET:-dev-insecure-change-me-local-only-secret-key}
+      PROVIDER_MODE: gee
+      GEE_PROJECT_ID: macro-shore-471006-c3
+      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/macro-shore-471006-c3-822bdbdaa0b9.json
+      OBJECT_STORAGE_PUBLIC_ENDPOINT: http://localhost:9000
+      FIRMS_MAP_KEY: ${FIRMS_MAP_KEY:-}
+      ALLOWED_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: codeniti-worker
+    command: python -m app.workers.analysis_worker
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@db:5432/wildlife
+      REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENDPOINT: http://object-storage:9000
+      OBJECT_STORAGE_BUCKET: wildlife-artifacts
+      OBJECT_STORAGE_ACCESS_KEY: minioadmin
+      OBJECT_STORAGE_SECRET_KEY: minioadminpassword
+      PROVIDER_MODE: gee
+      GEE_PROJECT_ID: macro-shore-471006-c3
+      GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/macro-shore-471006-c3-822bdbdaa0b9.json
+      OBJECT_STORAGE_PUBLIC_ENDPOINT: http://localhost:9000
+      LOG_LEVEL: INFO
+    ports:
+      - "9102:9102"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      object-storage:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+  dispatcher:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: codeniti-dispatcher
+    command: python -m app.workers.dispatcher
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@db:5432/wildlife
+      REDIS_URL: redis://redis:6379/0
+      LOG_LEVEL: INFO
+    ports:
+      - "9101:9101"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: codeniti-scheduler
+    command: python -m app.workers.scheduler
+    environment:
+      APP_ENV: development
+      DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@db:5432/wildlife
+      REDIS_URL: redis://redis:6379/0
+      LOG_LEVEL: INFO
+    ports:
+      - "9103:9103"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:

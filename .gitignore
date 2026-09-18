@@ -1,21 +1,40 @@
-# Dependencies
+# Python virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Node / frontend
 node_modules/
+.next/
+dist/
+out/
+build/
 .pnp
 .pnp.js
 
-# Build outputs
-dist/
-build/
-out/
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# Environment files
+# Environment files and credentials (rules.md)
+*.json
+!package*.json
+!tsconfig*.json
+credentials/
+secrets/
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
 *.pem
 *.key
 
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -24,3 +43,9 @@ pnpm-debug.log*
 # Editor & OS files
 .DS_Store
 Thumbs.db
+
+# Local storage and test artifacts
+volumes/
+data/
+scratch_git.ps1
+
