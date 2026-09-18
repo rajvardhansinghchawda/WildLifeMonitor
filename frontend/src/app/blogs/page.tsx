@@ -289,8 +289,15 @@ export default function BlogsPage() {
       <header className="sticky top-0 z-50 h-20 bg-[#16231c]/95 backdrop-blur-md border-b border-emerald-900/40 px-6 lg:px-12 flex items-center justify-between transition-all text-white">
         {/* Brand Logo & Tagline */}
         <Link href="/" className="flex items-center gap-3.5 group">
-          <div className="w-10 h-10 rounded-full bg-[#0d472a] border border-emerald-500/50 flex items-center justify-center text-emerald-300 shadow-md group-hover:scale-105 transition-transform">
-            <TreePine className="w-5 h-5" />
+          <div className="relative w-11 h-11 rounded-full bg-black/50 border border-amber-400/50 flex items-center justify-center p-1.5 shadow-md group-hover:scale-105 transition-transform overflow-hidden">
+            <Image
+              src="/primary logo 1.png"
+              alt="Wildlife Watch Logo"
+              width={36}
+              height={36}
+              className="w-full h-full object-contain"
+              priority
+            />
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-lg tracking-tight text-white leading-tight">
