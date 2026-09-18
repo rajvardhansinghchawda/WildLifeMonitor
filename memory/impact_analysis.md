@@ -150,5 +150,24 @@ This document records the architectural, data model, security, and operational i
   - Benchmarks (5 tests): submission latency, cold/warm cache, concurrent duplicate submissions, status reads, cancellations.
   - Security regressions (3 tests): secret redaction, attribution display, CORS policies.
 
+---
+
+## Phase 7: Documentation & Handover
+
+### Architectural & Scientific Impact
+- **Transparent Epistemic Boundary**: Explicitly delineates between what is simulated via test fixtures (e.g. Sentinel-2 L2A via `FixtureVegetationProvider`, `FixtureWaterProvider`, `FixtureBuiltupProvider`) and what is integrated directly against real services (PostgreSQL 16 + PostGIS 3.4, Redis 7, MinIO S3).
+- **Explicit Version Registration**: Consolidated and documented literal method version strings (`vegetation-v1`, `water-v1`, `builtup-v1`, `priority-v1`, `cached_osm_overpass_v1`) to guarantee reproducibility across frontend and analytical consumers.
+- **Scientific Review Caveats**: Formally documented that the Investigation Priority score is a product triage heuristic and not an ecologically validated Habitat Health index, and that context proximity measures cached source presence rather than physical absence.
+
+### Data Model & Persistence Impact
+- **Operational Runbook**: Established exact database migration guidelines, pre-migration snapshot commands, and rollback procedures.
+
+### Security & Operational Impact
+- **Operational Readiness**: Delivered `docs/handover.md` answering all 10 checklist items from `backendhandoverfile.md` enabling any new engineer or reviewer to operate, debug, test, and deploy the system without needing prior context or reading git history.
+
+### Regression Controls & Verification
+- **Verified Suite**: 80 automated tests passing with 0 failures; Ruff check clean; Ruff format clean; Mypy clean.
+
+
 
 

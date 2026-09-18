@@ -281,3 +281,31 @@ Known limitations: External cloud providers (Copernicus CDSE, Planetary Computer
 Migration or deployment steps: Backup and restore rehearsal documented in docs/backup-restore-drill.md.
 Next dependency: Phase 7 (P7-HANDOVER).
 ```
+
+---
+
+## [2026-09-18 18:00] Phase 7 — Documentation & Final Handover (`P7-HANDOVER`)
+
+### Prompt
+Complete backendhandoverfile.md's "Handover completion checklist" with the real, verified state of the implementation — not aspirational claims. Produce `docs/handover.md` covering all 10 checklist items, traceable to actual test runs and documented verification steps.
+
+### Thinking
+- **Epistemic Honesty and No Aspirational Claims (`agents.md`, `rules.md`)**: The handover document must report strictly what is implemented, verified, and measured. If a provider is simulated via fixtures (such as Sentinel-2 L2A via `FixtureVegetationProvider` and Overpass via cached fixtures), it must be stated plainly. GFW and GEE must be explicitly noted as pending external credentials.
+- **Traceability to Actuals**: All latency figures in the handover are drawn directly from the automated benchmark run (Phase 6).
+- **Comprehensive Coverage**: Fully addresses what is implemented, tested providers, tested AOIs and date ranges, literal method version strings (`vegetation-v1`, `water-v1`, `builtup-v1`, `priority-v1`), 80 executed tests and results, known unsupported conditions, required deployment environment variables, migration and backup drill guidance, and remaining scientific review caveats.
+
+### Result
+```text
+Task ID: P7-HANDOVER
+Status: completed
+Files changed:
+  - docs/handover.md (Comprehensive Handover Document addressing all 10 checklist items from backendhandoverfile.md)
+Behavior implemented: Comprehensive handover documentation describing the true verified state of the backend across all functional, scientific, security, and performance domains; clear distinction between fixture-backed and real integrations; exact method versions; and actionable operational runbooks.
+Contract changes: None.
+Tests executed: 80 automated tests in Docker with PostgreSQL 16 + PostGIS + Redis + MinIO (pytest tests/ -v).
+Test results: 80/80 passed; Ruff check 100% clean; Ruff format 100% clean; Mypy 0 errors in 64 source files.
+Provider checks executed: All providers documented with exact verification status against Phase 0 records.
+Known limitations: Documented in Section 6 of docs/handover.md (antimeridian geometries, polar regions, disabled GFW, workspace active job limits, tile access 900s TTL).
+Migration or deployment steps: Fully documented with step-by-step Alembic and pg_dump commands in Section 8 of docs/handover.md.
+Next dependency: None (All 7 Phases Complete).
+```
