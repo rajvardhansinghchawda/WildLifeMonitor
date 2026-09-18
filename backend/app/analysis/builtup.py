@@ -56,9 +56,7 @@ def detect_builtup_change(
     gain_mask = np.logical_and(valid_comparison, np.logical_and(base_non, comp_built))
 
     # Retain ambiguous transitions separately without forcing
-    ambiguous_mask = np.logical_and(
-        valid_comparison, np.logical_or(base_ambig, comp_ambig)
-    )
+    ambiguous_mask = np.logical_and(valid_comparison, np.logical_or(base_ambig, comp_ambig))
 
     # Compute probability difference strictly on valid support
     prob_diff = np.full(baseline_prob.shape, np.nan, dtype=np.float32)

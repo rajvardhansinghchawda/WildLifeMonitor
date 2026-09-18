@@ -56,4 +56,5 @@ class Artifact(Base):
     @property
     def storage_uri(self) -> str:
         from app.core.config import settings
+
         return f"s3://{settings.OBJECT_STORAGE_BUCKET}/{self.object_key}"

@@ -101,3 +101,26 @@ This document records the architectural, data model, security, and operational i
 ### Regression Controls & Verification
 - **Test Coverage**: 52 consolidated automated tests in Docker covering water gain/loss/ambiguity, zero-baseline water null relative change, builtup probability labeling, multi-layer independent failure isolation (`partial` resolution), GFW explicit unsupported reporting, and spatial-tree batching query counts.
 
+---
+
+## Phase 5: Investigation Workflow & Verification Loop
+
+### Architectural & Scientific Impact
+- **Investigation Priority Heuristic (superpower.md)**: Product ranking combines magnitude (0.50), conservation zone sensitivity (0.30), and pressure context (0.20) normalized to 0–100. Explicitly designated as a review triage heuristic, NOT an ecologically validated "Habitat Health" metric.
+- **Strict Null Propagation on Missing Context**: If workspace conservation zones or pressure indicators are unconfigured, `priority_score` strictly returns `null` (None in Python). The system NEVER defaults missing context to zero pressure, upholding scientific epistemic humility.
+- **Verification Workflow Semantics**: Reviewer confirmation (`verifiedchange`) verifies the presence of change under the monitoring workflow; it does NOT confirm illegal activity, causality, or specific species impact.
+
+### Data Model & Persistence Impact
+- **Optimistic Concurrency Control**: `ChangeEvent.record_version` incremented on each status mutation; concurrent updates with stale `expected_record_version` are rejected with `409 Conflict` (`VERSIONCONFLICT`).
+- **Verifications and Audit Trails**: Every status transition atomically writes a row to `verifications` (decision, actor, from/to status, reviewer notes, version) and `audit_logs` (actor, action, target_type, target_id, payload) in a single transaction.
+- **Keyset Cursor-Based Pagination**: `GET /analyses/{id}/events` utilizes composite index `events_priority_idx` (`workspace_id, analysis_id, priority_score DESC NULLS LAST, id DESC`), completely eliminating database offset scans and client/application-side sorting.
+
+### Security & Multi-Tenancy Impact
+- **Workspace Scoping**: Every Phase 5 endpoint enforces strict workspace authorization (`VIEWER` for read/export/access, `ANALYST` for verification). Negative tests confirm cross-workspace data access returns 404 (preventing resource existence leakage).
+- **Temporary Display Artifact Credentials**: Tile access generates time-bounded (900s) presigned MinIO/S3 URLs; durable internal storage URLs are never exposed as permanent identifiers.
+- **Authorized Provenance Export**: GeoJSON export endpoint carries full scientific provenance (method_version, baseline/comparison periods, attribution) bound to the requesting tenant.
+
+### Regression Controls & Verification
+- **Test Coverage**: 63 consolidated automated tests in Docker covering verification state transitions, mandatory notes on dismissal/inconclusive, optimistic locking conflicts (409), priority calculation and null propagation, keyset pagination stability and ordering over 120 synthetic events, layer access readiness (409 vs 200), and cross-workspace isolation.
+
+

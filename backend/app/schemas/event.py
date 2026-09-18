@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -16,6 +16,16 @@ class EventVerificationUpdateRequest(BaseModel):
     )
 
 
+class VerificationRecordSchema(BaseModel):
+    id: str
+    actor_id: str
+    from_status: str
+    to_status: str
+    notes: Optional[str] = None
+    record_version: int
+    created_at: str
+
+
 class EventProperties(BaseModel):
     analysis_id: str
     change_type: str
@@ -29,6 +39,8 @@ class EventProperties(BaseModel):
     status: str
     method_version: str
     record_version: int
+    latest_verification: Optional[VerificationRecordSchema] = None
+    verifications: Optional[List[VerificationRecordSchema]] = None
 
 
 class EventDetailResponse(BaseModel):

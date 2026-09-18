@@ -69,9 +69,7 @@ async def test_worker_heartbeat_actively_extends_lease(
     # Ensure reconciliation does not reap this healthy attempt
     redis_client = aioredis.from_url(settings.REDIS_URL, decode_responses=True)
     try:
-        await reconcile_expired_attempts(
-            db_session, redis_client, attempt_repo, analysis_repo
-        )
+        await reconcile_expired_attempts(db_session, redis_client, attempt_repo, analysis_repo)
         still_healthy = await attempt_repo.get_by_id(db_session, attempt.id)
         assert still_healthy is not None
         assert still_healthy.status == "active"

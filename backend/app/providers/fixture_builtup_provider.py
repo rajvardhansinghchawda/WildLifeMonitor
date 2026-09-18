@@ -41,7 +41,9 @@ class FixtureBuiltupProvider(ChangeProvider):
                 status="failed",
                 method_version=self.METHOD_VERSION,
                 error_code="PROVIDER_ERROR",
-                error_details={"reason": "Injected builtup provider simulation failure for test isolation verification."},
+                error_details={
+                    "reason": "Injected builtup provider simulation failure for test isolation verification."
+                },
                 provenance={
                     "provider": "fixture-builtup-v0",
                     "synthetic": True,

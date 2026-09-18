@@ -189,4 +189,46 @@ Migration or deployment steps: None (schemas and tables support all multi-layer 
 Next dependency: Phase 5 (P5-INVESTIGATION-WORKFLOW).
 ```
 
+---
 
+## [2026-09-18 17:40] Phase 5 — Investigation Workflow & Verification Loop (`P5-INVESTIGATION-WORKFLOW`)
+
+### Prompt
+Implement Phase 5 investigation workflow: analyst field-verification review with optimistic concurrency control (`PATCH /api/v1/events/{id}/verification`), Investigation Priority scoring service (`app/services/priority_service.py`), keyset cursor-based pagination for ChangeEvents (`GET /api/v1/analyses/{id}/events`), expiry-aware tile access descriptors (`GET /api/v1/analyses/{id}/layers/{layer_id}/access`), authorized GeoJSON export (`GET /api/v1/analyses/{id}/events/export`), and capability limits single-source-of-truth (`GET /api/v1/capabilities`).
+
+### Thinking
+- Verification contract requires exact state machine: `pendingfieldverification`, `investigating`, `verifiedchange`, `dismissed`, `inconclusive`. Transitions to `dismissed` and `inconclusive` strictly require reviewer notes.
+- Optimistic locking: `expected_record_version` checked against `event.record_version`. On mismatch, immediately return 409 Conflict with `VERSIONCONFLICT` error code and do not mutate records.
+- Verification and audit trail: Atomically record `Verification` and `AuditLog` rows upon status transition. A verified event confirms recorded change under the workflow, never asserting legal status, cause, or species impact.
+- Priority scoring: 3 normalized components with exact weights: magnitude (0.50), sensitivity (0.30, intersection with configured conservation zones), and context (0.20, proximity to configured pressure indicators). CRITICAL RULE: If conservation zone or pressure configuration is missing for a workspace, score MUST be `None` (null), never defaulted to 0 ('Do not treat missing context as zero pressure').
+- Keyset cursor pagination: Ordered using composite index `events_priority_idx` (`workspace_id, analysis_id, priority_score DESC NULLS LAST, id DESC`). Stable pagination under concurrent inserts; no expensive offset or application-side sorting.
+- Tile access: Expiry-aware short-lived presigned MinIO/S3 URLs (900s) generated for ready layers; returns 409 `LAYERNOTREADY` if layer not ready.
+- Export: Full GeoJSON FeatureCollection carrying complete provenance per feature.
+- Workspace scoping: Every endpoint enforces workspace membership and negative isolation tests prove cross-workspace denial.
+
+### Result
+```text
+Task ID: P5-INVESTIGATION-WORKFLOW
+Status: completed
+Files changed:
+  - backend/app/services/priority_service.py (Investigation Priority scoring service with normalized components, weights 0.50/0.30/0.20, and strict null propagation)
+  - backend/app/services/artifact_service.py (Added generate_presigned_url method using boto3 S3 client)
+  - backend/app/workers/analysis_worker.py (Wired PriorityService attachment during job finalization before status resolution)
+  - backend/app/schemas/event.py (Added VerificationRecordSchema, latest_verification, and verifications list to EventProperties)
+  - backend/app/api/v1/events.py (Implemented PATCH /events/{id}/verification with optimistic locking 409, notes requirement, Verification and AuditLog insertion; updated GET /events/{id} with full history)
+  - backend/app/api/v1/analyses.py (Implemented keyset cursor pagination with events_priority_idx, GET /analyses/{id}/events/export GeoJSON export, and GET /analyses/{id}/layers/{layer_id}/access presigned descriptors)
+  - backend/app/api/v1/capabilities.py (Enforced workspace authorization on GET /capabilities)
+  - backend/tests/test_priority_scoring.py (4 tests: null on missing conservation zones, null on missing context, accurate weights calculation, DB attachment)
+  - backend/tests/test_verification_workflow.py (3 tests: valid state transitions, mandatory notes on dismissal/inconclusive, optimistic concurrency 409)
+  - backend/tests/test_keyset_pagination.py (Keyset cursor traversal of 120 synthetic events: zero duplicates, zero omissions, strict ordering)
+  - backend/tests/test_layer_access.py (2 tests: 409 LAYERNOTREADY vs 200 presigned descriptor, authorized GeoJSON export with provenance)
+  - backend/tests/test_workspace_isolation_phase5.py (Negative cross-workspace denial tests for all Phase 5 endpoints)
+Behavior implemented: Full analyst field-verification workflow with optimistic locking (409 VERSIONCONFLICT), audit trail, and state machine transitions; Investigation Priority scoring with null propagation when conservation zones missing; keyset cursor pagination on events_priority_idx; short-lived presigned tile access descriptors; authorized GeoJSON export; and capabilities endpoint.
+Contract changes: PATCH /api/v1/events/{id}/verification active (200, 409, 422); GET /api/v1/analyses/{id}/events accepts cursor and limit and returns keyset pagination metadata; GET /api/v1/analyses/{id}/layers/{layer_id}/access returns access descriptor; GET /api/v1/analyses/{id}/events/export returns GeoJSON FeatureCollection.
+Tests executed: 63 automated tests in Docker with PostgreSQL 16 + PostGIS + Redis + MinIO (pytest tests/ -v).
+Test results: 63/63 passed in 14.47s; Ruff check 100% clean; Ruff format 100% clean; Mypy 0 errors in 59 source files.
+Provider checks executed: Synthetic vegetation, water, and builtup providers exercised; presigned URLs generated and verified against MinIO S3 API.
+Known limitations: Conservation zones and pressure indicators in tests use synthetic workspace configuration geometries. Real designations await production boundary ingestion.
+Migration or deployment steps: None (schema already supports verifications, audit_logs, and priority indexes from baseline migration).
+Next dependency: Phase 6 (P6-RELIABILITY-HARDENING).
+```

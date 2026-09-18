@@ -40,7 +40,9 @@ class FixtureWaterProvider(ChangeProvider):
                 status="failed",
                 method_version=self.METHOD_VERSION,
                 error_code="PROVIDER_ERROR",
-                error_details={"reason": "Injected water provider simulation failure for test isolation verification."},
+                error_details={
+                    "reason": "Injected water provider simulation failure for test isolation verification."
+                },
                 provenance={
                     "provider": "fixture-water-v0",
                     "synthetic": True,
@@ -112,5 +114,7 @@ class FixtureWaterProvider(ChangeProvider):
             metrics=analysis_out["metrics"],
             events=analysis_out["events"],
             provenance=provenance,
-            warnings=["Ambiguous probability pixels (0.30 <= p <= 0.70) retained unclassified without forced imputation."],
+            warnings=[
+                "Ambiguous probability pixels (0.30 <= p <= 0.70) retained unclassified without forced imputation."
+            ],
         )

@@ -60,9 +60,7 @@ def detect_water_change(
     loss_mask = np.logical_and(valid_comparison, np.logical_and(base_water, comp_land))
 
     # Ambiguous: either period was ambiguous while both are valid
-    ambiguous_mask = np.logical_and(
-        valid_comparison, np.logical_or(base_ambig, comp_ambig)
-    )
+    ambiguous_mask = np.logical_and(valid_comparison, np.logical_or(base_ambig, comp_ambig))
 
     return gain_mask, loss_mask, ambiguous_mask, valid_comparison
 
@@ -193,9 +191,7 @@ def execute_water_analysis(
     # Relative percentage change invariant: null if baseline is zero
     relative_change_pct: Optional[float] = None
     if base_water_area_ha > 0.0:
-        relative_change_pct = round(
-            float((net_water_change_ha / base_water_area_ha) * 100.0), 2
-        )
+        relative_change_pct = round(float((net_water_change_ha / base_water_area_ha) * 100.0), 2)
 
     # Extract connected components for gain and loss events
     events: List[Dict[str, Any]] = []

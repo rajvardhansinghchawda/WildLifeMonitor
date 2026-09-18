@@ -23,6 +23,7 @@ from app.repositories.job_attempt_repository import JobAttemptRepository
 from app.services.artifact_service import ArtifactService
 from app.services.context_enrichment_service import ContextEnrichmentService
 from app.services.event_extraction_service import EventExtractionService
+from app.services.priority_service import PriorityService
 from app.workers.dispatcher import REDIS_ANALYSES_QUEUE
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,7 @@ class AnalysisWorker:
         self.artifact_service = ArtifactService()
         self.event_service = EventExtractionService()
         self.context_service = ContextEnrichmentService()
+        self.priority_service = PriorityService()
 
         self.providers: Dict[str, ChangeProvider] = {
             "vegetation": self.vegetation_provider,
@@ -195,7 +197,10 @@ class AnalysisWorker:
                     analysis.stage = "cancelled"  # type: ignore[assignment]
                     await self.attempt_repo.mark_attempt_status(session, attempt.id, "cancelled")  # type: ignore[arg-type]
                     for rem_layer in analysis.layers:
-                        if rem_layer.status in (LayerStatusEnum.PENDING.value, LayerStatusEnum.RUNNING.value):
+                        if rem_layer.status in (
+                            LayerStatusEnum.PENDING.value,
+                            LayerStatusEnum.RUNNING.value,
+                        ):
                             rem_layer.status = LayerStatusEnum.CANCELLED.value  # type: ignore[assignment]
                     await session.commit()
                     return True
@@ -205,7 +210,9 @@ class AnalysisWorker:
                     logger.warning("No provider registered for layer type '%s'", layer.layer_type)
                     layer.status = LayerStatusEnum.UNSUPPORTED.value  # type: ignore[assignment]
                     layer.error_code = "UNSUPPORTED_LAYER"  # type: ignore[assignment]
-                    layer.error_details = {"reason": f"No provider configured for layer '{layer.layer_type}'."}  # type: ignore[assignment]
+                    layer.error_details = {
+                        "reason": f"No provider configured for layer '{layer.layer_type}'."
+                    }  # type: ignore[assignment]
                     continue
 
                 # Capability check
@@ -214,7 +221,9 @@ class AnalysisWorker:
                     logger.info("Layer '%s' unsupported: %s", layer.layer_type, cap.reason)
                     layer.status = LayerStatusEnum.UNSUPPORTED.value  # type: ignore[assignment]
                     layer.error_code = "CAPABILITY_UNSUPPORTED"  # type: ignore[assignment]
-                    layer.error_details = {"reason": cap.reason or "Layer unsupported for current context."}  # type: ignore[assignment]
+                    layer.error_details = {
+                        "reason": cap.reason or "Layer unsupported for current context."
+                    }  # type: ignore[assignment]
                     continue
 
                 try:
@@ -229,9 +238,11 @@ class AnalysisWorker:
 
                     if layer_result.status == LayerStatusEnum.READY.value:
                         # Context enrichment (batched spatial-tree search)
-                        enriched_events, context_warnings = self.context_service.enrich_events_batch(
-                            events=layer_result.events,
-                            aoi=context.aoi,
+                        enriched_events, context_warnings = (
+                            self.context_service.enrich_events_batch(
+                                events=layer_result.events,
+                                aoi=context.aoi,
+                            )
                         )
 
                         # Publish artifacts to object storage with SHA256 validation
@@ -294,6 +305,13 @@ class AnalysisWorker:
                 raise FencingTokenExpiredError(
                     f"Fencing token {attempt.fencing_token} expired or superseded before publication."
                 )
+
+            # Recompute and attach Investigation Priority scores to ChangeEvents per superpower.md
+            await self.priority_service.attach_priority_scores_to_events(
+                session=session,
+                analysis_id=cast(uuid.UUID, analysis.id),
+                workspace_id=cast(uuid.UUID, analysis.workspace_id),
+            )
 
             # Resolve Job Status per systemdesign.md rules:
             # - succeeded: all requested layers ready

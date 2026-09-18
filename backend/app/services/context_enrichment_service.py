@@ -59,11 +59,15 @@ class ContextEnrichmentService:
         # Generate representative cached OSM roads and settlements within or near the AOI
         # Road: diagonal highway crossing the AOI
         road1 = LineString([(min_lon, min_lat), (max_lon, max_lat)])
-        road2 = LineString([(min_lon, (min_lat + max_lat) / 2.0), (max_lon, (min_lat + max_lat) / 2.0)])
+        road2 = LineString(
+            [(min_lon, (min_lat + max_lat) / 2.0), (max_lon, (min_lat + max_lat) / 2.0)]
+        )
         roads: List[BaseGeometry] = [road1, road2]
 
         # Settlement: village center point near lower-left quadrant
-        settlement1 = Point(min_lon + (max_lon - min_lon) * 0.25, min_lat + (max_lat - min_lat) * 0.25)
+        settlement1 = Point(
+            min_lon + (max_lon - min_lon) * 0.25, min_lat + (max_lat - min_lat) * 0.25
+        )
         settlements: List[BaseGeometry] = [settlement1]
 
         return roads, settlements
@@ -81,7 +85,9 @@ class ContextEnrichmentService:
         warnings: List[str] = []
 
         if simulate_context_failure:
-            logger.warning("Simulated context enrichment failure encountered. Emitting warning without failing layer.")
+            logger.warning(
+                "Simulated context enrichment failure encountered. Emitting warning without failing layer."
+            )
             warnings.append(
                 "Context enrichment (infrastructure proximity) was unavailable for this run; "
                 "change detection results remain valid."
@@ -139,13 +145,9 @@ class ContextEnrichmentService:
                 if road_tree is not None and road_nearest_indices is not None:
                     nearest_road_geom = roads[road_nearest_indices[i]]
                     # Nearest point on road to event centroid
-                    p_nearest = nearest_road_geom.interpolate(
-                        nearest_road_geom.project(centroid)
-                    )
+                    p_nearest = nearest_road_geom.interpolate(nearest_road_geom.project(centroid))
                     road_dist = round(
-                        haversine_distance_m(
-                            centroid.x, centroid.y, p_nearest.x, p_nearest.y
-                        ),
+                        haversine_distance_m(centroid.x, centroid.y, p_nearest.x, p_nearest.y),
                         1,
                     )
 
@@ -155,7 +157,10 @@ class ContextEnrichmentService:
                     nearest_settlement_geom = settlements[settlement_nearest_indices[i]]
                     settlement_dist = round(
                         haversine_distance_m(
-                            centroid.x, centroid.y, nearest_settlement_geom.x, nearest_settlement_geom.y
+                            centroid.x,
+                            centroid.y,
+                            nearest_settlement_geom.x,
+                            nearest_settlement_geom.y,
                         ),
                         1,
                     )

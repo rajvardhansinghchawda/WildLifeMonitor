@@ -90,3 +90,22 @@ This document records the foundational architecture decisions, rationale, trade-
 - **Decision:** In `ContextEnrichmentService`, fetch cached context features (roads, settlements) once per analysis AOI ($O(1)$ query count), build in-memory `shapely.STRtree` spatial index structures, and execute batch nearest-neighbor queries for all event centroids simultaneously. Surface metrics as `nearest_known_road_distance_m` and `nearest_known_settlement_distance_m` with an explicit disclaimer distinguishing cached source presence from real-world absence.
 - **Consequences:** Highly performant $O(\log M)$ spatial lookups; zero $N$-query database amplification; epistemically honest reporting.
 
+---
+
+### ADR-012: Investigation Priority Scoring and Strict Null Propagation on Missing Context
+- **Status:** Accepted (Phase 5)
+- **Context:** superpower.md requires a composite triage ranking called "Investigation Priority" composed of magnitude (0.50), conservation zone sensitivity (0.30), and pressure context (0.20). A critical failure mode in environmental software is treating missing data (e.g., absence of local boundary shapefiles) as "zero pressure" or "zero sensitivity," artificially deflating risk.
+- **Decision:** In `PriorityService`, compute normalized components in [0.0, 1.0] and multiply the weighted sum by 100. If ANY required component input is missing (such as unconfigured conservation zones or pressure indicators in the workspace), the score MUST return `None` (null in JSON). We expose all individual component breakdown values and return formula method version `priority-v1`.
+- **Consequences:** Eliminates false senses of safety caused by missing GIS layers; transparently indicates why an event scored or did not score.
+
+---
+
+### ADR-013: Optimistic Concurrency Control and Keyset Cursor Pagination on Priority Index
+- **Status:** Accepted (Phase 5)
+- **Context:** Multiple reviewers may inspect the same candidate change events simultaneously, creating lost-update risks. Furthermore, analyses can yield hundreds of candidate events, where traditional `OFFSET` pagination causes $O(N^2)$ table scan degradation and unstable pages during concurrent inserts.
+- **Decision:**
+  1. Implement optimistic locking on `PATCH /api/v1/events/{id}/verification` via `expected_record_version`. On mismatch with `event.record_version`, reject with `409 Conflict` (`VERSIONCONFLICT`) and do not modify the database. On match, increment version and record immutable `Verification` and `AuditLog` rows.
+  2. Implement keyset cursor pagination on `GET /api/v1/analyses/{id}/events` using the composite index `events_priority_idx` (`workspace_id, analysis_id, priority_score DESC NULLS LAST, id DESC`). Cursor encodes `(last_priority_score, last_id)`, providing $O(1)$ indexed seek time per page and completely stable traversals without application-side sorting.
+- **Consequences:** Concurrency-safe analyst collaboration; scalable event feed delivery guaranteed to meet API latency SLAs.
+
+

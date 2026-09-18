@@ -191,3 +191,17 @@ class ArtifactService:
 
         return published
 
+    def generate_presigned_url(
+        self,
+        object_key: str,
+        expires_in_seconds: int = 900,
+    ) -> str:
+        """Generate short-lived authorized presigned URL for display artifact."""
+        client = self._get_s3_client()
+        return str(
+            client.generate_presigned_url(
+                "get_object",
+                Params={"Bucket": settings.OBJECT_STORAGE_BUCKET, "Key": object_key},
+                ExpiresIn=expires_in_seconds,
+            )
+        )
