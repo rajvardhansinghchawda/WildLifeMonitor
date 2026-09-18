@@ -17,40 +17,22 @@ interface AuthState {
   refresh: () => Promise<void>;
 }
 
-const BYPASS_USER: UserInfo = {
-  id: 'usr-analyst-001',
-  email: 'analyst@wildlife.gov',
-  full_name: 'Lead Wildlife Investigator',
-  is_active: true,
-  created_at: '2026-01-01T00:00:00Z',
-  last_login_at: '2026-09-18T00:00:00Z',
-  memberships: [
-    {
-      workspace_id: 'ws-default',
-      workspace_name: 'Global Conservation Operations',
-      role: 'admin',
-      is_public: false,
-    },
-  ],
-};
-
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Temporary auth bypass for local review & landing page implementation without backend
-  const [user, setUser] = useState<UserInfo | null>(BYPASS_USER);
-  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<UserInfo | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     if (!tokens.access && !tokens.refresh) {
-      setUser(BYPASS_USER);
+      setUser(null);
       setLoading(false);
       return;
     }
     try {
       setUser(await api.auth.me());
     } catch {
-      setUser(BYPASS_USER);
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -62,30 +44,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
-      try {
-        await api.auth.login(email, password);
-        setUser(await api.auth.me());
-      } catch {
-        // Fallback for preview mode
-        setUser(BYPASS_USER);
-      }
+      await api.auth.login(email, password);
+      setUser(await api.auth.me());
     },
     []
   );
+
   const register = useCallback(async (input: Parameters<AuthState['register']>[0]) => {
-    try {
-      await api.auth.register(input);
-      setUser(await api.auth.me());
-    } catch {
-      // Fallback for preview mode
-      setUser(BYPASS_USER);
-    }
+    await api.auth.register(input);
+    setUser(await api.auth.me());
   }, []);
+
   const logout = useCallback(async () => {
     try {
       await api.auth.logout();
     } catch {
-      // ignore
+      // ignore network errors on logout
     } finally {
       setUser(null);
     }

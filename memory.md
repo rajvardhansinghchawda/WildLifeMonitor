@@ -156,3 +156,48 @@ Persistent context and execution log across sessions per memory protocol.
     2. Live on-demand OpenStreetMap Nominatim/Overpass ingestion endpoint (`/api/v1/areas/search-live`) for searching any obscure sanctuary or forest division across India with auto-caching.
     3. Frontend Autocomplete Search combobox with state tags, live India search, and direct GPS coordinate/pinning support.
 - Status: Plan presented to user for review and approval.
+
+## [2026-09-19 05:05] Phase 22 — All-India + Global Wildlife Habitat Search (Execution)
+- Agent: Principal GIS Architect & Fullstack Systems Engineer
+- User Request: "seed bhi kar do or direct globally research ka option bhi dal do taki pure world ka koi sa bhi dekh ke check kar le judge" — Seed India's 50+ parks AND add a global live search option so judges can search any habitat in the entire world.
+- Implementation:
+  - **Backend Seeding** (`backend/app/scripts/seed_india_habitats.py`):
+    - Created comprehensive batch seed script for 43 India habitats (Tiger Reserves + National Parks across North, Central, West, East/NE, South, Andaman regions).
+    - Ran inside Docker container: **39 seeded, 4 skipped (no OSM polygon available), 0 failed**.
+    - Database now has **41 protected areas** total (3 pre-existing + 38 new from seed).
+    - Includes: Jim Corbett, Kaziranga, Manas, Ranthambhore, Gir, Bandipur, Nagarhole, Periyar, Mudumalai, Bandhavgarh, Panna, Satpura, Kuno, Melghat, Sariska, Tadoba, Dudhwa, Pilibhit, Hemis, Great Himalayan, Silent Valley, Eravikulam, Kudremukh, Valmiki, Campbell Bay, and many more.
+  - **Backend API** (`backend/app/api/v1/areas.py`):
+    - Added `GET /api/v1/areas/search-live?q={query}&limit=5` global live search endpoint.
+    - Priority: local PostGIS catalog first (instant), then live OSM Nominatim fetch globally if not found.
+    - Auto-ingests and caches new boundary into PostGIS on live fetch so subsequent searches are instant.
+    - Works for any wildlife habitat in the world (Yellowstone, Serengeti, Amazon, Virunga, etc.).
+    - Returns `AreaListResponse` — compatible with all existing frontend types.
+  - **Frontend** (`frontend/src/lib/api.ts`):
+    - Added `api.areas.searchLive(q, limit)` method hitting the new endpoint.
+  - **Frontend** (`frontend/src/components/map/TemporalCompareSlider.tsx`):
+    - Replaced static 3-item `<select>` with a rich **Global Habitat Search Combobox**:
+      - Displays 🌍 "Global Wildlife Habitat Search" in dropdown header.
+      - Country flag emoji badges (🇮🇳 India, 🇺🇸 USA, 🇰🇪 Kenya, 🇹🇿 Tanzania, 🇿🇦 South Africa, 🇧🇷 Brazil, 🇦🇺 Australia, 🇨🇦 Canada, 🇨🇳 China, 🌿 others).
+      - State • Country • Area km² tags for each habitat.
+      - Debounced 420ms auto-search in local catalog first, then live OSM.
+      - Loader spinner while fetching from OpenStreetMap.
+      - "Search worldwide for '...' via OpenStreetMap" live fetch button.
+      - "No habitat found" state with helpful text.
+      - OSM attribution footer with catalog count.
+      - Auto-merges newly found areas into local list for instant future queries.
+  - **Bug Fixes** (`frontend/src/assets.ts`, `frontend/src/components/map/TemporalCompareSlider.tsx`):
+    - Fixed `ImageAsset.tags` and `VideoAsset.tags` to accept `readonly string[] | string[]`.
+    - Fixed `api.areas.list({ limit })` (limit not a valid param) → removed limit.
+    - Fixed `api.events` (does not exist) → `api.hotspots`.
+    - Fixed `api.analyses.list({ limit })` → removed limit param.
+    - Fixed `pt.ndvi` possibly null → `pt.ndvi ?? 0.5`.
+- Verification:
+  - TypeScript: 0 errors (exit code 0).
+  - Pytest: 89 passed, 0 failed, 71 warnings (exit code 0).
+  - DB: 41 protected areas confirmed via SQL count query.
+- Git:
+  - Branch: `backend`
+  - Commit: `ed41c55` ("feat: all-india + global habitat search — 41 parks seeded, live OSM geocoding endpoint, smart search combobox")
+  - Push: Successful (`eff8e2e..ed41c55 backend -> backend`)
+  - Remote: `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git`
+
