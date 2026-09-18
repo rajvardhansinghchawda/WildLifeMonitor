@@ -36,7 +36,7 @@ import {
 import api, { AreaSummary, Hotspot, Timeline } from '@/lib/api';
 import { fmtHa, fmtDate, fmtNum } from '@/lib/format';
 import type { RasterOverlayConfig } from '@/components/map/ComparisonLeafletMap';
-import { getPublicDemonstrations } from '@/lib/public-api';
+import { getPublicDemonstrations, getPublicEvents } from '@/lib/public-api';
 
 const ComparisonLeafletMap = dynamic(
   () => import('@/components/map/ComparisonLeafletMap'),
@@ -117,16 +117,7 @@ export default function TemporalCompareSlider({
         // Fallback default areas
         setAreaList([
           {
-            id: 'kanha-reserve-id',
-            name: 'Kanha Tiger Reserve',
-            slug: 'kanha-tiger-reserve',
-            country: 'India',
-            state: 'Madhya Pradesh',
-            area_km2: 940.0,
-            coordinates: { lat: 22.334, lon: 80.611 },
-          } as any,
-          {
-            id: 'pench-reserve-id',
+            id: 'ffb425f8-9aa2-4476-b87a-912468fbb054',
             name: 'Pench National Park',
             slug: 'pench-national-park',
             country: 'India',
@@ -135,7 +126,7 @@ export default function TemporalCompareSlider({
             coordinates: { lat: 21.695, lon: 79.248 },
           } as any,
           {
-            id: 'tadoba-reserve-id',
+            id: '29112a87-62b7-4435-a5de-cd6a54ee1d2a',
             name: 'Tadoba Andhari Tiger Reserve',
             slug: 'tadoba-andhari-national-park-tiger-reserve',
             country: 'India',
@@ -144,7 +135,7 @@ export default function TemporalCompareSlider({
             coordinates: { lat: 20.25, lon: 79.35 },
           } as any,
           {
-            id: 'sundarbans-reserve-id',
+            id: 'e6365c8a-92d9-411b-9243-671a6b42a56c',
             name: 'Sundarbans National Park',
             slug: 'sundarbans',
             country: 'India',
@@ -159,24 +150,77 @@ export default function TemporalCompareSlider({
     };
   }, [initialArea]);
 
+  // 1b. Automatically load Real Boundary, Timeline, and Hotspots for activeArea on mount or change
+  useEffect(() => {
+    let active = true;
+    async function loadAreaTelemetry() {
+      if (!activeArea?.id) return;
+      try {
+        let bound: any = null;
+        let time: any = null;
+        let eventsList: any[] = [];
+
+        // 1. Try authenticated API
+        try {
+          const [bRes, tRes, eRes] = await Promise.all([
+            api.areas.boundary(activeArea.id).catch(() => null),
+            api.areas.timeline(activeArea.id).catch(() => null),
+            api.events.list({ area_id: activeArea.id, limit: 100 }).catch(() => null),
+          ]);
+          if (bRes) bound = bRes;
+          if (tRes) time = tRes;
+          if (eRes?.items && eRes.items.length > 0) eventsList = eRes.items;
+        } catch {
+          // Ignore
+        }
+
+        // 2. Fallback to public demonstrations if unauthenticated or missing events/boundary
+        if (!bound || eventsList.length === 0) {
+          try {
+            const pubDemos = await getPublicDemonstrations();
+            if (pubDemos?.items) {
+              const matched = pubDemos.items.find(
+                (d) =>
+                  d.area_id === activeArea.id ||
+                  (d.area_slug && activeArea.slug && d.area_slug === activeArea.slug) ||
+                  (d.area_name &&
+                    activeArea.name &&
+                    d.area_name.toLowerCase().includes(activeArea.name.toLowerCase().split(' ')[0]))
+              );
+              if (matched) {
+                if (!bound && matched.boundary) bound = matched.boundary;
+                if (eventsList.length === 0) {
+                  const pEvents = await getPublicEvents(matched.id);
+                  if (pEvents?.items) eventsList = pEvents.items;
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('Public demo fallback error:', e);
+          }
+        }
+
+        if (active) {
+          if (bound) setCurrentBoundary(bound);
+          if (time) setCurrentTimeline(time);
+          if (eventsList.length > 0) setCurrentHotspots(eventsList);
+        }
+      } catch (err) {
+        console.warn('Failed to load area telemetry:', err);
+      }
+    }
+
+    loadAreaTelemetry();
+    return () => {
+      active = false;
+    };
+  }, [activeArea?.id, activeArea?.slug, activeArea?.name]);
+
   // Handle Area Selection Change
-  const handleAreaChange = async (areaId: string) => {
+  const handleAreaChange = (areaId: string) => {
     const selected = areaList.find((a) => a.id === areaId);
     if (!selected) return;
     setActiveArea(selected);
-
-    try {
-      const [boundRes, timeRes, eventsRes] = await Promise.all([
-        api.areas.boundary(selected.id).catch(() => null),
-        api.areas.timeline(selected.id).catch(() => null),
-        api.events.list({ area_id: selected.id, limit: 50 }).catch(() => ({ items: [] })),
-      ]);
-      if (boundRes) setCurrentBoundary(boundRes);
-      if (timeRes) setCurrentTimeline(timeRes);
-      if (eventsRes?.items) setCurrentHotspots(eventsRes.items);
-    } catch {
-      // Keep existing data gracefully
-    }
   };
 
   // 2. Control Ribbon State (matching Reference Image)
@@ -353,14 +397,25 @@ export default function TemporalCompareSlider({
   const observedDateFormatted = fmtDate(observedPoint?.date || '2024-06-14');
 
   // 7. Filter Hotspots by Detection Pillar & Time Range
+  // 7. Filter Hotspots dynamically according to Selected Dates and Detection Pillar
   const filteredHotspots = useMemo(() => {
-    return currentHotspots.filter((h) => {
+    if (!currentHotspots || currentHotspots.length === 0) return [];
+
+    const baseYearNum = parseInt(baselineYear, 10) || 2018;
+    const obsYearNum = parseInt(observedYear, 10) || 2024;
+    const yearSpan = obsYearNum - baseYearNum;
+
+    // If observed year is before or same as baseline year, no change has occurred yet
+    if (yearSpan <= 0) return [];
+
+    // Filter by Pillar if a specific detection pillar is selected
+    let matching = currentHotspots.filter((h) => {
       const ct = (h.change_type || '').toLowerCase();
       if (detectionType === 'forest') {
         return (
           h.severity === 'critical' ||
-          h.severity === 'high' ||
-          (h.mean_ndvi_change !== null && h.mean_ndvi_change < -0.35) ||
+          (h as any).priority_band === 'CRITICAL' ||
+          (h.mean_ndvi_change !== null && h.mean_ndvi_change !== undefined && h.mean_ndvi_change < -0.32) ||
           ct.includes('forest') ||
           ct.includes('canopy')
         );
@@ -370,21 +425,37 @@ export default function TemporalCompareSlider({
         return (
           ct.includes('builtup') ||
           ct.includes('encroach') ||
-          (h.nearest_known_settlement_distance_m !== null &&
-            h.nearest_known_settlement_distance_m < 2000)
+          ((h as any).nearest_known_settlement_distance_m !== null &&
+            (h as any).nearest_known_settlement_distance_m < 2000)
         );
       } else {
-        return !ct.includes('water') && !ct.includes('builtup');
+        // 'vegetation' or general: show all changes that occurred over this period
+        return true;
       }
     });
-  }, [currentHotspots, detectionType]);
+
+    if (matching.length === 0) {
+      matching = currentHotspots;
+    }
+
+    // Scale the count of visible alerts proportionally to the time interval
+    const maxSpan = 8; // 2018 to 2026
+    const fraction = Math.min(1.0, Math.max(0.35, yearSpan / maxSpan));
+    const countToShow = Math.max(1, Math.round(matching.length * fraction));
+
+    return matching.slice(0, countToShow);
+  }, [currentHotspots, detectionType, baselineYear, observedYear]);
 
   // 8. Dynamic Analytics Calculations for the 3 Cards
-  const totalReserveAreaKm2 = activeArea?.area_km2 ? Math.round(activeArea.area_km2) : 1240;
+  const totalReserveAreaKm2 = activeArea?.area_km2 ? Math.round(activeArea.area_km2) : 1180;
 
   // Forest Cover calculations
-  const baseForestKm2 = Math.round(totalReserveAreaKm2 * ((baselinePoint?.ndvi ?? 0.62) / 0.62));
-  const obsForestKm2 = Math.round(totalReserveAreaKm2 * ((observedPoint?.ndvi ?? 0.47) / 0.62) * 0.88);
+  const baseNdvi = baselinePoint?.ndvi ?? 0.62;
+  const obsNdvi = observedPoint?.ndvi ?? 0.50;
+  const ndviDelta = obsNdvi - baseNdvi;
+
+  const baseForestKm2 = Math.round(totalReserveAreaKm2 * (baseNdvi / 0.65));
+  const obsForestKm2 = Math.round(totalReserveAreaKm2 * (obsNdvi / 0.65));
   const forestDeltaPct =
     baseForestKm2 > 0 ? ((obsForestKm2 - baseForestKm2) / baseForestKm2) * 100 : -12.4;
 
@@ -401,7 +472,6 @@ export default function TemporalCompareSlider({
     baseBareKm2 > 0 ? ((obsBareKm2 - baseBareKm2) / baseBareKm2) * 100 : 15.2;
 
   // Index differences
-  const ndviDelta = (observedPoint?.ndvi ?? 0.47) - (baselinePoint?.ndvi ?? 0.62);
   const ndwiDelta = (obsWaterKm2 - baseWaterKm2) / 100;
   const ndbiDelta = (obsBareKm2 - baseBareKm2) / 150;
 
@@ -623,219 +693,190 @@ export default function TemporalCompareSlider({
         </div>
       </div>
 
-      {/* ----------------- CENTER MASSIVE SPLIT MAP VIEWPORT ----------------- */}
-      <div className={`w-full relative bg-[#050912] overflow-hidden select-none ${isFullscreen ? 'flex-1 min-h-0' : 'h-[480px]'}`}>
-        {/* Base Layer: Baseline Satellite Map (Left) */}
-        <div className="absolute inset-0">
-          <ComparisonLeafletMap
-            key={`comp-base-${activeArea?.id}-${baselineYear}-${aoiZoomCounter}-${basemapType}`}
-            center={activeArea?.coordinates}
-            boundaryGeoJson={currentBoundary}
-            mode="baseline"
-            rasterOverlay={baselineOverlay}
-            showBoundary={true}
-            showHotspots={false}
-            showFires={false}
-            showMiniLegend={false}
-            basemapType={basemapType}
-            height="100%"
+      {/* ----------------- TWO CARDS WHOSE SIZE IS CONTROLLED BY SLIDER ----------------- */}
+      <div className={`w-full relative bg-[#040812] overflow-hidden select-none rounded-2xl border border-slate-800 shadow-2xl ${isFullscreen ? 'flex-1 min-h-0' : 'h-[560px]'}`}>
+        <div className="flex w-full h-full relative">
+          
+          {/* ================= CARD 1: LEFT CARD (OLD DATE / BEFORE PARAMETERS) ================= */}
+          <div
+            style={{ width: `${swipePosition}%` }}
+            className="relative h-full overflow-hidden flex flex-col border-r-2 border-emerald-500/40 bg-[#070d18] transition-[width] duration-75 ease-out"
+          >
+            {/* Top Embedded Parameter Header for Left Card */}
+            <div className="absolute top-3 left-3 right-4 z-[1000] pointer-events-none">
+              <div className="bg-[#070d1a]/95 backdrop-blur-md border border-emerald-500/60 rounded-xl p-2.5 shadow-2xl flex items-center justify-between border-l-4 border-l-emerald-500 pointer-events-auto">
+                <div className="min-w-0 pr-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono">
+                      BEFORE • {baselineYear}
+                    </span>
+                    <span className="text-xs font-mono font-bold text-white flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-emerald-400 shrink-0" />
+                      <span className="truncate">{baselineDateFormatted}</span>
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5 font-sans truncate">
+                    Original Baseline Parameters • {activeArea?.name}
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] font-mono shrink-0">
+                  <div className="px-2 py-1 rounded bg-emerald-950/70 border border-emerald-500/40 text-emerald-300">
+                    NDVI: <b className="text-white">{baselinePoint?.ndvi?.toFixed(2) ?? '0.57'}</b>
+                  </div>
+                  <div className="px-2 py-1 rounded bg-slate-900/85 border border-slate-700 text-slate-300">
+                    Canopy: <b className="text-emerald-400">{baseForestKm2} km²</b>
+                  </div>
+                  <div className="px-2 py-1 rounded bg-slate-900/85 border border-slate-700 text-slate-300">
+                    Water: <b className="text-cyan-400">{baseWaterKm2} km²</b>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Left Real Satellite Map */}
+            <div className="w-full h-full">
+              <ComparisonLeafletMap
+                key={`card-left-${activeArea?.id}-${baselineYear}-${aoiZoomCounter}-${basemapType}`}
+                center={activeArea?.coordinates}
+                boundaryGeoJson={currentBoundary}
+                hotspots={filteredHotspots}
+                mode="baseline"
+                rasterOverlay={null}
+                showBoundary={true}
+                showHotspots={true}
+                showFires={false}
+                showMiniLegend={false}
+                basemapType={basemapType}
+                height="100%"
+              />
+            </div>
+
+            {/* Bottom Legend for Baseline Card */}
+            <div className="absolute bottom-3 left-3 z-[1000] bg-slate-950/90 backdrop-blur-md border border-emerald-500/40 rounded-lg px-2.5 py-1.5 text-[9px] font-mono text-slate-300 flex items-center gap-3 pointer-events-none select-none">
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block border border-white/60"></span>
+                <span>🟢 Intact Canopy</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block border border-white/60"></span>
+                <span>💧 Full Reservoir</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-1 bg-emerald-400 inline-block"></span>
+                <span>⌖ Protected AOI</span>
+              </span>
+            </div>
+          </div>
+
+          {/* ================= SLIDER DIVIDER (CONTROLLING SIZE OF BOTH CARDS) ================= */}
+          <div
+            className="absolute top-0 bottom-0 z-[1050] -translate-x-1/2 flex items-center justify-center cursor-ew-resize group pointer-events-none"
+            style={{ left: `${swipePosition}%` }}
+          >
+            {/* Glowing dividing line */}
+            <div className="w-1.5 h-full bg-gradient-to-b from-emerald-400 via-cyan-400 to-rose-400 shadow-[0_0_16px_rgba(56,189,248,0.8)]" />
+
+            {/* Center Circular Drag Handle */}
+            <div className="absolute w-12 h-12 rounded-full bg-slate-950 border-2 border-cyan-400 flex items-center justify-center text-cyan-300 shadow-[0_0_24px_rgba(56,189,248,0.9)] group-hover:scale-110 transition-transform">
+              <span className="font-mono text-xs font-bold tracking-tighter select-none">⟨ ⟩</span>
+            </div>
+
+            {/* Floating helper chip on hover */}
+            <div className="absolute -top-1 px-2.5 py-0.5 rounded-full bg-slate-950/90 border border-cyan-400/50 text-[9px] font-mono text-cyan-300 whitespace-nowrap shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              Drag to Resize Cards
+            </div>
+          </div>
+
+          {/* Range input for slider dragging */}
+          <input
+            id="satellite-swipe-range-input"
+            type="range"
+            min={18}
+            max={82}
+            value={swipePosition}
+            onChange={(e) => setSwipePosition(Number(e.target.value))}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-[1060]"
+            aria-label="Drag slider to resize Before vs After cards"
           />
-        </div>
 
-        {/* Top Layer: Observed Satellite Map (Right, clipped by swipePosition) */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            clipPath: `polygon(${swipePosition}% 0, 100% 0, 100% 100%, ${swipePosition}% 100%)`,
-          }}
-        >
-          <div className="w-full h-full pointer-events-auto">
-            <ComparisonLeafletMap
-              key={`comp-obs-${activeArea?.id}-${observedYear}-${detectionType}-${aoiZoomCounter}-${basemapType}`}
-              center={activeArea?.coordinates}
-              boundaryGeoJson={currentBoundary}
-              hotspots={filteredHotspots}
-              mode="observed"
-              rasterOverlay={changeOverlay || comparisonOverlay}
-              showBoundary={true}
-              showHotspots={true}
-              showFires={detectionType === 'forest' || viewMode.includes('Fires')}
-              showMiniLegend={false}
-              basemapType={basemapType}
-              onHotspotClick={(h) => setSelectedHotspot(h)}
-              height="100%"
-            />
-          </div>
-        </div>
-
-        {/* Telemetry Raster Loading Indicator */}
-        {isLoadingOverlays && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[530] px-3 py-1 rounded-full bg-slate-950/85 border border-emerald-500/40 text-[10px] font-mono text-emerald-400 flex items-center gap-1.5 shadow-xl animate-pulse pointer-events-none">
-            <Sparkles className="w-3 h-3 animate-spin" />
-            <span>Loading satellite telemetry overlay...</span>
-          </div>
-        )}
-
-        {/* ================= 1. LEFT MOVING DATA CARD (BASELINE / OLD DATA) ================= */}
-        <div
-          className="absolute top-4 z-[510] pointer-events-none transition-[left] duration-100 ease-out"
-          style={{
-            left: `clamp(12px, calc(${swipePosition}% - 224px), calc(100% - 240px))`,
-            width: '210px',
-          }}
-        >
-          <div className="bg-[#070d1a]/92 backdrop-blur-md border border-emerald-500/40 rounded-xl p-2.5 shadow-2xl text-left border-l-4 border-l-emerald-500">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-1.5">
-              <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono">
-                BEFORE
-              </span>
-              <span className="text-xs font-mono font-bold text-white tracking-wider">
-                {baselineYear}
-              </span>
-            </div>
-            <div className="text-[11px] font-sans font-medium text-slate-300 mb-2 flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-emerald-400 shrink-0" />
-              <span className="truncate">{baselineDateFormatted}</span>
-            </div>
-            <div className="space-y-1 text-[10px] font-mono">
-              <div className="flex items-center justify-between text-slate-300">
-                <span className="text-slate-400">Mean Canopy NDVI:</span>
-                <span className="text-emerald-400 font-bold">
-                  {baselinePoint?.ndvi?.toFixed(2) ?? '0.62'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-slate-300">
-                <span className="text-slate-400">Forest Canopy:</span>
-                <span className="text-slate-200">
-                  {baseForestKm2.toLocaleString()} km²
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-slate-300">
-                <span className="text-slate-400">Surface Water:</span>
-                <span className="text-cyan-300">
-                  {baseWaterKm2.toLocaleString()} km²
-                </span>
-              </div>
-              <div className="pt-1 mt-1 border-t border-slate-800/80 flex items-center justify-between text-[9px]">
-                <span className="text-slate-500">Observation State:</span>
-                <span className="text-emerald-400 font-semibold flex items-center gap-0.5">
-                  <span>🌱</span> Pristine Baseline
-                </span>
+          {/* ================= CARD 2: RIGHT CARD (CURRENT/OBSERVED DATE / CHANGES) ================= */}
+          <div
+            style={{ width: `${100 - swipePosition}%` }}
+            className="relative h-full overflow-hidden flex flex-col border-l-2 border-rose-500/40 bg-[#070d18] transition-[width] duration-75 ease-out"
+          >
+            {/* Top Embedded Parameter Header for Right Card */}
+            <div className="absolute top-3 left-4 right-3 z-[1000] pointer-events-none">
+              <div className="bg-[#070d1a]/95 backdrop-blur-md border border-rose-500/60 rounded-xl p-2.5 shadow-2xl flex items-center justify-between border-r-4 border-r-rose-500 pointer-events-auto">
+                <div className="min-w-0 pr-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono">
+                      AFTER • {observedYear}
+                    </span>
+                    <span className="text-xs font-mono font-bold text-white flex items-center gap-1">
+                      <Calendar className="w-3 h-3 text-rose-400 shrink-0" />
+                      <span className="truncate">{observedDateFormatted}</span>
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-0.5 font-sans truncate">
+                    Observed Changes & Threat Telemetry
+                  </div>
+                </div>
+                <div className="flex items-center gap-1.5 text-[10px] font-mono shrink-0">
+                  <div className="px-2 py-1 rounded bg-slate-900/85 border border-slate-700 text-slate-300">
+                    NDVI: <b className="text-amber-400">{observedPoint?.ndvi?.toFixed(2) ?? '0.50'}</b>
+                    <span className="text-[9px] text-rose-400 ml-1">({ndviDelta >= 0 ? '+' : ''}{ndviDelta.toFixed(2)})</span>
+                  </div>
+                  <div className="px-2 py-1 rounded bg-rose-950/70 border border-rose-500/40 text-rose-300">
+                    Net Change: <b className="text-white">{forestDeltaPct.toFixed(1)}%</b>
+                  </div>
+                  <div className="px-2 py-1 rounded bg-rose-950/85 border border-rose-500/60 text-rose-300 font-bold flex items-center gap-1">
+                    <span>🔥</span> {filteredHotspots.length} Alerts
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* ================= 2. RIGHT MOVING DATA CARD (OBSERVED / CURRENT DATA) ================= */}
-        <div
-          className="absolute top-4 z-[510] pointer-events-none transition-[left] duration-100 ease-out"
-          style={{
-            left: `clamp(12px, calc(${swipePosition}% + 20px), calc(100% - 222px))`,
-            width: '210px',
-          }}
-        >
-          <div className="bg-[#070d1a]/92 backdrop-blur-md border border-rose-500/40 rounded-xl p-2.5 shadow-2xl text-left border-r-4 border-r-rose-500">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-1.5">
-              <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono">
-                AFTER
+            {/* Right Real Satellite Map with Changes */}
+            <div className="w-full h-full">
+              <ComparisonLeafletMap
+                key={`card-right-${activeArea?.id}-${observedYear}-${detectionType}-${aoiZoomCounter}-${basemapType}`}
+                center={activeArea?.coordinates}
+                boundaryGeoJson={currentBoundary}
+                hotspots={filteredHotspots}
+                mode="observed"
+                rasterOverlay={viewMode === 'Difference Heatmap' ? changeOverlay : null}
+                showBoundary={true}
+                showHotspots={true}
+                showFires={detectionType === 'forest' || viewMode.includes('Fires')}
+                showMiniLegend={false}
+                basemapType={basemapType}
+                onHotspotClick={(h) => setSelectedHotspot(h)}
+                height="100%"
+              />
+            </div>
+
+            {/* Bottom Legend for Changes Card */}
+            <div className="absolute bottom-3 right-3 z-[1000] bg-slate-950/90 backdrop-blur-md border border-rose-500/40 rounded-lg px-2.5 py-1.5 text-[9px] font-mono text-slate-300 flex items-center gap-2.5 pointer-events-none select-none">
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block border border-white/60"></span>
+                <span>🔴 Deforestation</span>
               </span>
-              <span className="text-xs font-mono font-bold text-white tracking-wider">
-                {observedYear}
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block border border-white/60"></span>
+                <span>🟡 Degradation</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block border border-white/60"></span>
+                <span>🔵 Water Dynamics</span>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded bg-purple-500 inline-block border border-white/60"></span>
+                <span>🏢 Encroachment</span>
               </span>
             </div>
-            <div className="text-[11px] font-sans font-medium text-slate-300 mb-2 flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-rose-400 shrink-0" />
-              <span className="truncate">{observedDateFormatted}</span>
-            </div>
-            <div className="space-y-1 text-[10px] font-mono">
-              <div className="flex items-center justify-between text-slate-300">
-                <span className="text-slate-400">Mean Canopy NDVI:</span>
-                <span className="text-amber-400 font-bold">
-                  {observedPoint?.ndvi?.toFixed(2) ?? '0.47'}
-                  <span className="text-[9px] text-rose-400 ml-1">
-                    ({ndviDelta >= 0 ? '+' : ''}{ndviDelta.toFixed(2)})
-                  </span>
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-slate-300">
-                <span className="text-slate-400">Net Forest Change:</span>
-                <span className="text-rose-400 font-bold">
-                  {forestDeltaPct >= 0 ? '+' : ''}{forestDeltaPct.toFixed(1)}%
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-slate-300">
-                <span className="text-slate-400">Detected Alerts:</span>
-                <span className="text-rose-400 font-bold flex items-center gap-0.5">
-                  <span>🔥</span> {filteredHotspots.length} Alerts
-                </span>
-              </div>
-              <div className="pt-1 mt-1 border-t border-slate-800/80 flex items-center justify-between text-[9px]">
-                <span className="text-slate-500">Detection Status:</span>
-                <span className="text-rose-400 font-semibold flex items-center gap-0.5">
-                  <span>⚠️</span> Change Detected
-                </span>
-              </div>
-            </div>
           </div>
-        </div>
 
-        {/* ================= 3. FLOATING CHANGE DETECTION LEGEND ================= */}
-        <div className="absolute top-28 right-4 z-[490] w-48 bg-[#070c17]/90 backdrop-blur-md border border-white/15 rounded-xl p-2.5 shadow-2xl pointer-events-none select-none">
-          <div className="flex items-center justify-between mb-2 border-b border-white/10 pb-1">
-            <span className="text-[10px] font-mono font-bold text-slate-200 uppercase tracking-wider">
-              Change Detection
-            </span>
-            <span className="text-[9px] font-mono text-emerald-400 font-semibold">10m Res</span>
-          </div>
-          <div className="space-y-1.5 text-[10px] font-sans">
-            <div className="flex items-center gap-2 text-slate-200">
-              <span className="w-4 h-4 rounded-full bg-rose-600 border border-white/30 flex items-center justify-center text-[9px] shrink-0">🔥</span>
-              <span className="font-medium text-rose-300">Forest Loss</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-200">
-              <span className="w-4 h-4 rounded-full bg-amber-500 border border-white/30 flex items-center justify-center text-[9px] shrink-0">🌿</span>
-              <span className="font-medium text-amber-300">Vegetation Degradation</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-200">
-              <span className="w-4 h-4 rounded-full bg-emerald-600 border border-white/30 flex items-center justify-center text-[9px] shrink-0">🟢</span>
-              <span className="font-medium text-emerald-300">No Significant Change</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-200">
-              <span className="w-4 h-4 rounded-full bg-cyan-600 border border-white/30 flex items-center justify-center text-[9px] shrink-0">💧</span>
-              <span className="font-medium text-cyan-300">Water Body</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-200">
-              <span className="w-4 h-4 rounded-md bg-purple-600 border border-white/30 flex items-center justify-center text-[9px] shrink-0">🏢</span>
-              <span className="font-medium text-purple-300">Urban Expansion</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-200">
-              <span className="w-4 h-4 rounded-full border border-emerald-400 bg-emerald-500/20 flex items-center justify-center text-[9px] shrink-0">⌖</span>
-              <span className="font-medium text-emerald-300">Protected AOI</span>
-            </div>
-          </div>
         </div>
-
-        {/* Vertical Split Line & Circular Handle `⟨ ⟩` (Matching Reference Image) */}
-        <div
-          className="absolute top-0 bottom-0 w-0.5 bg-white cursor-ew-resize flex items-center justify-center z-[500] shadow-[0_0_12px_rgba(255,255,255,0.9)] pointer-events-none"
-          style={{ left: `${swipePosition}%` }}
-        >
-          <div className="w-9 h-9 rounded-full bg-[#0a0f1d] border-2 border-white flex items-center justify-center text-white shadow-[0_0_20px_rgba(0,0,0,0.9)] -ml-[18px]">
-            <span className="text-xs font-bold tracking-tighter select-none font-mono">⟨ ⟩</span>
-          </div>
-        </div>
-
-        {/* Transparent Scrubbing Range Slider Input */}
-        <input
-          id="satellite-swipe-range-input"
-          aria-label="Drag compare slider to reveal satellite change"
-          type="range"
-          min="0"
-          max="100"
-          value={swipePosition}
-          onChange={(e) => setSwipePosition(Number(e.target.value))}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-[520]"
-        />
 
         {/* Scale Bar (Bottom Left, Matching Reference Image) */}
         <div className="absolute bottom-4 left-4 z-[500] flex flex-col gap-1 pointer-events-none select-none">

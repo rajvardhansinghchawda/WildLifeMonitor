@@ -166,3 +166,5 @@ export async function getPublicDemonstrationEvents(
   }
   return res.json();
 }
+
+export const getPublicEvents = getPublicDemonstrationEvents;

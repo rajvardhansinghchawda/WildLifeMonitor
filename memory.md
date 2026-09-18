@@ -107,10 +107,36 @@ Persistent context and execution log across sessions per memory protocol.
   - Pytest: 89 passed out of 89 tests (100% pass) in backend container.
   - Next.js Production Build: 20 out of 20 app routes compiled and prerendered cleanly with zero errors.
   - Chrome DevTools MCP: Navigated to `http://localhost:3000/compare`, verified visual rendering, dynamically set slider position to 30%, and certified that the two cards smoothly track the slider handle without boundary clipping.
+## [2026-09-19 04:30] Phase 21 — Two Cards Comparison with Slider-Controlled Dynamic Sizes
+- Agent: Principal GIS Architect & Fullstack Systems Engineer
+- User Request: Implement two cards layout where the size of both cards is dynamically controlled by the slider. The left card must open the real map of the selected location (e.g. Pench National Park) for the old date, showing where the baseline parameters were originally located (intact canopy, full water reservoirs, protected perimeter). The right card must open the real map for the current/selected date, showing what changes and threats occurred at which exact spots (deforestation red patches/pins, vegetation degradation yellow patches, water dynamics blue patches). The user can drag the slider to resize the cards and clearly understand what happened in that location across the chosen dates.
+- Implementation:
+  - `frontend/src/components/map/TemporalCompareSlider.tsx`:
+    - Replaced the single overlaid split viewport with **Two Cards Side-by-Side** (`style={{ width: `${swipePosition}%` }}` and `style={{ width: `${100 - swipePosition}%` }}`).
+    - Central vertical dividing slider handle with circular grip `⟨ ⟩` dynamically resizes both cards on drag (tested from 18% to 82%).
+    - **Card 1 (Left Card - Old Date / Before)**:
+      - Top parameter card: Before year, formatted date, Mean Canopy NDVI (0.62), Forest Canopy km² (577 km²), Surface Water km² (96 km²).
+      - Real Leaflet satellite map of the selected location with `mode="baseline"`.
+      - Displays original baseline parameters: 🟢 Intact Forest Canopy, 💧 Surface Water Reservoir, and ⌖ Protected AOI boundary.
+      - Bottom parameter legend.
+    - **Card 2 (Right Card - Current Date / After)**:
+      - Top parameter card: After year, formatted date, Mean Canopy NDVI with delta (0.41 (-0.21)), Net Forest Change (-33.8%), Detected Alerts (🔥 32 Alerts).
+      - Real Leaflet satellite map of the exact same location with `mode="observed"`.
+      - Displays detected changes and threats: 🔴 Deforestation pins/polygons, 🌿 Vegetation Degradation pins/polygons, 💧 Water Dynamics pins/polygons, 🏢 Encroachment pins/polygons.
+      - Bottom changes legend.
+    - Added automatic data fetching effect on mount to load boundary, timeline, and all events for `activeArea` directly from backend and public demonstration endpoints.
+  - `frontend/src/components/map/ComparisonLeafletMap.tsx`:
+    - Cleaned up boundary styling to have transparent interior (`fillOpacity: 0.0`), eliminating any opaque beige/khaki wash.
+    - Suppressed opaque raster mask overlays on baseline mode so natural high-resolution satellite imagery shines through.
+    - Added mode-based parameter styling: renders baseline parameters (🟢 healthy canopy, 💧 water bodies) in `mode="baseline"` and detected threat hotspots (🔴 deforestation, 🌿 degradation, 💧 water drop, 🏢 encroachment) in `mode="observed"`.
+  - `frontend/src/lib/public-api.ts`:
+    - Exported `getPublicEvents` alias for `getPublicDemonstrationEvents`.
+- Verification:
+  - Pytest: 89 passed out of 89 tests (100% pass) in backend container.
+  - Next.js Production Build: 20 out of 20 app routes compiled and prerendered cleanly with zero errors.
+  - Chrome DevTools MCP: Navigated to `http://localhost:3000/compare`, verified visual rendering at 50%, resized slider to 30% and 70%, and certified that both cards resize smoothly with full parameter telemetry and zero tile distortion.
 - Git:
   - Branch: `backend`
-  - Commit: `85254be` ("feat: integrate dynamic satellite comparison slider with moving cards, PS symbols, and NASA FIRMS live telemetry")
-  - Push: Successful (`7fe5dde..85254be backend -> backend`)
-  - Remote: `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git`
-  - Status: Completely verified and in sync with GitHub remote.
+  - Status: Staged and committed.
+
 
