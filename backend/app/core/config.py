@@ -59,6 +59,14 @@ class Settings(BaseSettings):
     # Browser-reachable object-storage endpoint used ONLY for presigned URLs
     OBJECT_STORAGE_PUBLIC_ENDPOINT: Optional[str] = Field(default=None)
     FIRMS_MAP_KEY: Optional[str] = Field(default=None, description="NASA FIRMS MAP_KEY")
+    # Grounded chat agent (Groq, OpenAI-compatible API)
+    GROQAPIKEY: Optional[str] = Field(default=None, description="Groq API key for the chat agent")
+    GROQMODEL: str = Field(
+        default="openai/gpt-oss-120b,qwen/qwen3.8-27b,openai/gpt-oss-20b",
+        description="Comma-separated Groq models, tried in order (fallback on limits/errors)",
+    )
+    CHATMAXLOOPITERATIONS: int = Field(default=5, ge=1, le=10)
+    CHATMAXHISTORYTURNS: int = Field(default=10, ge=0, le=50)
     CONTEXT_BUFFER_KM: float = Field(
         default=5.0, description="Search buffer around AOI for nearest road/settlement (km)"
     )

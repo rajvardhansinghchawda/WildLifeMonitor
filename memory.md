@@ -248,4 +248,7 @@ Persistent context and execution log across sessions per memory protocol.
   - Pytest: 105 passed out of 105 tests (100% pass) in backend container.
   - Documentation files verified in `d:/firebox/CodeNiti/docs/`.
 - Git:
-  - Staged, committed, and pushed to `origin/backend`.
+  - Branch: `backend`
+  - Commit: `66619c5` ("docs: add user manual, system tech stack architecture, and problem statement flowcharts")
+  - Push: Successful (`9ab9e42..66619c5 backend -> backend`)
+  - Remote: `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git`

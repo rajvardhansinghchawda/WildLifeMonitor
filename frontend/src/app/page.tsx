@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import PublicChat from '@/components/chat/PublicChat';
 import dynamic from 'next/dynamic';
 import {
   TreePine,
@@ -1286,6 +1287,7 @@ export default function PublicDemoPage() {
           </div>
         </div>
       )}
+      <PublicChat />
     </div>
   );
 }

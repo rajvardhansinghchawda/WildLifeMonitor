@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { TopNav } from './TopNav';
 import { useAuth } from '@/lib/auth';
+import AuthChat from '@/components/chat/AuthChat';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -36,6 +37,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           <div className="max-w-7xl mx-auto space-y-6">{children}</div>
         </main>
       </div>
+      <AuthChat />
     </div>
   );
 };

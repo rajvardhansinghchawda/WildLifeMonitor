@@ -6,6 +6,8 @@ from app.api.v1.analyses import router as analyses_router
 from app.api.v1.areas import router as areas_router
 from app.api.v1.auth import router as auth_router
 from app.api.v1.capabilities import router as capabilities_router
+from app.api.v1.chat import public_router as public_chat_router
+from app.api.v1.chat import router as chat_router
 from app.api.v1.events import router as events_router
 from app.api.v1.health import router as health_router
 from app.api.v1.hotspots import router as hotspots_router
@@ -22,6 +24,8 @@ api_v1_router.include_router(hotspots_router)
 api_v1_router.include_router(alerts_router)
 api_v1_router.include_router(reports_router)
 api_v1_router.include_router(analyses_router)
+api_v1_router.include_router(chat_router)
+api_v1_router.include_router(public_chat_router)
 api_v1_router.include_router(events_router)
 api_v1_router.include_router(capabilities_router)
 

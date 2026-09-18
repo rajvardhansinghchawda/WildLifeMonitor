@@ -69,6 +69,8 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/macro-shore-471006-c3-822bdbdaa0b9.json
       OBJECT_STORAGE_PUBLIC_ENDPOINT: http://localhost:9000
       FIRMS_MAP_KEY: ${FIRMS_MAP_KEY:-}
+      GROQAPIKEY: ${GROQAPIKEY:-}
+      GROQMODEL: ${GROQMODEL:-openai/gpt-oss-120b,qwen/qwen3.8-27b,openai/gpt-oss-20b}
       ALLOWED_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
       LOG_LEVEL: INFO
     ports:
