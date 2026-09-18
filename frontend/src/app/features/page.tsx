@@ -109,16 +109,14 @@ export default function FeaturesPage() {
       <header className="sticky top-0 z-50 h-20 bg-[#f7f8f5]/90 backdrop-blur-md border-b border-slate-200/80 px-6 lg:px-12 flex items-center justify-between transition-all">
         {/* Brand Logo & Tagline */}
         <Link href="/" className="flex items-center gap-3.5 group">
-          <div className="relative w-11 h-11 rounded-full bg-slate-900 border border-amber-400/50 flex items-center justify-center p-1.5 shadow-md group-hover:scale-105 transition-transform overflow-hidden">
-            <Image
-              src="/primary logo 1.png"
-              alt="Wildlife Watch Logo"
-              width={36}
-              height={36}
-              className="w-full h-full object-contain"
-              priority
-            />
-          </div>
+          <Image
+            src="/primary logo 1.png"
+            alt="Wildlife Watch Logo"
+            width={34}
+            height={42}
+            className="h-10 w-auto object-contain group-hover:scale-105 transition-transform"
+            priority
+          />
           <div className="flex flex-col">
             <span className="font-bold text-lg tracking-tight text-slate-900 leading-tight">
               Wildlife Watch

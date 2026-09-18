@@ -166,16 +166,14 @@ export default function PublicDemoPage() {
       <header className="fixed top-0 inset-x-0 z-50 h-16 bg-black/35 backdrop-blur-md border-b border-white/10 px-6 lg:px-12 flex items-center justify-between transition-all">
         {/* Brand Logo & Tagline */}
         <Link href="/" className="flex items-center gap-3 group">
-          <div className="relative w-10 h-10 rounded-full bg-slate-950/80 border border-amber-400/40 flex items-center justify-center p-1.5 shadow-md shadow-amber-500/15 group-hover:scale-105 transition-transform overflow-hidden">
-            <Image
-              src="/primary logo 1.png"
-              alt="Wildlife Watch Logo"
-              width={36}
-              height={36}
-              className="w-full h-full object-contain"
-              priority
-            />
-          </div>
+          <Image
+            src="/primary logo 1.png"
+            alt="Wildlife Watch Logo"
+            width={34}
+            height={42}
+            className="h-10 w-auto object-contain group-hover:scale-105 transition-transform"
+            priority
+          />
           <div className="flex flex-col">
             <span className="font-bold text-base tracking-tight text-white leading-tight">
               Wildlife Watch
@@ -357,15 +355,13 @@ export default function PublicDemoPage() {
 
         {/* Top-right brand badge (like World Animal Protection logo in reference) */}
         <div className="absolute top-20 right-6 z-10 flex flex-col items-center text-center select-none pointer-events-none">
-          <div className="w-11 h-11 rounded-full bg-black/40 border-2 border-amber-400/50 flex items-center justify-center p-1.5 shadow-lg mb-1 backdrop-blur-sm">
-            <Image
-              src="/primary logo 1.png"
-              alt="Wildlife Watch Logo"
-              width={32}
-              height={32}
-              className="w-full h-full object-contain"
-            />
-          </div>
+          <Image
+            src="/primary logo 1.png"
+            alt="Wildlife Watch Logo"
+            width={34}
+            height={42}
+            className="h-10 w-auto object-contain mb-1 drop-shadow-md"
+          />
           <span className="text-[9px] text-white/70 font-semibold leading-tight tracking-wide text-center max-w-[60px]">Wildlife Watch</span>
         </div>
 
