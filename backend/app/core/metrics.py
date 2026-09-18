@@ -1,9 +1,15 @@
 from prometheus_client import (
+    CONTENT_TYPE_LATEST,
     Counter,
     Gauge,
     Histogram,
     generate_latest,
 )
+
+__all__ = [
+    "CONTENT_TYPE_LATEST",
+    "export_prometheus_metrics",
+]
 
 # 1. HTTP signals
 HTTP_REQUESTS_TOTAL = Counter(

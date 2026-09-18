@@ -183,6 +183,7 @@ async def get_analysis_results(
         ]
         layers_data.append(
             {
+                "layer_id": str(layer.id),
                 "type": layer.layer_type,
                 "status": layer.status,
                 "quality_label": layer.quality_label,

@@ -10,6 +10,7 @@ from botocore.exceptions import ClientError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.metrics import ARTIFACT_PUBLICATION_FAILURES_TOTAL
 from app.models.analysis import Analysis
 from app.models.artifact import Artifact
 
@@ -101,6 +102,7 @@ class ArtifactService:
 
         except Exception as e:
             logger.error("Artifact upload failed for key '%s': %s", key, str(e))
+            ARTIFACT_PUBLICATION_FAILURES_TOTAL.labels(artifact_type=artifact_type).inc()
             raise ArtifactPublicationError(
                 f"Failed to publish artifact to storage: {str(e)}"
             ) from e

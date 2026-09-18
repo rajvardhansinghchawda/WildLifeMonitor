@@ -8,6 +8,7 @@ import redis.asyncio as redis
 
 from app.core.config import settings
 from app.core.exceptions import ConflictException
+from app.core.metrics import CACHE_HITS_TOTAL, CACHE_MISSES_TOTAL
 
 logger = logging.getLogger(__name__)
 
@@ -80,6 +81,7 @@ class IdempotencyStore:
             )
             if acquired:
                 # We won the race to reserve the key; caller should execute request
+                CACHE_MISSES_TOTAL.labels(cache_type="idempotency").inc()
                 return None
 
             # Key already exists: inspect status and payload hash
@@ -102,6 +104,7 @@ class IdempotencyStore:
 
                     # If completed, return cached response
                     if entry.get("status") == "completed" and entry.get("response") is not None:
+                        CACHE_HITS_TOTAL.labels(cache_type="idempotency").inc()
                         return cast(Optional[Dict[str, Any]], entry.get("response"))
 
                     # If still in flight, wait briefly and retry loop
@@ -112,6 +115,29 @@ class IdempotencyStore:
                 await asyncio.sleep(0.05)
 
         return None
+
+    async def release(
+        self,
+        workspace_id: uuid.UUID,
+        idempotency_key: str,
+    ) -> None:
+        """Release a reservation made by get_or_reserve without completing it.
+
+        Must be called whenever a request that successfully reserved a key
+        (get_or_reserve returned None) fails before save_response is reached
+        (e.g. active-job-limit rejection, a mid-request error). Without this,
+        the reservation would sit in Redis as permanently 'in_flight' for the
+        full TTL, forcing every subsequent retry with the same key to block
+        for wait_timeout_sec before it can proceed.
+        """
+        r = self._get_redis()
+        key = self._make_key(workspace_id, idempotency_key)
+        await r.delete(key)
+        logger.info(
+            "Released idempotency reservation for key %s in workspace %s",
+            idempotency_key,
+            workspace_id,
+        )
 
     async def save_response(
         self,

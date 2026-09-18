@@ -2,12 +2,14 @@ import asyncio
 import json
 import logging
 import uuid
+from datetime import datetime, timezone
 from typing import Optional
 
 import redis.asyncio as aioredis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.metrics import QUEUE_AGE_SECONDS, QUEUE_DEPTH
 from app.db.session import async_session_factory
 from app.repositories.outbox_repository import OutboxRepository
 
@@ -29,7 +31,17 @@ async def dispatch_pending_outbox_messages(
     repo = outbox_repo or OutboxRepository()
     messages = await repo.get_unpublished(session, batch_size=batch_size)
     if not messages:
+        QUEUE_DEPTH.labels(queue_name=REDIS_ANALYSES_QUEUE).set(
+            await redis_client.llen(REDIS_ANALYSES_QUEUE)  # type: ignore[misc]
+        )
         return 0
+
+    oldest_created_at = min(msg.created_at for msg in messages)  # type: ignore[type-var]
+    if oldest_created_at.tzinfo is None:
+        oldest_created_at = oldest_created_at.replace(tzinfo=timezone.utc)
+    QUEUE_AGE_SECONDS.labels(queue_name=REDIS_ANALYSES_QUEUE).set(
+        (datetime.now(timezone.utc) - oldest_created_at).total_seconds()
+    )
 
     published_ids: list[uuid.UUID] = []
     for msg in messages:
@@ -39,6 +51,10 @@ async def dispatch_pending_outbox_messages(
 
     await repo.mark_published(session, published_ids)
     await session.commit()
+
+    QUEUE_DEPTH.labels(queue_name=REDIS_ANALYSES_QUEUE).set(
+        await redis_client.llen(REDIS_ANALYSES_QUEUE)  # type: ignore[misc]
+    )
 
     logger.info(
         "Dispatched %d outbox messages to Redis queue '%s'",
@@ -74,3 +90,14 @@ async def run_dispatcher(
     finally:
         await redis_client.aclose()
         logger.info("Outbox dispatcher stopped.")
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=settings.LOG_LEVEL)
+    # Each process role runs in its own container with its own Prometheus
+    # client default registry — metrics recorded here are invisible from the
+    # api container's /metrics endpoint unless this process exposes its own.
+    from prometheus_client import start_http_server
+
+    start_http_server(9101)
+    asyncio.run(run_dispatcher())

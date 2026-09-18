@@ -55,6 +55,8 @@ class AnalysisService:
         )
 
         # 3. Handle Idempotency-Key if provided
+        payload_dict: Optional[dict] = None
+        reservation_held = False
         if idempotency_key:
             # Check Redis IdempotencyStore
             payload_dict = {
@@ -73,84 +75,104 @@ class AnalysisService:
             )
             if cached_resp:
                 return AnalysisCreateResponse(**cached_resp), warnings
+            # get_or_reserve returned None: either we won the reservation, or it timed
+            # out waiting on someone else's. Either way we must resolve it below —
+            # by completing it (save_response) or releasing it on failure — so a
+            # reservation never sits dangling as 'in_flight' for the full 24h TTL.
+            reservation_held = True
 
-            # Also check DB persistence repository
-            existing = await self.repo.find_by_idempotency_key(
-                session, workspace_id, idempotency_key
-            )
-            if existing:
-                matches = (
-                    existing.aoi_snapshot == request.aoi
-                    and existing.baseline_start == request.baseline.start
-                    and existing.baseline_end == request.baseline.end
-                    and existing.comparison_start == request.comparison.start
-                    and existing.comparison_end == request.comparison.end
-                    and existing.requested_layers == request.layers
-                    and existing.configuration_id == request.configuration_id
+        try:
+            if idempotency_key and payload_dict is not None:
+                # Also check DB persistence repository
+                existing = await self.repo.find_by_idempotency_key(
+                    session, workspace_id, idempotency_key
                 )
-                if matches:
-                    response = AnalysisCreateResponse(
-                        analysis_id=str(existing.id),
-                        status=str(existing.status),
-                        created_at=existing.created_at.isoformat(),
-                        status_url=f"{settings.API_PREFIX}/analyses/{existing.id}",
-                        results_url=f"{settings.API_PREFIX}/analyses/{existing.id}/results",
+                if existing:
+                    matches = (
+                        existing.aoi_snapshot == request.aoi
+                        and existing.baseline_start == request.baseline.start
+                        and existing.baseline_end == request.baseline.end
+                        and existing.comparison_start == request.comparison.start
+                        and existing.comparison_end == request.comparison.end
+                        and existing.requested_layers == request.layers
+                        and existing.configuration_id == request.configuration_id
                     )
-                    return response, warnings
-                else:
-                    raise ConflictException(
-                        error_code="IDEMPOTENCYCONFLICT",
-                        message="Idempotency key was previously used with a different request payload.",
-                        details={"idempotency_key": idempotency_key},
-                    )
+                    if matches:
+                        response = AnalysisCreateResponse(
+                            analysis_id=str(existing.id),
+                            status=str(existing.status),
+                            created_at=existing.created_at.isoformat(),
+                            status_url=f"{settings.API_PREFIX}/analyses/{existing.id}",
+                            results_url=f"{settings.API_PREFIX}/analyses/{existing.id}/results",
+                        )
+                        await self.idempotency_store.save_response(
+                            workspace_id=workspace_id,
+                            idempotency_key=idempotency_key,
+                            request_payload=payload_dict,
+                            response_data=response.model_dump(),
+                        )
+                        return response, warnings
+                    else:
+                        raise ConflictException(
+                            error_code="IDEMPOTENCYCONFLICT",
+                            message="Idempotency key was previously used with a different request payload.",
+                            details={"idempotency_key": idempotency_key},
+                        )
 
-        # 4. Enforce MAX_ACTIVE_JOBS_PER_WORKSPACE
-        active_count = await self.repo.count_active_jobs(session, workspace_id)
-        if active_count >= settings.MAX_ACTIVE_JOBS_PER_WORKSPACE:
-            raise RateLimitedException(
-                error_code="RATELIMITED",
-                message=(
-                    f"Workspace has {active_count} concurrent active jobs, "
-                    f"exceeding the limit of {settings.MAX_ACTIVE_JOBS_PER_WORKSPACE}."
-                ),
-                details={
-                    "active_jobs": active_count,
-                    "max_active_jobs": settings.MAX_ACTIVE_JOBS_PER_WORKSPACE,
-                },
-            )
+            # 4. Enforce MAX_ACTIVE_JOBS_PER_WORKSPACE
+            active_count = await self.repo.count_active_jobs(session, workspace_id)
+            if active_count >= settings.MAX_ACTIVE_JOBS_PER_WORKSPACE:
+                raise RateLimitedException(
+                    error_code="RATELIMITED",
+                    message=(
+                        f"Workspace has {active_count} concurrent active jobs, "
+                        f"exceeding the limit of {settings.MAX_ACTIVE_JOBS_PER_WORKSPACE}."
+                    ),
+                    details={
+                        "active_jobs": active_count,
+                        "max_active_jobs": settings.MAX_ACTIVE_JOBS_PER_WORKSPACE,
+                    },
+                )
 
-        # 5. Persist Analysis + AnalysisLayer + Outbox atomically in one database transaction
-        analysis, _ = await self.repo.create_analysis_with_layers_and_outbox(
-            session=session,
-            workspace_id=workspace_id,
-            created_by=user_id,
-            aoi_snapshot=request.aoi,
-            baseline_start=request.baseline.start,
-            baseline_end=request.baseline.end,
-            comparison_start=request.comparison.start,
-            comparison_end=request.comparison.end,
-            requested_layers=request.layers,
-            configuration_id=request.configuration_id,
-            idempotency_key=idempotency_key,
-        )
-
-        response = AnalysisCreateResponse(
-            analysis_id=str(analysis.id),
-            status=str(analysis.status),
-            created_at=analysis.created_at.isoformat(),
-            status_url=f"{settings.API_PREFIX}/analyses/{analysis.id}",
-            results_url=f"{settings.API_PREFIX}/analyses/{analysis.id}/results",
-        )
-
-        if idempotency_key:
-            await self.idempotency_store.save_response(
+            # 5. Persist Analysis + AnalysisLayer + Outbox atomically in one database transaction
+            analysis, _ = await self.repo.create_analysis_with_layers_and_outbox(
+                session=session,
                 workspace_id=workspace_id,
+                created_by=user_id,
+                aoi_snapshot=request.aoi,
+                baseline_start=request.baseline.start,
+                baseline_end=request.baseline.end,
+                comparison_start=request.comparison.start,
+                comparison_end=request.comparison.end,
+                requested_layers=request.layers,
+                configuration_id=request.configuration_id,
                 idempotency_key=idempotency_key,
-                request_payload=payload_dict,
-                response_data=response.model_dump(),
             )
 
-        return response, warnings
+            response = AnalysisCreateResponse(
+                analysis_id=str(analysis.id),
+                status=str(analysis.status),
+                created_at=analysis.created_at.isoformat(),
+                status_url=f"{settings.API_PREFIX}/analyses/{analysis.id}",
+                results_url=f"{settings.API_PREFIX}/analyses/{analysis.id}/results",
+            )
+
+            if idempotency_key and payload_dict is not None:
+                await self.idempotency_store.save_response(
+                    workspace_id=workspace_id,
+                    idempotency_key=idempotency_key,
+                    request_payload=payload_dict,
+                    response_data=response.model_dump(),
+                )
+
+            return response, warnings
+        except Exception:
+            if reservation_held and idempotency_key:
+                await self.idempotency_store.release(
+                    workspace_id=workspace_id,
+                    idempotency_key=idempotency_key,
+                )
+            raise
 
     async def get_analysis_status(
         self,
@@ -180,6 +202,7 @@ class AnalysisService:
 
         layer_items = [
             LayerStatusItem(
+                layer_id=str(layer.id),
                 type=str(layer.layer_type),
                 status=str(layer.status),
                 error_code=layer.error_code,

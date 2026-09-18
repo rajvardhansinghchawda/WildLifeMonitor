@@ -26,6 +26,7 @@ class AnalysisCreateResponse(BaseModel):
 
 
 class LayerStatusItem(BaseModel):
+    layer_id: str
     type: str
     status: str
     error_code: Optional[str] = None

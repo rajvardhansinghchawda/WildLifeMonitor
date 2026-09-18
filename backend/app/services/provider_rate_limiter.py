@@ -3,12 +3,13 @@ import logging
 import random
 import time
 import uuid
-from typing import Any, Callable, Coroutine, Dict, Optional, TypeVar, cast
+from typing import Any, Callable, Coroutine, Optional, TypeVar, cast
 
 import redis.asyncio as redis
 
 from app.core.config import settings
 from app.core.exceptions import AppException
+from app.core.metrics import PROVIDER_LATENCY_SECONDS, PROVIDER_THROTTLES_TOTAL
 
 logger = logging.getLogger(__name__)
 
@@ -153,12 +154,17 @@ class ProviderRateLimiter:
         attempt = 0
         while True:
             lease_id: Optional[str] = None
+            op_start = time.time()
             try:
                 lease_id = await self.acquire_lease(
                     provider_name=provider_name,
                     max_concurrent=max_concurrent,
                 )
-                return await operation()
+                result = await operation()
+                PROVIDER_LATENCY_SECONDS.labels(provider=provider_name).observe(
+                    time.time() - op_start
+                )
+                return result
             except AppException as app_err:
                 # Check error code against non-retryable list
                 if app_err.error_code in NON_RETRYABLE_ERROR_CODES or not getattr(
@@ -200,6 +206,7 @@ class ProviderRateLimiter:
                     sleep_time,
                     app_err.message,
                 )
+                PROVIDER_THROTTLES_TOTAL.labels(provider=provider_name).inc()
                 await asyncio.sleep(sleep_time)
 
             except Exception as e:

@@ -79,48 +79,69 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: codeniti-worker
-    command: python -c "import time; print('Worker placeholder ready'); time.sleep(86400)"
+    command: python -m app.workers.analysis_worker
     environment:
       APP_ENV: development
       DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@db:5432/wildlife
       REDIS_URL: redis://redis:6379/0
+      OBJECT_STORAGE_ENDPOINT: http://object-storage:9000
+      OBJECT_STORAGE_BUCKET: wildlife-artifacts
+      OBJECT_STORAGE_ACCESS_KEY: minioadmin
+      OBJECT_STORAGE_SECRET_KEY: minioadminpassword
+      LOG_LEVEL: INFO
+    ports:
+      - "9102:9102"
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+      object-storage:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
 
   dispatcher:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: codeniti-dispatcher
-    command: python -c "import time; print('Dispatcher placeholder ready'); time.sleep(86400)"
+    command: python -m app.workers.dispatcher
     environment:
       APP_ENV: development
       DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@db:5432/wildlife
       REDIS_URL: redis://redis:6379/0
+      LOG_LEVEL: INFO
+    ports:
+      - "9101:9101"
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - ./backend:/app
 
   scheduler:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: codeniti-scheduler
-    command: python -c "import time; print('Scheduler placeholder ready'); time.sleep(86400)"
+    command: python -m app.workers.scheduler
     environment:
       APP_ENV: development
       DATABASE_URL: postgresql+asyncpg://postgres:postgrespassword@db:5432/wildlife
       REDIS_URL: redis://redis:6379/0
+      LOG_LEVEL: INFO
+    ports:
+      - "9103:9103"
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - ./backend:/app
 
 volumes:
   postgres_data:

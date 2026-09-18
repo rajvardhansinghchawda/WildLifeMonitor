@@ -1,3 +1,4 @@
+import time
 import uuid
 
 from fastapi import FastAPI, HTTPException, Request, status
@@ -9,6 +10,7 @@ from app.api.v1 import api_v1_router
 from app.api.v1.health import router as root_health_router
 from app.core.config import settings
 from app.core.logging import request_id_ctx, setup_logging
+from app.core.metrics import HTTP_REQUEST_DURATION_SECONDS, HTTP_REQUESTS_TOTAL
 from app.schemas.common import ErrorDetail, ErrorEnvelope
 
 # Initialize structured logging
@@ -34,14 +36,34 @@ app.add_middleware(
 
 @app.middleware("http")
 async def correlation_id_middleware(request: Request, call_next):
-    """Tracks and propagates request_id across async context and response headers."""
+    """Tracks and propagates request_id across async context and response headers,
+    and records HTTP duration/error-rate metrics per backendhandoverfile.md's
+    Observability table."""
     req_id = request.headers.get("X-Request-ID") or f"req-{uuid.uuid4().hex[:8]}"
     token = request_id_ctx.set(req_id)
+    route_template = request.url.path
+    start = time.monotonic()
+    status_code = 500
     try:
         response = await call_next(request)
+        status_code = response.status_code
         response.headers["X-Request-ID"] = req_id
         return response
     finally:
+        # Prefer the matched route template (e.g. "/api/v1/analyses/{analysis_id}")
+        # over the raw path so metric cardinality doesn't grow with every UUID.
+        route = request.scope.get("route")
+        endpoint_label = getattr(route, "path", route_template)
+        duration = time.monotonic() - start
+        HTTP_REQUESTS_TOTAL.labels(
+            method=request.method,
+            endpoint=endpoint_label,
+            status_code=str(status_code),
+        ).inc()
+        HTTP_REQUEST_DURATION_SECONDS.labels(
+            method=request.method,
+            endpoint=endpoint_label,
+        ).observe(duration)
         request_id_ctx.reset(token)
 
 

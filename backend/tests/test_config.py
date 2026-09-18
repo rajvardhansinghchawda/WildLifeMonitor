@@ -5,8 +5,15 @@ from app.core.config import Settings
 
 
 def test_config_defaults():
-    """Verify default configurations align with spec.md and backendhandoverfile.md."""
+    """Verify default configurations align with spec.md and backendhandoverfile.md.
+
+    _env_file=None keeps this hermetic: without it, pydantic-settings still reads
+    unset fields (e.g. GEE_PROJECT_ID) from the developer's local backend/.env,
+    so this test's result would depend on whatever is configured on the machine
+    running it rather than on the code's actual declared defaults.
+    """
     config = Settings(
+        _env_file=None,
         APP_ENV="development",
         AUTH_MODE="development",
         DATABASE_URL="postgresql+asyncpg://postgres:pass@localhost:5432/wildlife",

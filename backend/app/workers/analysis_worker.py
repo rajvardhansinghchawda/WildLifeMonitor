@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import time
 import uuid
 from datetime import date
 from typing import Any, Dict, Optional, cast
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.exceptions import FencingTokenExpiredError
+from app.core.metrics import JOB_DURATION_SECONDS, VALID_DATA_COVERAGE_FRACTION
 from app.db.session import async_session_factory
 from app.models.analysis import JobStatusEnum, LayerStatusEnum
 from app.providers.base import AnalysisContext, AnalysisRequestData, ChangeProvider
@@ -24,6 +26,7 @@ from app.services.artifact_service import ArtifactService
 from app.services.context_enrichment_service import ContextEnrichmentService
 from app.services.event_extraction_service import EventExtractionService
 from app.services.priority_service import PriorityService
+from app.services.provider_rate_limiter import ProviderRateLimiter
 from app.workers.dispatcher import REDIS_ANALYSES_QUEUE
 
 logger = logging.getLogger(__name__)
@@ -52,6 +55,7 @@ class AnalysisWorker:
         self.event_service = EventExtractionService()
         self.context_service = ContextEnrichmentService()
         self.priority_service = PriorityService()
+        self.rate_limiter = ProviderRateLimiter()
 
         self.providers: Dict[str, ChangeProvider] = {
             "vegetation": self.vegetation_provider,
@@ -109,6 +113,8 @@ class AnalysisWorker:
             worker_id=self.worker_id,
             lease_seconds=self.lease_seconds,
         )
+        job_start_time = time.time()
+        job_duration_status = "failed"
 
         analysis.status = JobStatusEnum.RUNNING.value  # type: ignore[assignment]
         analysis.stage = "processing_layers"  # type: ignore[assignment]
@@ -227,11 +233,27 @@ class AnalysisWorker:
                     continue
 
                 try:
-                    layer_result = await provider.analyze(context)
+                    # Deployment-wide concurrency limiting + bounded retry/backoff
+                    # (dsabackendoptimisation.md: "a semaphore inside one process
+                    # does not enforce a deployment-wide limit"). Wraps only the
+                    # actual provider call, not the cheap local capability check.
+                    active_provider: ChangeProvider = provider
+                    active_context: AnalysisContext = context
+                    layer_result = await self.rate_limiter.execute_with_retry_and_rate_limit(
+                        provider_name=str(layer.layer_type),
+                        operation=lambda: active_provider.analyze(active_context),
+                    )
                     layer.status = layer_result.status  # type: ignore[assignment]
                     layer.quality_label = layer_result.quality_label  # type: ignore[assignment]
                     layer.metrics = layer_result.metrics  # type: ignore[assignment]
                     layer.method_version = layer_result.method_version  # type: ignore[assignment]
+                    if (
+                        layer_result.metrics
+                        and layer_result.metrics.get("validpixelfraction") is not None
+                    ):
+                        VALID_DATA_COVERAGE_FRACTION.labels(
+                            layer_type=str(layer.layer_type)
+                        ).observe(float(layer_result.metrics["validpixelfraction"]))
                     if layer_result.error_code:
                         layer.error_code = layer_result.error_code  # type: ignore[assignment]
                         layer.error_details = layer_result.error_details  # type: ignore[assignment]
@@ -335,6 +357,7 @@ class AnalysisWorker:
             analysis.stage = "completed"  # type: ignore[assignment]
             await self.attempt_repo.mark_attempt_status(session, attempt.id, "completed")  # type: ignore[arg-type]
             await session.commit()
+            job_duration_status = str(resolved_status)
 
             logger.info(
                 "Successfully finalized analysis %s with status '%s' under fencing_token=%d",
@@ -351,6 +374,10 @@ class AnalysisWorker:
                 await heartbeat_task
             except asyncio.CancelledError:
                 pass
+            JOB_DURATION_SECONDS.labels(
+                method_version=str(analysis.configuration_id),
+                status=job_duration_status,
+            ).observe(time.time() - job_start_time)
 
 
 async def run_worker(
@@ -382,3 +409,11 @@ async def run_worker(
     finally:
         await redis_client.aclose()
         logger.info("Analysis worker '%s' stopped.", worker.worker_id)
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=settings.LOG_LEVEL)
+    from prometheus_client import start_http_server
+
+    start_http_server(9102)
+    asyncio.run(run_worker())
