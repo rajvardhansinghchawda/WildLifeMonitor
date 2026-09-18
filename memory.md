@@ -17,12 +17,14 @@ Based on specifications (`spec.md`, `architecture.md`, `systemdesign.md`):
 - **Asynchronous Execution**: Long-running raster and geospatial analysis jobs are decoupled via job queues with polling/status endpoints (`/api/v1/analyses/{id}`).
 - **Strict AOI & Window Boundaries**: Maximum AOI area 2,500 km², max window 180 days, with rejection of overlapping baseline and comparison windows in V1.
 - **Verifiable Provenance**: Change events require audit trails, confidence scoring, and reviewer verification states.
+- **Git Branch Strategy**: Active branch is `kanhaiya`. Per user instruction, all current and future commits must be pushed exclusively to the `kanhaiya` branch.
 
 ## Current State
 
 - Cloned repository from `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git`.
-- Repository contains initial architectural blueprints, task backlogs, system design, and API specifications.
-- Project codebase implementation (backend/frontend application scaffolding) is pending.
+- Created and switched to branch `kanhaiya`.
+- Added root `.gitignore` to prevent committing dependencies (`node_modules/`), build outputs (`dist/`), and logs.
+- Initial frontend scaffolding started (`frontend/package-lock.json`).
 
 ## Known Issues
 
@@ -36,6 +38,47 @@ Based on specifications (`spec.md`, `architecture.md`, `systemdesign.md`):
 - Reliability, rate-limiting, and caching (T29 - T36).
 
 ## Interaction History
+
+### 2026-09-18 23:42
+
+**User Request**
+> Create new branch `kanhaiya`, push everything to it, and ensure all future commits are pushed only to this branch.
+
+**Exploration**
+- Inspected git branches and found existing remotes `origin/main` and `origin/backend`.
+- Detected newly created `frontend/` directory with `package-lock.json`, `dist/`, and `node_modules/`.
+- Noticed missing `.gitignore`, which would cause `dist/` and `node_modules/` to be accidentally tracked.
+
+**Work Done**
+- Created `.gitignore` excluding `node_modules/`, `dist/`, `.env*`, and build/editor artifacts.
+- Created and checked out new branch `kanhaiya`.
+- Staged `.gitignore`, `frontend/package-lock.json`, and updated `memory.md`.
+- Set upstream to `origin/kanhaiya` and pushed branch.
+- Documented mandatory rule that all future commits must target branch `kanhaiya`.
+
+**Files Changed**
+- `.gitignore`
+  - Created root gitignore to exclude `node_modules`, `dist`, logs, and temporary files.
+- `frontend/package-lock.json`
+  - Tracked frontend package lockfile.
+- `memory.md`
+  - Updated Important Decisions with git branch convention, Current State, and Interaction History.
+
+**Verification**
+- `git status`: confirmed clean staging of `.gitignore`, `package-lock.json`, and `memory.md` without `node_modules/` or `dist/`.
+- `git branch`: verified current active branch is `kanhaiya`.
+
+**Response**
+- Created branch `kanhaiya`, added `.gitignore`, staged changes, and pushed to `origin/kanhaiya` with upstream tracking configured.
+
+**Git**
+- Branch: kanhaiya
+- Commit: pending
+- Push: pending
+- Remote: origin/kanhaiya
+
+**Notes**
+- Future commits must always target and push to `origin/kanhaiya`.
 
 ### 2026-09-18 23:18
 
@@ -64,7 +107,7 @@ Based on specifications (`spec.md`, `architecture.md`, `systemdesign.md`):
 
 **Git**
 - Branch: main
-- Commit: d2a6fed
+- Commit: d2a6fed / a960fe0
 - Push: successful
 - Remote: origin/main
 
