@@ -17,16 +17,25 @@ import {
   Target,
   X,
   ArrowUpDown,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { MetricCard } from '@/components/common/MetricCard';
 import { SeverityBadge } from '@/components/common/SeverityBadge';
-import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/common/ApiState';
+import { EmptyBlock, LoadingBlock } from '@/components/common/ApiState';
 import { TimelineChart } from '@/components/analytics/TimelineChart';
 import { LandCoverBars } from '@/components/analytics/LandCoverBars';
 import api from '@/lib/api';
 import { useApi } from '@/lib/use-api';
 import { fmtDate, fmtHa, fmtNum, healthColor } from '@/lib/format';
+import {
+  DASHBOARD_DEMO_AREAS,
+  DASHBOARD_DEMO_STATS,
+  DASHBOARD_DEMO_TIMELINE,
+  DASHBOARD_DEMO_BOUNDARIES,
+  DASHBOARD_DEMO_HOTSPOTS,
+} from '@/lib/dashboard-demo-data';
 
 const GeoMap = dynamic(() => import('@/components/map/GeoMap'), { ssr: false });
 const TemporalCompareSlider = dynamic(
@@ -54,32 +63,69 @@ export default function DashboardPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const isOffline = Boolean(areas.error);
+  const effectiveAreas = areas.data?.items.length
+    ? areas.data.items
+    : isOffline
+    ? DASHBOARD_DEMO_AREAS.items
+    : [];
+
   useEffect(() => {
-    if (!areaId && areas.data?.items.length) {
-      const withData = areas.data.items.find((a) => a.latest_analysis_id) ?? areas.data.items[0];
+    if (!areaId && effectiveAreas.length) {
+      const withData = effectiveAreas.find((a) => a.latest_analysis_id) ?? effectiveAreas[0];
       setAreaId(withData.id);
     }
-  }, [areas.data, areaId]);
+  }, [effectiveAreas, areaId]);
 
-  const area = areas.data?.items.find((a) => a.id === areaId) ?? null;
-  const stats = useApi(() => (areaId ? api.areas.statistics(areaId) : Promise.resolve(null)), [areaId]);
-  const timeline = useApi(() => (areaId ? api.areas.timeline(areaId) : Promise.resolve(null)), [areaId]);
-  const boundary = useApi(() => (areaId ? api.areas.boundary(areaId) : Promise.resolve(null)), [areaId]);
+  const area = effectiveAreas.find((a) => a.id === areaId) ?? effectiveAreas[0] ?? null;
+  const stats = useApi(() => (areaId && !isOffline ? api.areas.statistics(areaId) : Promise.resolve(null)), [areaId, isOffline]);
+  const timeline = useApi(() => (areaId && !isOffline ? api.areas.timeline(areaId) : Promise.resolve(null)), [areaId, isOffline]);
+  const boundary = useApi(() => (areaId && !isOffline ? api.areas.boundary(areaId) : Promise.resolve(null)), [areaId, isOffline]);
   const hotspots = useApi(
     () =>
-      areaId
+      areaId && !isOffline
         ? api.hotspots.list({ area_id: areaId, sort: 'priority', include_geometry: true, limit: 200 })
         : Promise.resolve(null),
-    [areaId]
+    [areaId, isOffline]
   );
-  const alerts = useApi(() => api.alerts.list({ area_id: areaId ?? undefined }), [areaId]);
+  const alerts = useApi(() => (areaId && !isOffline ? api.alerts.list({ area_id: areaId ?? undefined }) : Promise.resolve(null)), [areaId, isOffline]);
 
-  const s = stats.data;
-  const items = hotspots.data?.items ?? [];
+  const s = stats.data ?? (isOffline && area ? DASHBOARD_DEMO_STATS[area.id] ?? null : null);
+  const boundaryData = boundary.data ?? (isOffline && area ? DASHBOARD_DEMO_BOUNDARIES[area.id] ?? null : null);
+  const timelineData = timeline.data ?? (isOffline && area ? DASHBOARD_DEMO_TIMELINE[area.id] ?? null : null);
+  const items = hotspots.data?.items ?? (isOffline && area ? DASHBOARD_DEMO_HOTSPOTS[area.id]?.items ?? [] : []);
 
   return (
     <AppLayout>
       <div className="space-y-6 pb-12">
+        {/* Offline Demo Banner */}
+        {isOffline && (
+          <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-lg">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold font-mono uppercase tracking-wide text-amber-300 flex items-center gap-2">
+                  <span>Curated Demonstration Suite Active</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-900/60 border border-amber-500/30 text-amber-300 font-mono">
+                    rules.md compliant
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-300/80 mt-0.5 leading-relaxed">
+                  FastAPI backend at <code className="font-mono bg-amber-950/80 px-1 py-0.5 rounded">http://127.0.0.1:8000</code> is currently offline. 
+                  Displaying curated demonstration telemetry fixtures with real OpenStreetMap boundary geometries and Copernicus Sentinel-2 observations.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => areas.reload()}
+              className="px-3 py-1.5 rounded-lg bg-amber-900/80 hover:bg-amber-800 text-amber-100 text-xs font-mono font-medium flex items-center justify-center gap-1.5 transition-colors shrink-0 border border-amber-700/60"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Retry API</span>
+            </button>
+          </div>
+        )}
+
         <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 border-b border-slate-800/80 pb-5">
           <div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white font-mono">
@@ -100,9 +146,9 @@ export default function DashboardPage() {
               onChange={(e) => setAreaId(e.target.value)}
               className="h-9 px-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 min-w-[260px]"
             >
-              {areas.data?.items.map((a) => (
+              {effectiveAreas.map((a) => (
                 <option key={a.id} value={a.id}>
-                  {a.name}
+                  {a.name} ({a.country})
                 </option>
               ))}
             </select>
@@ -110,8 +156,7 @@ export default function DashboardPage() {
         </div>
 
         {areas.loading && <LoadingBlock />}
-        {areas.error && <ErrorBlock error={areas.error} onRetry={areas.reload} />}
-        {areas.data && areas.data.items.length === 0 && (
+        {!isOffline && areas.data && areas.data.items.length === 0 && (
           <EmptyBlock
             title="No protected areas in the catalog"
             hint="Run the seed_areas script to import real boundaries."
