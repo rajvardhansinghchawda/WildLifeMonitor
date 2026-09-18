@@ -25,6 +25,9 @@ dependencies = [
     "pyjwt[crypto]>=2.9.0",
     "httpx>=0.27.2",
     "prometheus-client>=0.20.0",
+    # Google Earth Engine provider
+    "earthengine-api>=0.1.370",
+    "google-auth>=2.35.0",
 ]
 
 [project.optional-dependencies]
