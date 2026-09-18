@@ -104,3 +104,46 @@ Known limitations: Analysis processing is backed by fixture-orchestration-v0 syn
 Migration or deployment steps: Ensure Redis container is running and accessible via REDIS_URL. Outbox dispatcher and worker processes run alongside API.
 Next dependency: Phase 3 (P3-VEGETATION-SLICE).
 ```
+
+---
+
+## Phase 3: Vegetation Vertical Slice (`P3-VEGETATION-SLICE`)
+
+### Prompt
+Implement the end-to-end vegetation domain slice: Sentinel-2 processing pipeline, NDVI zero-denominator masking without data fabrication, median temporal compositing, 8-connected component polygonization with minimum area thresholding, artifact publication to MinIO with SHA256 validation, idempotent ChangeEvent extraction, and result manifest API (`GET /analyses/{id}/results` and `GET /analyses/{id}/events`).
+
+### Thinking
+- **Scientific Integrity & Zero Data Fabrication (`rules.md`)**: In optical satellite imagery, pixels where $(B4+B8) == 0$ or $(B4+B8) < 1e-4$ are unobserved or corrupt. Fabricating an NDVI value of 0.0 falsely implies bare soil or water when in reality no valid measurement exists. These pixels must be strictly masked out of valid pixel masks and completely excluded from composite reductions and spatial statistics.
+- **Artifact Publication Invariant (`systemdesign.md`)**: Artifact metadata must be persisted to the PostgreSQL `artifacts` table **only after** the object has been confirmed written to MinIO/S3 and its SHA256 checksum has been verified against the uploaded payload. If an upload fails or checksum mismatches, zero rows are inserted into the database.
+- **Idempotency & Re-runs**: Re-running event extraction on the same analysis layer must be idempotent. The service purges or updates prior attempt extractions atomically within the attempt boundary to avoid duplicate event multiplication.
+- **Result Manifest Completeness (`spec.md`)**: The response from `GET /analyses/{id}/results` must strictly adhere to the required fields (`analysis_id`, `status`, `configuration_id`, `input_snapshot`, `layers`, `provenance`, `warnings`, `attribution`, `event_count`, `events_url`).
+
+### Result (Official Handover Format)
+```text
+Task: P3-VEGETATION-SLICE
+Status: Complete and verified
+Files changed:
+  - backend/app/providers/base.py (ChangeProvider Protocol, LayerResult, AnalysisContext)
+  - backend/app/analysis/vegetation.py (SCL masking, safe zero-denominator exclusion, temporal median compositing, 8-connected BFS component polygonization, ha conversion)
+  - backend/app/providers/fixture_vegetation_provider.py (Deterministic synthetic Sentinel-2 fixture provider labeled synthetic)
+  - backend/app/services/artifact_service.py (Storage-first MinIO upload with SHA256 verification before DB registration)
+  - backend/app/services/event_extraction_service.py (Idempotent attempt-scoped ChangeEvent persistence with PostGIS polygons)
+  - backend/app/models/artifact.py (Added checksum, artifact_type, storage_uri convenience properties)
+  - backend/app/workers/analysis_worker.py (Wired Vegetation provider, MinIO artifact publisher, and event extraction service into worker flow)
+  - backend/app/api/v1/analyses.py (Added GET /analyses/{id}/results and GET /analyses/{id}/events)
+  - backend/app/api/v1/events.py (Added GET /events/{id})
+  - backend/tests/test_vegetation_analysis.py (6 tests: zero-denominator masking, SCL masking, temporal compositing, thresholding, small component filtering, no valid observations)
+  - backend/tests/test_artifact_publication.py (2 tests: upload with SHA256 verification and corruption rejection)
+  - backend/tests/test_event_extraction.py (2 tests: idempotent event persistence and metric-to-manifest consistency)
+  - backend/tests/test_result_manifest.py (1 test: spec.md field completeness and 409 when not ready)
+  - backend/tests/conftest.py (Container network DB resolution fallback)
+Behavior implemented: Implemented end-to-end vegetation change analysis with Sentinel-2 SCL cloud/shadow filtering, zero-denominator invalid support masking, temporal median compositing, 8-connected polygonization, storage-first artifact publication with SHA256 validation, idempotent ChangeEvent extraction, and full result manifest / GeoJSON event endpoints.
+Contract changes: Added GET /api/v1/analyses/{id}/results (ResultManifestResponse), GET /api/v1/analyses/{id}/events (GeoJSON FeatureCollection), and GET /api/v1/events/{id} (GeoJSON Feature).
+Tests executed: 41 automated tests in Docker with PostgreSQL 16 + PostGIS + Redis + MinIO (pytest tests/ -v).
+Test results: 41/41 passed in 10.59s; Ruff check 100% clean; Ruff format 100% clean; Mypy 0 errors in 52 source files.
+Provider checks executed: Synthetic Sentinel-2 provider labeled synthetic (Phase 0 real provider access pending).
+Known limitations: Earth Engine provider verification remains pending in docs/provider-verification-records/gee.md; execution runs through the validated FixtureVegetationProvider.
+Migration or deployment steps: MinIO bucket 'wildlife-artifacts' must exist or be created by ArtifactService._ensure_bucket_exists.
+Next dependency: Phase 4 (P4-ADDITIONAL-LAYERS).
+```
+

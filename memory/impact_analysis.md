@@ -59,3 +59,24 @@ This document records the architectural, data model, security, and operational i
 ### Regression Controls & Verification
 - **Test Coverage**: 30 automated tests in PostgreSQL 16 + PostGIS + Redis Docker environment covering input validation, idempotency, lifecycle transitions, heartbeat lease extensions, worker crash recovery, and fencing token rejection.
 
+---
+
+## Phase 3: Vegetation Vertical Slice
+
+### Architectural & Scientific Impact
+- **Decoupled Geospatial Core**: Algorithms for NDVI computation, cloud filtering, compositing, and connected components (`app/analysis/vegetation.py`) are pure numeric Python functions decoupled from FastAPI, database, and specific cloud providers.
+- **Strict Scientific Integrity (Zero-Data Fabrication)**: Prohibited default zeros for corrupt/unobserved satellite pixels. Zero-denominator pixels ($(B4+B8) < 1e-4$) are explicitly masked out of the valid observation mask rather than smoothed or imputed as "no change".
+- **Storage-First Artifact Publication**: Invariant enforced in `ArtifactService`: object storage writes and SHA256 integrity verification must succeed prior to any database row persistence.
+
+### Data Model & Persistence Impact
+- **PostGIS Polygon Persistence**: Change events store polygon boundaries in WGS84 (`SRID=4326`) with GiST index support.
+- **Idempotent Attempt-Scoped Persistence**: Event extraction clears prior attempt artifacts and commits events in a single transaction, preventing duplication across re-runs.
+- **Artifact Convenience Properties**: `Artifact` model exposes `checksum`, `artifact_type`, and `storage_uri` properties while preserving underlying column schemas (`checksum_sha256`, `metadata`).
+
+### Security & Operational Impact
+- **Object Storage Isolation**: Artifacts are scoped to `analysis_id/attempt_id/filename` in MinIO/S3, eliminating namespace collisions.
+- **Contractual Integrity**: `GET /analyses/{id}/results` returns 409 Conflict (`ANALYSISNOTREADY`) if polled prior to terminal completion.
+
+### Regression Controls & Verification
+- **Test Coverage**: 41 consolidated automated tests in Docker covering SCL masking, zero-denominator exclusion, temporal compositing, 8-connected polygonization, MinIO SHA256 verification, corrupt artifact write rejection, idempotent event extraction, and result manifest spec compliance.
+

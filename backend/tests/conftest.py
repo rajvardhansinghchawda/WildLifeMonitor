@@ -12,7 +12,10 @@ os.environ["APP_ENV"] = "development"
 os.environ["AUTH_MODE"] = "development"
 TEST_DB_URL = os.environ.get(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/wildlife",
+    os.environ.get(
+        "DATABASE_URL",
+        "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/wildlife",
+    ),
 )
 os.environ["DATABASE_URL"] = TEST_DB_URL
 

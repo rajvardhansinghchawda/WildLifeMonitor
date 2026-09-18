@@ -1,12 +1,19 @@
 import uuid
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response, status
+from geoalchemy2.shape import to_shape
+from shapely.geometry import mapping
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
+from app.core.exceptions import ConflictException
 from app.core.security import WorkspaceContext, require_role
 from app.db.session import get_db
+from app.models.analysis import Analysis
+from app.models.event import ChangeEvent
 from app.models.workspace import RoleEnum
 from app.schemas.analysis import (
     AnalysisCreateRequest,
@@ -78,12 +85,7 @@ async def cancel_analysis(
     context: WorkspaceContext = Depends(require_role(RoleEnum.ANALYST)),
     db: AsyncSession = Depends(get_db),
 ):
-    """Request cooperative cancellation for an active analysis.
-
-    Returns:
-    - 202 Accepted if cancellation was requested while queued or running
-    - 409 Conflict if analysis is already in a terminal state
-    """
+    """Request cooperative cancellation for an active analysis."""
     try:
         parsed_id = uuid.UUID(analysis_id)
     except ValueError:
@@ -100,32 +102,184 @@ async def cancel_analysis(
     return {"message": "Cancellation successfully requested for analysis."}
 
 
-@router.get(
-    "/{analysis_id}/results",
-    response_model=ResultManifestResponse,
-    status_code=status.HTTP_501_NOT_IMPLEMENTED,
-)
+@router.get("/{analysis_id}/results", response_model=ResultManifestResponse)
 async def get_analysis_results(
     analysis_id: str,
     context: WorkspaceContext = Depends(require_role(RoleEnum.VIEWER)),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Stub for result manifest retrieval (implemented in Phase 3)."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Result manifests implemented in Phase 3.",
+    """Retrieve result manifest per spec.md required fields."""
+    try:
+        parsed_id = uuid.UUID(analysis_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Invalid analysis identifier."
+        )
+
+    query = (
+        select(Analysis)
+        .options(
+            selectinload(Analysis.layers),
+            selectinload(Analysis.artifacts),
+            selectinload(Analysis.events),
+        )
+        .where(
+            Analysis.id == parsed_id,
+            Analysis.workspace_id == uuid.UUID(context.workspace_id),
+        )
+    )
+    result = await db.execute(query)
+    analysis = result.scalar_one_or_none()
+    if not analysis:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Analysis not found.")
+
+    terminal_statuses = {"succeeded", "partial", "failed"}
+    if analysis.status not in terminal_statuses:
+        raise ConflictException(
+            error_code="ANALYSISNOTREADY",
+            message=f"Analysis '{analysis_id}' is not ready yet (current status: '{analysis.status}').",
+            details={"status": str(analysis.status)},
+        )
+
+    # Compile layers and artifacts
+    layers_data: List[Dict[str, Any]] = []
+    for layer in analysis.layers:
+        layer_artifacts = [
+            {
+                "id": str(art.id),
+                "artifact_type": art.artifact_type,
+                "storage_uri": art.storage_uri,
+                "checksum": art.checksum,
+            }
+            for art in analysis.artifacts
+            if str(layer.layer_type) in art.artifact_type
+        ]
+        layers_data.append(
+            {
+                "type": layer.layer_type,
+                "status": layer.status,
+                "quality_label": layer.quality_label,
+                "metrics": layer.metrics or {},
+                "method_version": layer.method_version,
+                "artifacts": layer_artifacts,
+            }
+        )
+
+    input_snapshot = {
+        "aoi": analysis.aoi_snapshot,
+        "baseline": {"start": str(analysis.baseline_start), "end": str(analysis.baseline_end)},
+        "comparison": {
+            "start": str(analysis.comparison_start),
+            "end": str(analysis.comparison_end),
+        },
+        "layers": analysis.requested_layers,
+    }
+
+    provenance = {
+        "sources": ["Sentinel-2 L2A (synthetic fixture)"],
+        "method_versions": {layer.layer_type: layer.method_version for layer in analysis.layers},
+        "attribution": "Synthetic Sentinel-2 L2A fixture — not real observations",
+        "effective_observations": {"baseline": 3, "comparison": 3},
+    }
+
+    attribution = {
+        "vegetation": "Copernicus Sentinel data [2024-2025] processed via synthetic fixture",
+    }
+
+    return ResultManifestResponse(
+        analysis_id=str(analysis.id),
+        status=str(analysis.status),
+        configuration_id=str(analysis.configuration_id),
+        input_snapshot=input_snapshot,
+        layers=layers_data,
+        provenance=provenance,
+        warnings=[],
+        attribution=attribution,
+        event_count=len(analysis.events),
+        events_url=f"{settings.API_PREFIX}/analyses/{analysis.id}/events",
     )
 
 
-@router.get("/{analysis_id}/events", status_code=status.HTTP_501_NOT_IMPLEMENTED)
+@router.get("/{analysis_id}/events")
 async def get_analysis_events(
     analysis_id: str,
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=100),
     context: WorkspaceContext = Depends(require_role(RoleEnum.VIEWER)),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Stub for paginated events retrieval (implemented in Phase 3/5)."""
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Events retrieval implemented in Phase 3.",
+    """Retrieve paginated change events for an analysis as a GeoJSON FeatureCollection."""
+    try:
+        parsed_id = uuid.UUID(analysis_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Invalid analysis identifier."
+        )
+
+    offset = (page - 1) * page_size
+
+    # Verify analysis belongs to workspace
+    analysis_query = select(Analysis).where(
+        Analysis.id == parsed_id,
+        Analysis.workspace_id == uuid.UUID(context.workspace_id),
     )
+    analysis_res = await db.execute(analysis_query)
+    if not analysis_res.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Analysis not found.")
+
+    count_query = select(func.count(ChangeEvent.id)).where(
+        ChangeEvent.analysis_id == parsed_id,
+        ChangeEvent.workspace_id == uuid.UUID(context.workspace_id),
+    )
+    count_res = await db.execute(count_query)
+    total_count = count_res.scalar_one() or 0
+
+    events_query = (
+        select(ChangeEvent)
+        .where(
+            ChangeEvent.analysis_id == parsed_id,
+            ChangeEvent.workspace_id == uuid.UUID(context.workspace_id),
+        )
+        .order_by(ChangeEvent.created_at.asc())
+        .offset(offset)
+        .limit(page_size)
+    )
+    events_res = await db.execute(events_query)
+    events = list(events_res.scalars().all())
+
+    features = []
+    for evt in events:
+        evt_any: Any = evt
+        shapely_geom = to_shape(evt_any.geom)
+        features.append(
+            {
+                "type": "Feature",
+                "id": str(evt_any.id),
+                "geometry": dict(mapping(shapely_geom)),
+                "properties": {
+                    "analysis_id": str(evt_any.analysis_id),
+                    "change_type": evt_any.change_type,
+                    "affected_area_ha": evt_any.affected_area_ha,
+                    "mean_ndvi_change": evt_any.mean_ndvi_change,
+                    "valid_pixel_fraction": evt_any.valid_pixel_fraction,
+                    "quality_label": evt_any.quality_label,
+                    "source_confidence": evt_any.source_confidence,
+                    "priority_score": evt_any.priority_score,
+                    "priority_method_version": evt_any.priority_method_version,
+                    "status": evt_any.status,
+                    "method_version": evt_any.method_version,
+                    "record_version": evt_any.record_version,
+                },
+            }
+        )
+
+    return {
+        "type": "FeatureCollection",
+        "features": features,
+        "total_count": total_count,
+        "page": page,
+        "page_size": page_size,
+    }
 
 
 @router.get("/{analysis_id}/layers/{layer_id}/access", status_code=status.HTTP_501_NOT_IMPLEMENTED)

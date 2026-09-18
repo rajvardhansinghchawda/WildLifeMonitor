@@ -42,3 +42,18 @@ class Artifact(Base):
     )
 
     analysis = relationship("Analysis", back_populates="artifacts")
+
+    @property
+    def checksum(self) -> str:
+        return str(self.checksum_sha256)
+
+    @property
+    def artifact_type(self) -> str:
+        if isinstance(self.artifact_metadata, dict):
+            return str(self.artifact_metadata.get("artifact_type", "unknown"))
+        return "unknown"
+
+    @property
+    def storage_uri(self) -> str:
+        from app.core.config import settings
+        return f"s3://{settings.OBJECT_STORAGE_BUCKET}/{self.object_key}"

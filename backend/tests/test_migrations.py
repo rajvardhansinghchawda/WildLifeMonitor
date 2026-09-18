@@ -8,7 +8,10 @@ from sqlalchemy.ext.asyncio import create_async_engine
 
 TEST_DB_URL = os.environ.get(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/wildlife",
+    os.environ.get(
+        "DATABASE_URL",
+        "postgresql+asyncpg://postgres:postgrespassword@localhost:5432/wildlife",
+    ),
 )
 
 

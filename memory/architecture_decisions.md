@@ -58,3 +58,19 @@ This document records the foundational architecture decisions, rationale, trade-
 - **Decision:** Implement cooperative cancellation where `POST /api/v1/analyses/{id}/cancel` sets `cancel_requested = True` in PostgreSQL and returns 202 Accepted (or 409 if terminal). Workers inspect this flag before and between layer processing steps to halt cleanly. For idempotency, the API caches `Idempotency-Key` along with the request payload snapshot; matching requests replay the original 202 response, while divergent payloads with the same key return 409 Conflict (`IDEMPOTENCYCONFLICT`).
 - **Consequences:** Responsive cancellation without abrupt thread termination; zero duplicate job creation from client retries; robust idempotency semantics.
 
+---
+
+## ADR-008: Zero Data Fabrication in Spectral Indices Masking
+- **Status:** Accepted
+- **Context:** `rules.md` mandates zero data fabrication in scientific calculations. In optical satellite observations (e.g. Sentinel-2), pixels where $(B4 + B8) == 0$ or $(B4 + B8) < 1e-4$ are unobserved, corrupt, or invalid. Setting NDVI to 0.0 falsely implies bare soil or open water when no observation exists.
+- **Decision:** Explicitly mask zero-denominator pixels out of the valid pixel support array (`valid_mask`). Never smooth, interpolate, or set them to 0.0. Exclude invalid pixels entirely from composite reductions (`np.nanmedian`) and layer mean calculations.
+- **Consequences:** Scientifically sound metrics; zero artificial vegetation change reports; transparent valid pixel fraction reporting.
+
+---
+
+## ADR-009: Storage-First Checksummed Artifact Registration
+- **Status:** Accepted
+- **Context:** `systemdesign.md` requires that artifact metadata in the database reflect only durable, accessible objects in object storage. Writing database records before upload completion risks dangling references if network or write failures occur.
+- **Decision:** In `ArtifactService`, upload binary payloads to MinIO/S3 and verify SHA256 integrity and byte length before executing any database `INSERT` into the `artifacts` table. If storage write fails or checksum mismatches, abort immediately with `ArtifactPublicationError` without creating a database record.
+- **Consequences:** Perfect consistency between object storage and relational database metadata; zero orphaned or corrupt artifact rows.
+

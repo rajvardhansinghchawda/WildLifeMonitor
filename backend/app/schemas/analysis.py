@@ -45,7 +45,9 @@ class ResultManifestResponse(BaseModel):
     analysis_id: str
     status: str
     configuration_id: str
+    input_snapshot: Optional[Dict[str, Any]] = None
     layers: List[Dict[str, Any]] = Field(default_factory=list)
+    provenance: Dict[str, Any] = Field(default_factory=dict)
     warnings: List[Dict[str, Any]] = Field(default_factory=list)
     attribution: Dict[str, str] = Field(default_factory=dict)
     event_count: int = 0

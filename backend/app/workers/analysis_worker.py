@@ -2,7 +2,8 @@ import asyncio
 import json
 import logging
 import uuid
-from typing import Optional
+from datetime import date
+from typing import Any, Dict, Optional, cast
 
 import redis.asyncio as aioredis
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,9 +12,13 @@ from app.core.config import settings
 from app.core.exceptions import FencingTokenExpiredError
 from app.db.session import async_session_factory
 from app.models.analysis import JobStatusEnum, LayerStatusEnum
+from app.providers.base import AnalysisContext
 from app.providers.fixture_processor import FixtureProcessor
+from app.providers.fixture_vegetation_provider import FixtureVegetationProvider
 from app.repositories.analysis_repository import AnalysisRepository
 from app.repositories.job_attempt_repository import JobAttemptRepository
+from app.services.artifact_service import ArtifactService
+from app.services.event_extraction_service import EventExtractionService
 from app.workers.dispatcher import REDIS_ANALYSES_QUEUE
 
 logger = logging.getLogger(__name__)
@@ -34,6 +39,9 @@ class AnalysisWorker:
         self.analysis_repo = AnalysisRepository()
         self.attempt_repo = JobAttemptRepository()
         self.fixture_processor = FixtureProcessor()
+        self.vegetation_provider = FixtureVegetationProvider()
+        self.artifact_service = ArtifactService()
+        self.event_service = EventExtractionService()
 
     async def execute_job_message(
         self,
@@ -142,16 +150,65 @@ class AnalysisWorker:
                 return True
 
             # Process each requested layer using deterministic fixture processor
+            # Process each requested layer using appropriate provider and publish artifacts
             for layer in analysis.layers:
-                layer_output = self.fixture_processor.process_layer(
-                    analysis=analysis,
-                    attempt=attempt,
-                    layer_type=layer.layer_type,
-                )
-                layer.status = layer_output["status"]
-                layer.quality_label = layer_output["quality_label"]
-                layer.metrics = layer_output["metrics"]
-                layer.method_version = layer_output["method_version"]
+                if layer.layer_type == "vegetation":
+                    context = AnalysisContext(
+                        analysis_id=cast(uuid.UUID, analysis.id),
+                        attempt_id=cast(uuid.UUID, attempt.id),
+                        workspace_id=cast(uuid.UUID, analysis.workspace_id),
+                        aoi=cast(Dict[str, Any], analysis.aoi_snapshot),
+                        baseline_start=cast(date, analysis.baseline_start),
+                        baseline_end=cast(date, analysis.baseline_end),
+                        comparison_start=cast(date, analysis.comparison_start),
+                        comparison_end=cast(date, analysis.comparison_end),
+                        configuration_id=str(analysis.configuration_id),
+                    )
+                    layer_result = await self.vegetation_provider.analyze(context)
+                    layer.status = layer_result.status  # type: ignore[assignment]
+                    layer.quality_label = layer_result.quality_label  # type: ignore[assignment]
+                    layer.metrics = layer_result.metrics  # type: ignore[assignment]
+                    layer.method_version = layer_result.method_version  # type: ignore[assignment]
+
+                    if layer_result.status == "ready":
+                        # Publish artifacts to object storage with SHA256 validation
+                        mock_tif_bytes = b"II*\x00\x08\x00\x00\x00" + b"\x00" * 100
+                        manifest_payload = {
+                            "analysis_id": str(analysis.id),
+                            "attempt_id": str(attempt.id),
+                            "layer_type": "vegetation",
+                            "method_version": layer_result.method_version,
+                            "metrics": layer_result.metrics,
+                            "provenance": layer_result.provenance,
+                        }
+                        await self.artifact_service.publish_layer_manifest_and_raster(
+                            session=session,
+                            analysis_id=cast(uuid.UUID, analysis.id),
+                            attempt_id=cast(uuid.UUID, attempt.id),
+                            layer_type="vegetation",
+                            manifest_data=manifest_payload,
+                            raster_bytes=mock_tif_bytes,
+                        )
+
+                        # Persist ChangeEvents idempotently
+                        await self.event_service.persist_events_idempotent(
+                            session=session,
+                            workspace_id=cast(uuid.UUID, analysis.workspace_id),
+                            analysis_id=cast(uuid.UUID, analysis.id),
+                            layer_id=cast(uuid.UUID, layer.id),
+                            raw_events=layer_result.events,
+                            method_version=layer_result.method_version,
+                        )
+                else:
+                    layer_output = self.fixture_processor.process_layer(
+                        analysis=analysis,
+                        attempt=attempt,
+                        layer_type=layer.layer_type,
+                    )
+                    layer.status = layer_output["status"]  # type: ignore[assignment]
+                    layer.quality_label = layer_output["quality_label"]  # type: ignore[assignment]
+                    layer.metrics = layer_output["metrics"]  # type: ignore[assignment]
+                    layer.method_version = layer_output["method_version"]  # type: ignore[assignment]
 
             # Fencing Token Validation before publication
             is_token_valid = await self.attempt_repo.validate_fencing_token(
