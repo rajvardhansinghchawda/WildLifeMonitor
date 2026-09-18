@@ -108,4 +108,28 @@ This document records the foundational architecture decisions, rationale, trade-
   2. Implement keyset cursor pagination on `GET /api/v1/analyses/{id}/events` using the composite index `events_priority_idx` (`workspace_id, analysis_id, priority_score DESC NULLS LAST, id DESC`). Cursor encodes `(last_priority_score, last_id)`, providing $O(1)$ indexed seek time per page and completely stable traversals without application-side sorting.
 - **Consequences:** Concurrency-safe analyst collaboration; scalable event feed delivery guaranteed to meet API latency SLAs.
 
+---
+
+### ADR-014: Separation of Idempotency Keys from Scientific Computation Cache with Canonical Ring Normalization
+- **Status:** Accepted (Phase 6)
+- **Context:** `dsabackendoptimisation.md` explicitly mandates keeping request-level submission idempotency keys strictly separated from scientific computation cache keys. Idempotency is a short-lived, tenant-scoped mechanism (`idem:{workspace_id}:{idempotency_key}`) preventing duplicate pipeline triggers during network retries. Scientific caching (`sci:{composite_hash}`) is an algorithmic optimization enabling reusable layer outputs across requests with identical inputs.
+- **Decision:**
+  1. Implement `IdempotencyStore` for request submissions using atomic `SET ... NX` reservation and in-flight polling with conflict detection on payload mismatch (409 `IDEMPOTENCYCONFLICT`).
+  2. Implement `ScientificCache` keyed by a deterministic SHA-256 hash across all 13 variance factors (workspace, canonical AOI hash, baseline/comparison date bounds, requested layers, dataset revision, method version, thresholds, masks, CRS, resolution).
+  3. Implement canonical polygon ring normalization in `canonicalize_ring`: exterior rings are strictly oriented counter-clockwise (CCW) and interior rings (holes) clockwise (CW), with coordinates rotated so the lexicographically smallest coordinate is the first vertex. No coordinate rounding is performed to prevent scientific boundary distortion.
+- **Consequences:** Prevents cache collisions between distinct algorithmic configurations; guarantees consistent cache keys regardless of how clients winding/order polygon vertices; protects downstream workers from thundering herd duplicates.
+
+---
+
+### ADR-015: Cluster-Wide Distributed Rate Limiting and Shared Token-Refresh Locking via Redis
+- **Status:** Accepted (Phase 6)
+- **Context:** When running multiple worker processes and API containers across a cluster, in-process mutexes or semaphores fail to enforce global rate limits on upstream geospatial data providers (Copernicus CDSE, Microsoft Planetary Computer, Overpass API). Furthermore, token expiry under concurrent load can trigger "refresh storms" where dozens of workers concurrently attempt to refresh credentials.
+- **Decision:**
+  1. Implement `ProviderRateLimiter` using a Redis sorted set (`ratelimit:sem:{provider}`) to track active leases across all worker processes. Leases auto-expire via scoring against UNIX timestamp to ensure dead workers do not leak slots.
+  2. Implement a distributed token refresh lock (`ratelimit:refresh_lock:{provider}`) via Redis `SET ... NX EX`. Only the worker holding the lock performs credential renewal; all others wait or use the refreshed credentials once released.
+  3. Enforce exponential backoff with random jitter honoring `Retry-After` headers, and reduce concurrency rather than increasing retry aggressiveness under sustained provider throttling.
+  4. Immediately fail fast without retries on non-retryable errors (`INVALIDCREDENTIALS`, `INVALIDGEOMETRY`, `UNSUPPORTEDCOVERAGE`).
+- **Consequences:** Prevents provider rate-limit bans across distributed worker nodes; eliminates token refresh storms; respects upstream backoff directives.
+
+
 

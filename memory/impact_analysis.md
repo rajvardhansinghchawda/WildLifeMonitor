@@ -123,4 +123,32 @@ This document records the architectural, data model, security, and operational i
 ### Regression Controls & Verification
 - **Test Coverage**: 63 consolidated automated tests in Docker covering verification state transitions, mandatory notes on dismissal/inconclusive, optimistic locking conflicts (409), priority calculation and null propagation, keyset pagination stability and ordering over 120 synthetic events, layer access readiness (409 vs 200), and cross-workspace isolation.
 
+---
+
+## Phase 6: Reliability & Hardening
+
+### Architectural & Scientific Impact
+- **Dual Redis Caching Mechanisms**: Clear separation between `IdempotencyStore` (`idem:{workspace_id}:{idempotency_key}`) which acts as a transient request gate, and `ScientificCache` (`sci:{composite_hash}`) which caches reusable analysis layer outputs across identical scientific parameters.
+- **Canonical Polygon Ring Normalization**: Exterior rings are canonically oriented counter-clockwise (CCW) and interior holes clockwise (CW) with starting vertex rotated to the lexicographically minimum coordinate. Eliminates hashing divergence caused by arbitrary coordinate winding without destructive coordinate rounding.
+- **Scientific Variance Integrity**: The scientific cache key strictly binds all 13 variance factors: workspace scope, canonical AOI hash, baseline/comparison dates, requested layers, dataset revision, method version, threshold config, mask config, CRS, and resolution.
+- **Deployment-Wide Concurrency Limiting**: `ProviderRateLimiter` enforces provider-level execution caps cluster-wide using Redis sorted sets rather than local in-process semaphores, preventing API throttling from distributed workers.
+- **Single-Flight Token Refresh**: Shared Redis lock prevents credential refresh storms when tokens expire under heavy concurrent load.
+- **Fast-Fail on Non-Retryable Errors**: Immediate termination without retry for `INVALIDCREDENTIALS`, `INVALIDGEOMETRY`, `UNSUPPORTEDCOVERAGE`, preventing resource waste and log spam.
+
+### Data Model & Persistence Impact
+- **In-Flight Concurrency Synchronization**: `IdempotencyStore` utilizes atomic `SET ... NX` reservation combined with bounded polling on in-flight status, ensuring exactly one background analysis is created when duplicate requests arrive simultaneously.
+- **Automated Abandoned Artifact Cleanup**: `ArtifactCleanupService` queries and purges failed/cancelled attempt artifacts older than the retention grace period (24 hours) from object storage and database while strictly preserving published artifacts of succeeded analyses.
+
+### Security & Operational Impact
+- **Observability**: Prometheus `/metrics` endpoint exports all 8 metric families from `backendhandoverfile.md` (HTTP requests/duration, queue depth/age, job duration, provider latency/throttles, valid coverage fraction, cache hits/misses, worker heartbeat age, artifact publication failures).
+- **Secret Redaction**: Logging pipeline and test assertions verify sensitive credentials and bearer tokens never leak into captured logs.
+- **Disaster Recovery Validation**: Rehearsed and documented cold-restore drill (`docs/backup-restore-drill.md`) proving database snapshot and MinIO artifact restore readability.
+
+### Regression Controls & Verification
+- **Test Coverage**: 80 consolidated automated tests in Docker with PostgreSQL 16 + PostGIS + Redis + MinIO:
+  - Phase 6 unit tests (8 tests): ring canonicalization, hash stability, scientific cache storage, idempotency replay/conflict, provider semaphore/lock, non-retryable error handling, artifact cleanup, `/metrics` exposition.
+  - Benchmarks (5 tests): submission latency, cold/warm cache, concurrent duplicate submissions, status reads, cancellations.
+  - Security regressions (3 tests): secret redaction, attribution display, CORS policies.
+
+
 

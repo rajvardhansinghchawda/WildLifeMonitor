@@ -77,14 +77,15 @@ class PriorityService:
         # 3. Context calculation (proximity to configured pressure indicators)
         context: Optional[float] = None
         if context_distances is not None:
-            # Distances provided by context enrichment (e.g. nearest road/settlement km)
-            road_dist = context_distances.get("nearest_road_distance_km")
-            settlement_dist = context_distances.get("nearest_settlement_distance_km")
-            valid_dists = [d for d in [road_dist, settlement_dist] if d is not None]
-            if valid_dists:
-                min_dist = min(valid_dists)
+            # Distances in meters, as persisted from ContextEnrichmentService
+            # (app/services/context_enrichment_service.py: nearest_known_*_distance_m).
+            road_dist_m = context_distances.get("nearest_known_road_distance_m")
+            settlement_dist_m = context_distances.get("nearest_known_settlement_distance_m")
+            valid_dists_m = [d for d in [road_dist_m, settlement_dist_m] if d is not None]
+            if valid_dists_m:
+                min_dist_km = min(valid_dists_m) / 1000.0
                 # Closer pressure features = higher risk/priority (capped at 10km)
-                context = round(max(0.0, 1.0 - min(1.0, min_dist / 10.0)), 4)
+                context = round(max(0.0, 1.0 - min(1.0, min_dist_km / 10.0)), 4)
         elif pressure_indicators is not None:
             # Pressure indicators explicitly configured in workspace
             evt_shapely = shape(event_geom_dict)
@@ -162,12 +163,26 @@ class PriorityService:
             shapely_geom = to_shape(evt_any.geom)
             geom_dict = shapely_geom.__geo_interface__
 
+            # Prefer the real per-event proximity data already computed by
+            # ContextEnrichmentService and persisted on the event row over the
+            # coarser workspace-level pressure_indicators fallback.
+            context_distances: Optional[Dict[str, float]] = None
+            if (
+                evt_any.nearest_known_road_distance_m is not None
+                or evt_any.nearest_known_settlement_distance_m is not None
+            ):
+                context_distances = {
+                    "nearest_known_road_distance_m": evt_any.nearest_known_road_distance_m,
+                    "nearest_known_settlement_distance_m": evt_any.nearest_known_settlement_distance_m,
+                }
+
             res = self.compute_priority(
                 event_geom_dict=geom_dict,
                 affected_area_ha=float(evt_any.affected_area_ha),
                 mean_ndvi_change=evt_any.mean_ndvi_change,
                 conservation_zones=conservation_zones,
                 pressure_indicators=pressure_indicators,
+                context_distances=context_distances,
             )
 
             evt_any.priority_score = res.priority_score

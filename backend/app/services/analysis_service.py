@@ -14,13 +14,22 @@ from app.schemas.analysis import (
     LayerStatusItem,
 )
 from app.services.analysis_validation import validate_date_windows, validate_geometry
+from app.services.idempotency_store import IdempotencyStore
+from app.services.scientific_cache import ScientificCache
 
 
 class AnalysisService:
     """Domain service orchestrating analysis lifecycle, validation, idempotency, and persistence."""
 
-    def __init__(self, analysis_repository: Optional[AnalysisRepository] = None):
+    def __init__(
+        self,
+        analysis_repository: Optional[AnalysisRepository] = None,
+        idempotency_store: Optional[IdempotencyStore] = None,
+        scientific_cache: Optional[ScientificCache] = None,
+    ):
         self.repo = analysis_repository or AnalysisRepository()
+        self.idempotency_store = idempotency_store or IdempotencyStore()
+        self.scientific_cache = scientific_cache or ScientificCache()
 
     async def submit_analysis(
         self,
@@ -47,11 +56,29 @@ class AnalysisService:
 
         # 3. Handle Idempotency-Key if provided
         if idempotency_key:
+            # Check Redis IdempotencyStore
+            payload_dict = {
+                "aoi": request.aoi,
+                "baseline_start": str(request.baseline.start),
+                "baseline_end": str(request.baseline.end),
+                "comparison_start": str(request.comparison.start),
+                "comparison_end": str(request.comparison.end),
+                "layers": request.layers,
+                "configuration_id": request.configuration_id,
+            }
+            cached_resp = await self.idempotency_store.get_or_reserve(
+                workspace_id=workspace_id,
+                idempotency_key=idempotency_key,
+                request_payload=payload_dict,
+            )
+            if cached_resp:
+                return AnalysisCreateResponse(**cached_resp), warnings
+
+            # Also check DB persistence repository
             existing = await self.repo.find_by_idempotency_key(
                 session, workspace_id, idempotency_key
             )
             if existing:
-                # Compare request parameters to detect conflicts
                 matches = (
                     existing.aoi_snapshot == request.aoi
                     and existing.baseline_start == request.baseline.start
@@ -62,7 +89,6 @@ class AnalysisService:
                     and existing.configuration_id == request.configuration_id
                 )
                 if matches:
-                    # Idempotent replay: return original response
                     response = AnalysisCreateResponse(
                         analysis_id=str(existing.id),
                         status=str(existing.status),
@@ -72,7 +98,6 @@ class AnalysisService:
                     )
                     return response, warnings
                 else:
-                    # Reusing same key with different body must return 409
                     raise ConflictException(
                         error_code="IDEMPOTENCYCONFLICT",
                         message="Idempotency key was previously used with a different request payload.",
@@ -116,6 +141,15 @@ class AnalysisService:
             status_url=f"{settings.API_PREFIX}/analyses/{analysis.id}",
             results_url=f"{settings.API_PREFIX}/analyses/{analysis.id}/results",
         )
+
+        if idempotency_key:
+            await self.idempotency_store.save_response(
+                workspace_id=workspace_id,
+                idempotency_key=idempotency_key,
+                request_payload=payload_dict,
+                response_data=response.model_dump(),
+            )
+
         return response, warnings
 
     async def get_analysis_status(

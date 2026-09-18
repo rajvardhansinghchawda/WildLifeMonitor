@@ -54,6 +54,10 @@ class ChangeEvent(Base):
     priority_score = Column(Float, nullable=True)
     priority_method_version = Column(String(50), nullable=True)
 
+    nearest_known_road_distance_m = Column(Float, nullable=True)
+    nearest_known_settlement_distance_m = Column(Float, nullable=True)
+    context_source = Column(String(100), nullable=True)
+
     status = Column(
         String(50), nullable=False, default=VerificationStatusEnum.PENDINGFIELDVERIFICATION.value
     )

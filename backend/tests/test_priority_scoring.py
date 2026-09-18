@@ -84,7 +84,7 @@ def test_priority_score_accurate_calculation_and_weights():
         affected_area_ha=10.0,
         mean_ndvi_change=-0.5,
         conservation_zones=[{"geometry": event_geom}],
-        context_distances={"nearest_road_distance_km": 0.0},
+        context_distances={"nearest_known_road_distance_m": 0.0},
     )
 
     assert result.components["magnitude"] == 1.0
@@ -106,7 +106,7 @@ def test_priority_score_accurate_calculation_and_weights():
                 }
             }
         ],
-        context_distances={"nearest_road_distance_km": 15.0},
+        context_distances={"nearest_known_road_distance_m": 15000.0},
     )
 
     assert result2.components["magnitude"] == 0.5
@@ -207,3 +207,81 @@ async def test_attach_priority_scores_in_database(
     assert evt.priority_score is not None
     assert evt.priority_score > 0.0
     assert evt.priority_method_version == "priority-v1"
+
+
+@pytest.mark.asyncio
+async def test_attach_priority_scores_uses_persisted_context_enrichment_distance(
+    db_session: AsyncSession,
+    test_workspace: uuid.UUID,
+):
+    """Regression: the 'context' component must be computed from the real per-event
+    nearest_known_road/settlement distances that ContextEnrichmentService persists on the
+    ChangeEvent row (app/services/context_enrichment_service.py), not only from a
+    Workspace.settings['pressure_indicators'] value that nothing else in the system sets.
+    Without this wiring, context (and therefore priority_score) is null for every event
+    unless an admin manually configures pressure_indicators, even when real proximity data
+    was already computed and stored for that event.
+    """
+    service = PriorityService()
+
+    analysis = Analysis(
+        id=uuid.uuid4(),
+        workspace_id=test_workspace,
+        status="running",
+        stage="finalizing",
+        configuration_id="mvp-v1",
+        requested_layers=["vegetation"],
+        aoi_snapshot={
+            "type": "Polygon",
+            "coordinates": [[[79.2, 21.6], [79.3, 21.6], [79.3, 21.7], [79.2, 21.6]]],
+        },
+        baseline_start=date(2024, 1, 1),
+        baseline_end=date(2024, 4, 1),
+        comparison_start=date(2025, 1, 1),
+        comparison_end=date(2025, 4, 1),
+        created_by="test-analyst",
+    )
+    db_session.add(analysis)
+
+    poly = Polygon(
+        [[79.24, 21.64], [79.241, 21.64], [79.241, 21.641], [79.24, 21.641], [79.24, 21.64]]
+    )
+
+    # Conservation zone configured (sensitivity=1.0), but no pressure_indicators configured.
+    ws = await db_session.get(Workspace, test_workspace)
+    assert ws is not None
+    ws.settings = {
+        "conservation_zones": [{"name": "Buffer Zone A", "geometry": poly.__geo_interface__}],
+    }
+
+    evt = ChangeEvent(
+        id=uuid.uuid4(),
+        workspace_id=test_workspace,
+        analysis_id=analysis.id,
+        geom=from_shape(poly, srid=4326),
+        change_type="vegetationlosscandidate",
+        affected_area_ha=2.0,
+        mean_ndvi_change=-0.25,
+        status="pendingfieldverification",
+        method_version="vegetation-v1",
+        record_version=1,
+        # Simulates ContextEnrichmentService having already run for this event.
+        nearest_known_road_distance_m=500.0,
+        nearest_known_settlement_distance_m=None,
+        context_source="cached_osm_overpass_v1",
+    )
+    db_session.add(evt)
+    await db_session.commit()
+
+    updated = await service.attach_priority_scores_to_events(
+        session=db_session,
+        analysis_id=analysis.id,
+        workspace_id=test_workspace,
+    )
+    assert updated == 1
+
+    await db_session.refresh(evt)
+    # A road only 500m away must NOT be treated as "missing context" -> null score,
+    # even though Workspace.settings has no pressure_indicators configured.
+    assert evt.priority_score is not None
+    assert evt.priority_score > 0.0

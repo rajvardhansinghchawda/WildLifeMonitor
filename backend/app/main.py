@@ -103,3 +103,13 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 # Mount root health probes (for container orchestrators) and API v1 routes
 app.include_router(root_health_router)
 app.include_router(api_v1_router, prefix=settings.API_PREFIX)
+
+
+@app.get("/metrics", tags=["Observability"], include_in_schema=False)
+async def metrics_endpoint():
+    """Prometheus exposition metrics endpoint per backendhandoverfile.md."""
+    from fastapi.responses import Response
+
+    from app.core.metrics import CONTENT_TYPE_LATEST, export_prometheus_metrics
+
+    return Response(content=export_prometheus_metrics(), media_type=CONTENT_TYPE_LATEST)

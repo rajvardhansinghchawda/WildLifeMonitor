@@ -36,6 +36,21 @@ class EventProperties(BaseModel):
     source_confidence: Optional[str] = None
     priority_score: Optional[float] = None
     priority_method_version: Optional[str] = None
+    nearest_known_road_distance_m: Optional[float] = Field(
+        None,
+        description=(
+            "Distance to the nearest known road in the cached context source. "
+            "Absence of a nearby feature in this source is not proof no road exists."
+        ),
+    )
+    nearest_known_settlement_distance_m: Optional[float] = Field(
+        None,
+        description=(
+            "Distance to the nearest known settlement in the cached context source. "
+            "Absence of a nearby feature in this source is not proof no settlement exists."
+        ),
+    )
+    context_source: Optional[str] = None
     status: str
     method_version: str
     record_version: int
