@@ -21,6 +21,8 @@ import {
   Radio,
   Shield,
   Users,
+  Sliders,
+  ArrowUpDown,
 } from 'lucide-react';
 
 
@@ -38,6 +40,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
       href: '/dashboard',
       icon: LayoutDashboard,
       badge: null,
+    },
+    {
+      name: 'Compare Slider',
+      href: '/compare',
+      icon: ArrowUpDown,
+      badge: 'LIVE',
+      badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
     },
     {
       name: 'Explore Map',
@@ -105,6 +114,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
       name: 'Members & RBAC',
       href: '/admin/members',
       icon: Users,
+      badge: null,
+    },
+    {
+      name: 'Scientific Tuning',
+      href: '/admin/settings',
+      icon: Sliders,
       badge: null,
     },
   ];

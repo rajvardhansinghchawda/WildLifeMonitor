@@ -4,8 +4,7 @@ from enum import Enum
 
 from geoalchemy2 import Geometry
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Index, Integer, String, desc
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
 from app.db.base import Base

@@ -87,11 +87,11 @@ export default function AdminTelemetryPage() {
             </Link>
 
             <Link
-              href="/settings"
+              href="/admin/settings"
               className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono flex items-center gap-1.5 transition-colors border border-slate-700"
             >
               <Settings className="w-3.5 h-3.5 text-amber-400" />
-              <span>Workspace Settings</span>
+              <span>Scientific Tuning</span>
             </Link>
 
             <button

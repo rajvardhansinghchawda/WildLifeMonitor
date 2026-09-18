@@ -17,8 +17,8 @@ from app.models.event import ChangeEvent
 from app.models.workspace import Workspace
 from app.schemas.portal import AreaSummary, Coordinates, HotspotItem
 from app.services.alert_service import event_severity
-from app.services.health_index import compute_health_index
 from app.services.analysis_validation import calculate_polygon_area_km2
+from app.services.health_index import compute_health_index
 
 TERMINAL_OK = ("succeeded", "partial")
 

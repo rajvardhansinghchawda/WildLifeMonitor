@@ -74,6 +74,8 @@ def _leaflet_bounds(aoi: Dict[str, Any]) -> List[List[float]]:
 
 
 def _ee_range(start: date, end: date) -> Tuple[ee.Date, ee.Date]:
+    if isinstance(start, ee.Date):  # already server-side (area timelines)
+        return start, end  # type: ignore[return-value]
     return ee.Date(start.isoformat()), ee.Date(end.isoformat())  # end exclusive in EE
 
 

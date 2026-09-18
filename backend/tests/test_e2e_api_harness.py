@@ -4,27 +4,62 @@ Exercises and validates all platform endpoints across all 3 portals:
 Public, Investigator, and Admin.
 """
 
-import json
 import uuid
+
 import pytest
-from httpx import ASGITransport, AsyncClient
-from app.main import app
-from app.models.workspace import RoleEnum
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.workspace import Membership, RoleEnum, Workspace
+
+
+@pytest.fixture
+async def admin_workspace(db_session: AsyncSession):
+    ws_id = uuid.uuid4()
+    ws = Workspace(
+        id=ws_id,
+        name="E2E Harness Workspace",
+        settings={
+            "priority_weights": {"magnitude": 0.50, "sensitivity": 0.30, "context": 0.20},
+            "context_buffer_km": 5.0,
+        },
+    )
+    db_session.add(ws)
+    await db_session.flush()
+
+    admin_mem = Membership(
+        id=uuid.uuid4(),
+        workspace_id=ws_id,
+        user_id="test-admin-actor",
+        role=RoleEnum.ADMIN.value,
+    )
+    analyst_mem = Membership(
+        id=uuid.uuid4(),
+        workspace_id=ws_id,
+        user_id="test-field-analyst",
+        role=RoleEnum.ANALYST.value,
+    )
+    db_session.add_all([admin_mem, analyst_mem])
+    await db_session.commit()
+    return ws_id
 
 
 @pytest.mark.asyncio
-async def test_e2e_full_api_surface(client: AsyncClient, db_session):
+async def test_e2e_full_api_surface(client: AsyncClient, db_session, admin_workspace: uuid.UUID):
     """Test every major API endpoint across all system domains."""
     headers = {
-        "Authorization": "Bearer dev-user:admin-01",
-        "X-Workspace-ID": "00000000-0000-0000-0000-000000000001",
+        "Authorization": "Bearer dev-user:test-admin-actor",
+        "X-Workspace-ID": str(admin_workspace),
     }
 
     # 1. Root & Health
-    resp = await client.get("/health")
-    assert resp.status_code == 200, f"/health returned {resp.status_code}"
-    health_data = resp.json()
-    assert health_data["status"] in ["healthy", "degraded", "operational"]
+    resp_live = await client.get("/health/live")
+    assert resp_live.status_code == 200, f"/health/live returned {resp_live.status_code}"
+    assert resp_live.json()["status"] == "ok"
+
+    resp_ready = await client.get("/health/ready")
+    assert resp_ready.status_code == 200, f"/health/ready returned {resp_ready.status_code}"
+    assert resp_ready.json()["status"] in ["healthy", "ok"]
 
     # 2. Public Portal Endpoints (Unauthenticated)
     pub_overview = await client.get("/api/v1/public/overview")
@@ -33,7 +68,7 @@ async def test_e2e_full_api_surface(client: AsyncClient, db_session):
 
     pub_demos = await client.get("/api/v1/public/demonstrations")
     assert pub_demos.status_code == 200
-    assert isinstance(pub_demos.json(), list)
+    assert "items" in pub_demos.json()
 
     pub_events = await client.get("/api/v1/public/demonstrations/pench-tiger-reserve/events")
     assert pub_events.status_code in [200, 404]
@@ -54,7 +89,7 @@ async def test_e2e_full_api_surface(client: AsyncClient, db_session):
 
     # Test PATCH member role
     adm_patch = await client.patch(
-        "/api/v1/admin/members/ranger-marcus",
+        "/api/v1/admin/members/test-field-analyst",
         json={"role": "ANALYST", "is_active": True},
         headers=headers,
     )

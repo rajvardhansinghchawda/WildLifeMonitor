@@ -7,6 +7,7 @@ from shapely.geometry import mapping
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.exceptions import NotFoundException
 from app.core.security import ReadScope, get_read_scope
 from app.db.session import get_db
@@ -19,6 +20,7 @@ from app.schemas.portal import (
     TimelineResponse,
 )
 from app.services import portal_queries as pq
+from app.services.firms import get_active_fires_for_area
 
 router = APIRouter(prefix="/areas", tags=["Areas"])
 
@@ -138,7 +140,7 @@ async def get_area_statistics(
     scope: ReadScope = Depends(get_read_scope),
     db: AsyncSession = Depends(get_db),
 ):
-    """Real Earth Engine land-cover statistics plus the indicative Habitat Health Index."""
+    """Real Earth Engine land-cover statistics plus NASA FIRMS active fire count and indicative Habitat Health Index."""
     area = await _get_area(db, area_ref)
     stats = dict(area.statistics or {})  # type: ignore[arg-type]
     latest = (await pq.latest_analyses_by_area(db, scope.workspace_ids, [area.id])).get(area.id)
@@ -147,7 +149,14 @@ async def get_area_statistics(
     unavailable = []
     if not stats:
         unavailable.append("Land-cover statistics have not been computed for this area yet.")
-    unavailable.append("Active fire count requires a NASA FIRMS key (FIRMS_MAP_KEY not configured).")
+
+    active_fires: Optional[int] = None
+    if settings.FIRMS_MAP_KEY:
+        firms_data = await get_active_fires_for_area(area, days=3)
+        active_fires = firms_data.get("count", 0)
+    else:
+        unavailable.append("Active fire count requires a NASA FIRMS key (FIRMS_MAP_KEY not configured).")
+
     return AreaStatistics(
         area_id=str(area.id),
         area_name=str(area.name),
@@ -162,10 +171,22 @@ async def get_area_statistics(
         last_cloud_free_pass=stats.get("last_cloud_free_pass"),
         latest_analysis_id=str(latest.id) if latest else None,
         vegetation_loss_candidate_ha=veg.get("vegetationlossareaha"),
-        active_fires_count=None,
+        active_fires_count=active_fires,
         health_index=pq.health_for_analysis(latest),
         unavailable=unavailable,
     )
+
+
+@router.get("/{area_ref}/fires")
+async def get_area_fires(
+    area_ref: str,
+    days: int = Query(3, ge=1, le=10, description="Window in days to query from NASA FIRMS"),
+    _scope: ReadScope = Depends(get_read_scope),
+    db: AsyncSession = Depends(get_db),
+):
+    """Real thermal anomalies / active fire detections from NASA FIRMS satellites (VIIRS / MODIS)."""
+    area = await _get_area(db, area_ref)
+    return await get_active_fires_for_area(area, days=days)
 
 
 @router.get("/{area_ref}/timeline", response_model=TimelineResponse)
@@ -183,7 +204,13 @@ async def get_area_timeline(
         computed_at=pq.iso(area.timeline_computed_at),  # type: ignore[arg-type]
         source=payload.get("source"),
         scale_m=payload.get("scale_m"),
-        notes=payload.get("notes", ["Timeline has not been computed for this area yet."])
-        if not payload.get("points")
-        else payload.get("notes", []),
+        notes=(
+            payload.get("notes", [])
+            + [
+                "Monsoon months (Jun–Sep) have few clear observations; Dynamic World water "
+                "and NDVI values there are unreliable and may understate surface water."
+            ]
+            if payload.get("points")
+            else ["Timeline has not been computed for this area yet."]
+        ),
     )

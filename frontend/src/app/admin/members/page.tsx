@@ -15,6 +15,7 @@ import {
   RefreshCw,
   ChevronLeft,
   Search,
+  Settings,
 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import {
@@ -113,6 +114,14 @@ export default function AdminMembersPage() {
           </div>
 
           <div className="flex items-center gap-3">
+            <Link
+              href="/admin/settings"
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono flex items-center gap-1.5 transition-colors border border-slate-700"
+            >
+              <Settings className="w-3.5 h-3.5 text-amber-400" />
+              <span>Scientific Tuning</span>
+            </Link>
+
             <button
               onClick={fetchMembers}
               className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700"

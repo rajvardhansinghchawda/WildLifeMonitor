@@ -8,6 +8,7 @@ from datetime import date
 from typing import Any, Dict, List
 
 import ee
+from shapely.geometry import shape
 
 from app.providers.gee.client import ensure_initialized
 from app.providers.gee.pipeline import (
@@ -16,8 +17,6 @@ from app.providers.gee.pipeline import (
     _region,
     _s2_ndvi_collection,
 )
-from shapely.geometry import shape
-
 from app.services.analysis_validation import calculate_polygon_area_km2
 
 DW_CLASSES = [
@@ -101,15 +100,16 @@ def compute_timeline(aoi: Dict[str, Any], end: date, months: int = 24) -> Dict[s
         m0 = ee.Date(d)
         m1 = m0.advance(1, "month")
         ndvi = _s2_ndvi_collection(region, m0, m1)  # type: ignore[arg-type]
-        n_img = ndvi.median().rename("ndvi")
-        water = (
-            ee.ImageCollection(DW_COLLECTION)
-            .filterBounds(region)
-            .filterDate(m0, m1)
-            .select("water")
-            .mean()
-            .gte(0.5)
-            .rename("water")
+        empty_ndvi = ee.Image.constant(0).rename("ndvi").updateMask(ee.Image.constant(0))
+        n_img = ee.Image(
+            ee.Algorithms.If(ndvi.size().gt(0), ndvi.median().rename("ndvi"), empty_ndvi)
+        )
+        dw_m = (
+            ee.ImageCollection(DW_COLLECTION).filterBounds(region).filterDate(m0, m1).select("water")
+        )
+        empty_water = ee.Image.constant(0).rename("water").updateMask(ee.Image.constant(0))
+        water = ee.Image(
+            ee.Algorithms.If(dw_m.size().gt(0), dw_m.mean().gte(0.5).rename("water"), empty_water)
         )
         stack = n_img.addBands(water)
         vals = stack.reduceRegion(

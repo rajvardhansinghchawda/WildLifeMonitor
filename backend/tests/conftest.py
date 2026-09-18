@@ -11,6 +11,9 @@ from sqlalchemy.pool import NullPool
 os.environ["APP_ENV"] = "development"
 os.environ["AUTH_MODE"] = "development"
 os.environ["PROVIDER_MODE"] = "fixture"
+# Dedicated Redis logical DB so live daemons never consume test queue messages.
+_REDIS_BASE = os.environ.get("REDIS_URL", "redis://localhost:6379/0").rsplit("/", 1)[0]
+os.environ["REDIS_URL"] = _REDIS_BASE + "/15"
 
 _BASE_URL = os.environ.get(
     "DATABASE_URL",

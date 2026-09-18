@@ -7,7 +7,7 @@ per systemdesign.md, superpower.md, and rules.md.
 
 import datetime
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.security import WorkspaceContext, require_role
 from app.db.session import get_db
-from app.models.analysis import Analysis, AnalysisLayer, JobStatusEnum
+from app.models.analysis import Analysis
 from app.models.audit import AuditLog
 from app.models.user import User
 from app.models.workspace import Membership, RoleEnum, Workspace

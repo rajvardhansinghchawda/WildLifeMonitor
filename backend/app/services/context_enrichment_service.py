@@ -5,7 +5,6 @@ import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
-
 from shapely import STRtree
 from shapely.geometry import LineString, Point, shape
 from shapely.geometry.base import BaseGeometry

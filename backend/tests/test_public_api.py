@@ -1,8 +1,9 @@
 import datetime
 import uuid
+
 import pytest
-from httpx import AsyncClient
 from geoalchemy2.shape import from_shape
+from httpx import AsyncClient
 from shapely.geometry import box
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +28,7 @@ async def test_public_overview(client: AsyncClient):
 async def test_public_demonstrations_and_events(client: AsyncClient, db_session: AsyncSession):
     # Seed a test protected area and demonstration in the isolated test DB
     ws_id = uuid.uuid4()
-    workspace = Workspace(id=ws_id, name="Public Demo Test")
+    workspace = Workspace(id=ws_id, name="Public Demo Test", is_public=True)
     db_session.add(workspace)
 
     area_id = uuid.uuid4()
@@ -83,7 +84,7 @@ async def test_public_demonstrations_and_events(client: AsyncClient, db_session:
         change_type="vegetation_loss",
         affected_area_ha=12.5,
         mean_ndvi_change=-0.25,
-        priority_score=0.82,
+        priority_score=82.0,
         status=VerificationStatusEnum.PENDINGFIELDVERIFICATION.value,
         method_version="v1.0",
         nearest_known_road_distance_m=500.0,

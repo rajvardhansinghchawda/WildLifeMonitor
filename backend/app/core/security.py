@@ -1,3 +1,4 @@
+import time
 import uuid
 from dataclasses import dataclass
 from typing import Dict, List, Optional
@@ -233,12 +234,27 @@ class ReadScope:
         return workspace_id != self.own_workspace_id
 
 
+_PUBLIC_WS_TTL_S = 30.0
+_public_ws_cache: "tuple[float, list[uuid.UUID]] | None" = None
+
+
+async def _public_workspace_ids(db: AsyncSession) -> "list[uuid.UUID]":
+    """Curated workspaces change rarely; cache the id list briefly to spare a query per read."""
+    global _public_ws_cache
+    now = time.monotonic()
+    if _public_ws_cache is not None and now - _public_ws_cache[0] < _PUBLIC_WS_TTL_S:
+        return _public_ws_cache[1]
+    result = await db.execute(select(Workspace.id).where(Workspace.is_public.is_(True)))
+    ids = [row[0] for row in result.all()]
+    _public_ws_cache = (now, ids)
+    return ids
+
+
 async def get_read_scope(
     context: WorkspaceContext = Depends(require_role(RoleEnum.VIEWER)),
     db: AsyncSession = Depends(get_db),
 ) -> ReadScope:
-    result = await db.execute(select(Workspace.id).where(Workspace.is_public.is_(True)))
-    public_ids = [row[0] for row in result.all()]
+    public_ids = await _public_workspace_ids(db)
     own_id = uuid.UUID(context.workspace_id)
     return ReadScope(
         context=context,

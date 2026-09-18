@@ -17,9 +17,10 @@ from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.db.session import get_db
-from app.models.analysis import Analysis, AnalysisLayer
+from app.models.analysis import Analysis
 from app.models.area import ProtectedArea
 from app.models.event import ChangeEvent
+from app.models.workspace import Workspace
 
 router = APIRouter(prefix="/public", tags=["Public Demonstration"])
 
@@ -31,15 +32,21 @@ DEMO_DISCLAIMER = (
 
 
 def _get_priority_band(score: Optional[float]) -> str:
+    """Priority is 0-100 (priority-v1)."""
     if score is None:
         return "UNKNOWN"
-    if score >= 0.80:
+    if score >= 75:
         return "CRITICAL"
-    if score >= 0.60:
+    if score >= 50:
         return "HIGH"
-    if score >= 0.40:
+    if score >= 25:
         return "MEDIUM"
     return "LOW"
+
+
+def _public_workspaces():
+    """Only curated (is_public) workspaces may ever be exposed unauthenticated."""
+    return select(Workspace.id).where(Workspace.is_public.is_(True))
 
 
 def _change_type_label(change_type: str) -> str:
@@ -66,11 +73,11 @@ async def get_public_overview(db: AsyncSession = Depends(get_db)) -> Dict[str, A
     total_area_km2 = area_sum_res.scalar_one() or 0.0
 
     # Curated analyses count
-    analyses_count_res = await db.execute(select(func.count(Analysis.id)))
+    analyses_count_res = await db.execute(select(func.count(Analysis.id)).where(Analysis.workspace_id.in_(_public_workspaces())))
     analyses_count = analyses_count_res.scalar_one() or 0
 
     # Total events count
-    events_count_res = await db.execute(select(func.count(ChangeEvent.id)))
+    events_count_res = await db.execute(select(func.count(ChangeEvent.id)).where(ChangeEvent.workspace_id.in_(_public_workspaces())))
     events_count = events_count_res.scalar_one() or 0
 
     methods = ["vegetation-v1", "water-v1", "builtup-v1"]
@@ -137,6 +144,7 @@ async def list_demonstrations(db: AsyncSession = Depends(get_db)) -> Dict[str, A
             selectinload(Analysis.layers),
             selectinload(Analysis.events),
         )
+        .where(Analysis.workspace_id.in_(_public_workspaces()))
         .order_by(desc(Analysis.created_at))
     )
     result = await db.execute(query)
@@ -222,7 +230,7 @@ async def get_demonstration_detail(
             selectinload(Analysis.layers),
             selectinload(Analysis.events),
         )
-        .where(Analysis.id == parsed_id)
+        .where(Analysis.id == parsed_id, Analysis.workspace_id.in_(_public_workspaces()))
     )
     res = await db.execute(query)
     analysis = res.scalar_one_or_none()
@@ -316,7 +324,10 @@ async def get_demonstration_events(
 
     query = (
         select(ChangeEvent)
-        .where(ChangeEvent.analysis_id == parsed_id)
+        .where(
+            ChangeEvent.analysis_id == parsed_id,
+            ChangeEvent.workspace_id.in_(_public_workspaces()),
+        )
         .order_by(desc(ChangeEvent.priority_score))
     )
     if change_type:

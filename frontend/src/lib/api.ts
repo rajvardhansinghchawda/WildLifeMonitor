@@ -453,6 +453,10 @@ export const api = {
       request<GeoJSON.Feature<GeoJSON.Geometry>>(`/areas/${ref}/boundary`),
     statistics: (ref: string) => request<AreaStatistics>(`/areas/${ref}/statistics`),
     timeline: (ref: string) => request<Timeline>(`/areas/${ref}/timeline`),
+    fires: (ref: string, days = 3) =>
+      request<{ configured: boolean; count: number; fires: any[]; source?: string }>(
+        `/areas/${ref}/fires?days=${days}`
+      ),
   },
 
   hotspots: {
