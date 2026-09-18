@@ -38,7 +38,7 @@ export interface ImageAsset {
   height?: number;
   aspectRatio?: string;
   attribution?: string;
-  tags?: string[];
+  tags?: string[] | readonly string[];
   metadata?: Record<string, string | number | boolean>;
 }
 
@@ -54,7 +54,7 @@ export interface VideoAsset {
   resolution: string;
   fps?: number;
   attribution?: string;
-  tags?: string[];
+  tags?: string[] | readonly string[];
   metadata?: Record<string, string | number | boolean>;
 }
 

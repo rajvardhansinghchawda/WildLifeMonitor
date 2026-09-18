@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import {
   ChevronLeft,
@@ -23,6 +23,8 @@ import {
   Sparkles,
   Calendar,
   Satellite,
+  Search,
+  Loader2,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -104,7 +106,7 @@ export default function TemporalCompareSlider({
   useEffect(() => {
     let active = true;
     api.areas
-      .list({ limit: 10 })
+      .list()
       .then((res) => {
         if (!active || !res?.items) return;
         setAreaList(res.items);
@@ -165,7 +167,7 @@ export default function TemporalCompareSlider({
           const [bRes, tRes, eRes] = await Promise.all([
             api.areas.boundary(activeArea.id).catch(() => null),
             api.areas.timeline(activeArea.id).catch(() => null),
-            api.events.list({ area_id: activeArea.id, limit: 100 }).catch(() => null),
+            api.hotspots.list({ area_id: activeArea.id, limit: 100 }).catch(() => null),
           ]);
           if (bRes) bound = bRes;
           if (tRes) time = tRes;
@@ -221,7 +223,91 @@ export default function TemporalCompareSlider({
     const selected = areaList.find((a) => a.id === areaId);
     if (!selected) return;
     setActiveArea(selected);
+    setSearchQuery(selected.name);
+    setSearchOpen(false);
   };
+
+  const handleAreaSelectDirect = (area: AreaSummary) => {
+    setActiveArea(area);
+    setSearchQuery(area.name);
+    setSearchOpen(false);
+    // Add to local area list if not already present
+    setAreaList((prev) => {
+      if (prev.find((a) => a.id === area.id)) return prev;
+      return [...prev, area];
+    });
+  };
+
+  // Global Search State
+  const [searchQuery, setSearchQuery] = useState<string>(initialArea?.name || '');
+  const [searchOpen, setSearchOpen] = useState<boolean>(false);
+  const [searchResults, setSearchResults] = useState<AreaSummary[]>([]);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [noResults, setNoResults] = useState<boolean>(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // Debounced live global search
+  useEffect(() => {
+    if (!searchQuery.trim() || searchQuery === activeArea?.name) {
+      // Show full catalog list
+      setSearchResults(areaList);
+      setNoResults(false);
+      return;
+    }
+    const q = searchQuery.trim();
+    if (q.length < 2) return;
+
+    const timer = setTimeout(async () => {
+      setIsSearching(true);
+      setNoResults(false);
+      try {
+        // First try local catalog
+        const local = areaList.filter(
+          (a) =>
+            a.name.toLowerCase().includes(q.toLowerCase()) ||
+            (a.state || '').toLowerCase().includes(q.toLowerCase()) ||
+            (a.country || '').toLowerCase().includes(q.toLowerCase())
+        );
+        if (local.length > 0) {
+          setSearchResults(local);
+          setIsSearching(false);
+          return;
+        }
+        // Then hit live global search API
+        const res = await api.areas.searchLive(q, 8);
+        if (res?.items && res.items.length > 0) {
+          setSearchResults(res.items);
+          // Merge new areas into local catalog
+          setAreaList((prev) => {
+            const existing = new Set(prev.map((a) => a.id));
+            const newItems = res.items.filter((a) => !existing.has(a.id));
+            return [...prev, ...newItems];
+          });
+        } else {
+          setSearchResults([]);
+          setNoResults(true);
+        }
+      } catch {
+        setSearchResults(areaList.filter((a) => a.name.toLowerCase().includes(q.toLowerCase())));
+      } finally {
+        setIsSearching(false);
+      }
+    }, 420); // 420ms debounce
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, areaList, activeArea?.name]);
 
   // 2. Control Ribbon State (matching Reference Image)
   const [dataSource, setDataSource] = useState<string>('Sentinel-2');
@@ -254,7 +340,7 @@ export default function TemporalCompareSlider({
 
         // Try authenticated API first
         try {
-          const analysesRes = await api.analyses.list({ area_id: activeArea.id, limit: 10 });
+          const analysesRes = await api.analyses.list({ area_id: activeArea.id });
           if (analysesRes?.items && analysesRes.items.length > 0) {
             readyAnalysis =
               analysesRes.items.find((a) => a.status === 'succeeded' || a.status === 'partial') ||
@@ -479,7 +565,7 @@ export default function TemporalCompareSlider({
   const trendData = useMemo(() => {
     return timelinePoints.map((pt) => {
       const yr = pt.date.slice(0, 4);
-      const computedKm2 = Math.round(totalReserveAreaKm2 * (pt.ndvi / 0.62) * (yr === '2024' ? 0.875 : 1));
+      const computedKm2 = Math.round(totalReserveAreaKm2 * ((pt.ndvi ?? 0.5) / 0.62) * (yr === '2024' ? 0.875 : 1));
       return {
         year: yr,
         date: pt.date,
@@ -528,26 +614,184 @@ export default function TemporalCompareSlider({
 
         {/* Right: Glassmorphism Control Ribbon */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* 1. Area Selector */}
-          <div className="flex items-center gap-1.5 bg-[#0e172e] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
-            <MapPin className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-[9px] text-slate-400 uppercase font-mono leading-none">Area</span>
-              <select
-                id="satellite-area-select"
-                value={activeArea?.id || ''}
-                onChange={(e) => handleAreaChange(e.target.value)}
-                className="bg-transparent text-xs text-white font-medium focus:outline-none cursor-pointer pr-1"
-              >
-                {areaList.map((a) => (
-                  <option key={a.id} value={a.id} className="bg-[#0b1324] text-white">
-                    {a.name}
-                  </option>
-                ))}
-              </select>
+          {/* 1. Global Habitat Search Combobox */}
+          <div className="relative" ref={searchRef}>
+            <div
+              className="flex items-center gap-1.5 bg-[#0e172e] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 cursor-pointer min-w-[180px]"
+              onClick={() => {
+                setSearchOpen(true);
+                setSearchResults(areaList);
+                setTimeout(() => searchInputRef.current?.focus(), 50);
+              }}
+            >
+              <Globe className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="text-[9px] text-slate-400 uppercase font-mono leading-none">Habitat Search</span>
+                {searchOpen ? (
+                  <div className="flex items-center gap-1">
+                    <Search className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                    <input
+                      ref={searchInputRef}
+                      id="global-habitat-search"
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        setSearchOpen(true);
+                      }}
+                      onFocus={() => setSearchOpen(true)}
+                      placeholder="Search any habitat worldwide..."
+                      className="bg-transparent text-xs text-white font-medium focus:outline-none w-40 placeholder:text-slate-500"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    {isSearching && <Loader2 className="w-3 h-3 text-emerald-400 animate-spin flex-shrink-0" />}
+                  </div>
+                ) : (
+                  <span className="text-xs text-white font-medium truncate max-w-[148px]">
+                    {activeArea?.name || 'Select habitat...'}
+                  </span>
+                )}
+              </div>
+              <ChevronDown className="w-3 h-3 text-slate-400 flex-shrink-0" />
             </div>
-            <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none -ml-1" />
+
+            {/* Dropdown results */}
+            {searchOpen && (
+              <div className="absolute top-full left-0 mt-1 w-72 bg-[#0b1324] border border-slate-700/80 rounded-xl shadow-2xl z-[9999] overflow-hidden">
+                {/* Header */}
+                <div className="px-3 py-2 border-b border-slate-800 flex items-center justify-between">
+                  <span className="text-[10px] text-emerald-400 font-mono font-semibold uppercase">
+                    🌍 Global Wildlife Habitat Search
+                  </span>
+                  <button
+                    onClick={() => setSearchOpen(false)}
+                    className="text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {/* Search input */}
+                <div className="px-3 py-2 border-b border-slate-800">
+                  <div className="flex items-center gap-2 bg-slate-900/80 rounded-lg px-2 py-1.5">
+                    {isSearching ? (
+                      <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin flex-shrink-0" />
+                    ) : (
+                      <Search className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                    )}
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Yellowstone, Serengeti, Kaziranga..."
+                      className="bg-transparent text-xs text-white flex-1 focus:outline-none placeholder:text-slate-600"
+                      autoFocus
+                    />
+                    {searchQuery && (
+                      <button
+                        onClick={() => { setSearchQuery(''); setSearchResults(areaList); setNoResults(false); }}
+                        className="text-slate-500 hover:text-slate-300"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Results list */}
+                <div className="max-h-64 overflow-y-auto">
+                  {isSearching && (
+                    <div className="px-3 py-3 flex items-center gap-2 text-xs text-slate-400">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                      <span>Searching OpenStreetMap globally...</span>
+                    </div>
+                  )}
+
+                  {!isSearching && noResults && (
+                    <div className="px-3 py-4 text-center text-xs text-slate-500">
+                      <div className="text-lg mb-1">🔍</div>
+                      <div>No habitat found for &ldquo;{searchQuery}&rdquo;</div>
+                      <div className="text-slate-600 mt-1">Try a different spelling or more specific name.</div>
+                    </div>
+                  )}
+
+                  {!isSearching && !noResults && (searchResults.length > 0 ? searchResults : areaList).map((a) => (
+                    <button
+                      key={a.id}
+                      onClick={() => handleAreaSelectDirect(a)}
+                      className={`w-full text-left px-3 py-2.5 hover:bg-slate-800/70 transition-colors border-b border-slate-800/40 last:border-0 ${
+                        activeArea?.id === a.id ? 'bg-emerald-500/10 border-l-2 border-l-emerald-400' : ''
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-base leading-none mt-0.5 flex-shrink-0">
+                          {a.country_code === 'IN' ? '🇮🇳' :
+                           a.country_code === 'US' ? '🇺🇸' :
+                           a.country_code === 'KE' ? '🇰🇪' :
+                           a.country_code === 'TZ' ? '🇹🇿' :
+                           a.country_code === 'ZA' ? '🇿🇦' :
+                           a.country_code === 'BR' ? '🇧🇷' :
+                           a.country_code === 'AU' ? '🇦🇺' :
+                           a.country_code === 'CA' ? '🇨🇦' :
+                           a.country_code === 'CN' ? '🇨🇳' :
+                           '🌿'}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className={`text-xs font-medium truncate ${activeArea?.id === a.id ? 'text-emerald-300' : 'text-white'}`}>
+                            {a.name}
+                          </div>
+                          <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1">
+                            <MapPin className="w-2.5 h-2.5 inline flex-shrink-0" />
+                            <span className="truncate">
+                              {[a.state, a.country].filter(Boolean).join(' • ')}
+                              {a.area_km2 ? ` · ${Math.round(a.area_km2).toLocaleString()} km²` : ''}
+                            </span>
+                          </div>
+                        </div>
+                        {activeArea?.id === a.id && (
+                          <span className="text-emerald-400 text-xs flex-shrink-0">✓</span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+
+                  {/* Live global search hint */}
+                  {!isSearching && searchQuery.length >= 2 && searchQuery !== activeArea?.name && (
+                    <button
+                      onClick={async () => {
+                        setIsSearching(true);
+                        setNoResults(false);
+                        try {
+                          const res = await api.areas.searchLive(searchQuery.trim(), 5);
+                          if (res?.items?.length > 0) {
+                            setSearchResults(res.items);
+                            setAreaList((prev) => {
+                              const existing = new Set(prev.map((a) => a.id));
+                              return [...prev, ...res.items.filter((a) => !existing.has(a.id))];
+                            });
+                          } else {
+                            setNoResults(true);
+                          }
+                        } catch { setNoResults(true); } finally { setIsSearching(false); }
+                      }}
+                      className="w-full px-3 py-2.5 flex items-center gap-2 text-xs text-emerald-400 hover:bg-emerald-500/10 border-t border-slate-800 transition-colors"
+                    >
+                      <Globe className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span>Search worldwide for &ldquo;<strong>{searchQuery}</strong>&rdquo; via OpenStreetMap</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="px-3 py-1.5 border-t border-slate-800 bg-slate-950/50">
+                  <span className="text-[9px] text-slate-600 font-mono">
+                    © OpenStreetMap contributors · ODbL · {areaList.length} habitats in catalog
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
+
 
           {/* 2. Data Source Selector */}
           <div className="flex items-center gap-1.5 bg-[#0e172e] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">

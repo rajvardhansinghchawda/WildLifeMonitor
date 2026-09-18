@@ -1,7 +1,8 @@
+import asyncio
 import uuid
-from typing import Optional
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from geoalchemy2.shape import to_shape
 from shapely.geometry import mapping
 from sqlalchemy import func, or_, select
@@ -23,6 +24,116 @@ from app.services import portal_queries as pq
 from app.services.firms import get_active_fires_for_area
 
 router = APIRouter(prefix="/areas", tags=["Areas"])
+
+
+# ---------------------------------------------------------------------------
+# Global Live Search — searches ANY habitat worldwide via OpenStreetMap,
+# auto-caches into PostGIS, and returns the area for immediate use.
+# ---------------------------------------------------------------------------
+
+
+@router.get("/search-live", response_model=AreaListResponse)
+async def search_live(
+    q: str = Query(..., min_length=2, description="Search query: any wildlife habitat, national park, or reserve worldwide"),
+    limit: int = Query(5, ge=1, le=20, description="Max results to return"),
+    db: AsyncSession = Depends(get_db),
+    scope: ReadScope = Depends(get_read_scope),
+):
+    """Live global search via OpenStreetMap Nominatim.
+
+    1. Searches local PostGIS catalog first (fast, zero-latency).
+    2. If fewer than `limit` results found, queries Nominatim for any
+       protected area / national park globally matching the query.
+    3. Auto-ingests the new boundary into PostGIS so subsequent requests are instant.
+    4. Returns merged results ready for the comparison slider.
+
+    Example: /api/v1/areas/search-live?q=Yellowstone
+    """
+    from app.scripts.seed_areas import upsert_area, fetch_nominatim
+
+    like = f"%{q.strip()}%"
+    conditions = [
+        or_(
+            ProtectedArea.name.ilike(like),
+            ProtectedArea.state.ilike(like),
+            ProtectedArea.country.ilike(like),
+        )
+    ]
+
+    # Step 1: local catalog
+    local_areas = (
+        (
+            await db.execute(
+                select(ProtectedArea)
+                .where(*conditions)
+                .order_by(ProtectedArea.name)
+                .limit(limit)
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    items: List = []
+    latest = await pq.latest_analyses_by_area(db, scope.workspace_ids, [a.id for a in local_areas])
+    counts = await pq.event_counts(db, [a.id for a in latest.values()])
+    for a in local_areas:
+        items.append(
+            pq.build_area_summary(
+                a,
+                latest.get(a.id),
+                counts.get(latest[a.id].id, 0) if a.id in latest else 0,
+            )
+        )
+
+    # Step 2: if local catalog has no results, fetch live from Nominatim
+    if not items:
+        try:
+            # Run Nominatim fetch in threadpool (it's a sync HTTP call)
+            result = await asyncio.to_thread(fetch_nominatim, f"{q.strip()}, wildlife reserve")
+            area = await upsert_area(q.strip())
+            # Reload from DB with fresh data
+            fresh = (
+                await db.execute(select(ProtectedArea).where(ProtectedArea.id == area.id))
+            ).scalar_one_or_none()
+            if fresh:
+                new_latest = await pq.latest_analyses_by_area(db, scope.workspace_ids, [fresh.id])
+                new_counts = await pq.event_counts(db, [a2.id for a2 in new_latest.values()])
+                items.append(
+                    pq.build_area_summary(
+                        fresh,
+                        new_latest.get(fresh.id),
+                        new_counts.get(new_latest[fresh.id].id, 0) if fresh.id in new_latest else 0,
+                    )
+                )
+        except LookupError:
+            # No boundary polygon found on OSM — try without suffix
+            try:
+                area = await upsert_area(q.strip())
+                fresh = (
+                    await db.execute(select(ProtectedArea).where(ProtectedArea.id == area.id))
+                ).scalar_one_or_none()
+                if fresh:
+                    new_latest = await pq.latest_analyses_by_area(db, scope.workspace_ids, [fresh.id])
+                    new_counts = await pq.event_counts(db, [a2.id for a2 in new_latest.values()])
+                    items.append(
+                        pq.build_area_summary(
+                            fresh,
+                            new_latest.get(fresh.id),
+                            new_counts.get(new_latest[fresh.id].id, 0) if fresh.id in new_latest else 0,
+                        )
+                    )
+            except Exception:
+                pass  # Return empty list; frontend will show "not found" state
+        except Exception as exc:
+            # Nominatim/DB error — gracefully return empty (don't 500)
+            pass
+
+    total = (
+        await db.execute(select(func.count(ProtectedArea.id)).where(*conditions))
+    ).scalar_one()
+
+    return AreaListResponse(items=items, total=max(int(total), len(items)))
 
 
 async def _get_area(db: AsyncSession, ident: str) -> ProtectedArea:

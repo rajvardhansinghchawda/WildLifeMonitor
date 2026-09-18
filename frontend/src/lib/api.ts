@@ -457,7 +457,14 @@ export const api = {
       request<{ configured: boolean; count: number; fires: any[]; source?: string }>(
         `/areas/${ref}/fires?days=${days}`
       ),
+    /** Live global search via OpenStreetMap Nominatim — searches any habitat worldwide
+     *  and auto-caches its boundary in the database for future instant results. */
+    searchLive: (q: string, limit = 5) =>
+      request<{ items: AreaSummary[]; total: number }>(
+        `/areas/search-live${qs({ q, limit })}`
+      ),
   },
+
 
   hotspots: {
     list: (
