@@ -145,7 +145,13 @@ class AnalysisService:
         total_layers = len(analysis.layers)
 
         layer_items = [
-            LayerStatusItem(type=layer.layer_type, status=layer.status) for layer in analysis.layers
+            LayerStatusItem(
+                type=str(layer.layer_type),
+                status=str(layer.status),
+                error_code=layer.error_code,
+                error_details=layer.error_details,
+            )
+            for layer in analysis.layers
         ]
 
         return AnalysisStatusResponse(

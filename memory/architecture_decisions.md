@@ -74,3 +74,19 @@ This document records the foundational architecture decisions, rationale, trade-
 - **Decision:** In `ArtifactService`, upload binary payloads to MinIO/S3 and verify SHA256 integrity and byte length before executing any database `INSERT` into the `artifacts` table. If storage write fails or checksum mismatches, abort immediately with `ArtifactPublicationError` without creating a database record.
 - **Consequences:** Perfect consistency between object storage and relational database metadata; zero orphaned or corrupt artifact rows.
 
+---
+
+## ADR-010: Independent Multi-Layer Execution and Partial Job Resolution
+- **Status:** Accepted
+- **Context:** An analysis may request multiple sensors and change algorithms (vegetation, surface water, built-up probability, forest alerts). External provider outages or local processing errors in one layer must not abort or discard results from another successfully computed layer.
+- **Decision:** Each `AnalysisLayer` executes independently within its own exception boundary. If all requested layers succeed, the parent job resolves to `succeeded`. If at least one layer succeeds while one or more fail or are unsupported, the job resolves to `partial`. The job only resolves to `failed` if zero requested change layers produce usable output. Context layer failures emit warnings and never invalidate change outputs.
+- **Consequences:** Fault-tolerant multi-layer processing; maximum data availability for analysts; explicit per-layer error reporting.
+
+---
+
+## ADR-011: Spatial-Tree Batched Infrastructure Proximity Enrichment
+- **Status:** Accepted
+- **Context:** `dsabackendoptimisation.md` requires optimizing nearest-feature queries across hundreds of candidate events without issuing repetitive spatial queries or database roundtrips.
+- **Decision:** In `ContextEnrichmentService`, fetch cached context features (roads, settlements) once per analysis AOI ($O(1)$ query count), build in-memory `shapely.STRtree` spatial index structures, and execute batch nearest-neighbor queries for all event centroids simultaneously. Surface metrics as `nearest_known_road_distance_m` and `nearest_known_settlement_distance_m` with an explicit disclaimer distinguishing cached source presence from real-world absence.
+- **Consequences:** Highly performant $O(\log M)$ spatial lookups; zero $N$-query database amplification; epistemically honest reporting.
+

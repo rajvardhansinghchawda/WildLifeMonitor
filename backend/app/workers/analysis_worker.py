@@ -12,12 +12,16 @@ from app.core.config import settings
 from app.core.exceptions import FencingTokenExpiredError
 from app.db.session import async_session_factory
 from app.models.analysis import JobStatusEnum, LayerStatusEnum
-from app.providers.base import AnalysisContext
+from app.providers.base import AnalysisContext, AnalysisRequestData, ChangeProvider
+from app.providers.fixture_builtup_provider import FixtureBuiltupProvider
 from app.providers.fixture_processor import FixtureProcessor
 from app.providers.fixture_vegetation_provider import FixtureVegetationProvider
+from app.providers.fixture_water_provider import FixtureWaterProvider
+from app.providers.gfw_provider import GFWProvider
 from app.repositories.analysis_repository import AnalysisRepository
 from app.repositories.job_attempt_repository import JobAttemptRepository
 from app.services.artifact_service import ArtifactService
+from app.services.context_enrichment_service import ContextEnrichmentService
 from app.services.event_extraction_service import EventExtractionService
 from app.workers.dispatcher import REDIS_ANALYSES_QUEUE
 
@@ -40,8 +44,20 @@ class AnalysisWorker:
         self.attempt_repo = JobAttemptRepository()
         self.fixture_processor = FixtureProcessor()
         self.vegetation_provider = FixtureVegetationProvider()
+        self.water_provider = FixtureWaterProvider()
+        self.builtup_provider = FixtureBuiltupProvider()
+        self.gfw_provider = GFWProvider()
         self.artifact_service = ArtifactService()
         self.event_service = EventExtractionService()
+        self.context_service = ContextEnrichmentService()
+
+        self.providers: Dict[str, ChangeProvider] = {
+            "vegetation": self.vegetation_provider,
+            "water": self.water_provider,
+            "builtup": self.builtup_provider,
+            "forestalerts": self.gfw_provider,
+            "gfw": self.gfw_provider,
+        }
 
     async def execute_job_message(
         self,
@@ -149,45 +165,95 @@ class AnalysisWorker:
                 await session.commit()
                 return True
 
-            # Process each requested layer using deterministic fixture processor
-            # Process each requested layer using appropriate provider and publish artifacts
+            context = AnalysisContext(
+                analysis_id=cast(uuid.UUID, analysis.id),
+                attempt_id=cast(uuid.UUID, attempt.id),
+                workspace_id=cast(uuid.UUID, analysis.workspace_id),
+                aoi=cast(Dict[str, Any], analysis.aoi_snapshot),
+                baseline_start=cast(date, analysis.baseline_start),
+                baseline_end=cast(date, analysis.baseline_end),
+                comparison_start=cast(date, analysis.comparison_start),
+                comparison_end=cast(date, analysis.comparison_end),
+                configuration_id=str(analysis.configuration_id),
+            )
+            req_data = AnalysisRequestData(
+                aoi=cast(Dict[str, Any], analysis.aoi_snapshot),
+                baseline_start=cast(date, analysis.baseline_start),
+                baseline_end=cast(date, analysis.baseline_end),
+                comparison_start=cast(date, analysis.comparison_start),
+                comparison_end=cast(date, analysis.comparison_end),
+                layers=[str(layer.layer_type) for layer in analysis.layers],
+                configuration_id=str(analysis.configuration_id),
+            )
+
+            # Process each requested layer independently
             for layer in analysis.layers:
-                if layer.layer_type == "vegetation":
-                    context = AnalysisContext(
-                        analysis_id=cast(uuid.UUID, analysis.id),
-                        attempt_id=cast(uuid.UUID, attempt.id),
-                        workspace_id=cast(uuid.UUID, analysis.workspace_id),
-                        aoi=cast(Dict[str, Any], analysis.aoi_snapshot),
-                        baseline_start=cast(date, analysis.baseline_start),
-                        baseline_end=cast(date, analysis.baseline_end),
-                        comparison_start=cast(date, analysis.comparison_start),
-                        comparison_end=cast(date, analysis.comparison_end),
-                        configuration_id=str(analysis.configuration_id),
-                    )
-                    layer_result = await self.vegetation_provider.analyze(context)
+                # Cooperative cancellation check between layers
+                await session.refresh(analysis, ["cancel_requested", "status"])
+                if analysis.cancel_requested:
+                    analysis.status = JobStatusEnum.CANCELLED.value  # type: ignore[assignment]
+                    analysis.stage = "cancelled"  # type: ignore[assignment]
+                    await self.attempt_repo.mark_attempt_status(session, attempt.id, "cancelled")  # type: ignore[arg-type]
+                    for rem_layer in analysis.layers:
+                        if rem_layer.status in (LayerStatusEnum.PENDING.value, LayerStatusEnum.RUNNING.value):
+                            rem_layer.status = LayerStatusEnum.CANCELLED.value  # type: ignore[assignment]
+                    await session.commit()
+                    return True
+
+                provider = self.providers.get(str(layer.layer_type))
+                if not provider:
+                    logger.warning("No provider registered for layer type '%s'", layer.layer_type)
+                    layer.status = LayerStatusEnum.UNSUPPORTED.value  # type: ignore[assignment]
+                    layer.error_code = "UNSUPPORTED_LAYER"  # type: ignore[assignment]
+                    layer.error_details = {"reason": f"No provider configured for layer '{layer.layer_type}'."}  # type: ignore[assignment]
+                    continue
+
+                # Capability check
+                cap = await provider.check_capability(req_data)
+                if not cap.supported:
+                    logger.info("Layer '%s' unsupported: %s", layer.layer_type, cap.reason)
+                    layer.status = LayerStatusEnum.UNSUPPORTED.value  # type: ignore[assignment]
+                    layer.error_code = "CAPABILITY_UNSUPPORTED"  # type: ignore[assignment]
+                    layer.error_details = {"reason": cap.reason or "Layer unsupported for current context."}  # type: ignore[assignment]
+                    continue
+
+                try:
+                    layer_result = await provider.analyze(context)
                     layer.status = layer_result.status  # type: ignore[assignment]
                     layer.quality_label = layer_result.quality_label  # type: ignore[assignment]
                     layer.metrics = layer_result.metrics  # type: ignore[assignment]
                     layer.method_version = layer_result.method_version  # type: ignore[assignment]
+                    if layer_result.error_code:
+                        layer.error_code = layer_result.error_code  # type: ignore[assignment]
+                        layer.error_details = layer_result.error_details  # type: ignore[assignment]
 
-                    if layer_result.status == "ready":
+                    if layer_result.status == LayerStatusEnum.READY.value:
+                        # Context enrichment (batched spatial-tree search)
+                        enriched_events, context_warnings = self.context_service.enrich_events_batch(
+                            events=layer_result.events,
+                            aoi=context.aoi,
+                        )
+
                         # Publish artifacts to object storage with SHA256 validation
                         mock_tif_bytes = b"II*\x00\x08\x00\x00\x00" + b"\x00" * 100
                         manifest_payload = {
                             "analysis_id": str(analysis.id),
                             "attempt_id": str(attempt.id),
-                            "layer_type": "vegetation",
+                            "layer_type": layer.layer_type,
                             "method_version": layer_result.method_version,
                             "metrics": layer_result.metrics,
                             "provenance": layer_result.provenance,
+                            "warnings": layer_result.warnings + context_warnings,
                         }
                         await self.artifact_service.publish_layer_manifest_and_raster(
                             session=session,
                             analysis_id=cast(uuid.UUID, analysis.id),
                             attempt_id=cast(uuid.UUID, attempt.id),
-                            layer_type="vegetation",
+                            layer_type=str(layer.layer_type),
                             manifest_data=manifest_payload,
                             raster_bytes=mock_tif_bytes,
+                            workspace_id=cast(uuid.UUID, analysis.workspace_id),
+                            layer_id=cast(uuid.UUID, layer.id),
                         )
 
                         # Persist ChangeEvents idempotently
@@ -196,19 +262,20 @@ class AnalysisWorker:
                             workspace_id=cast(uuid.UUID, analysis.workspace_id),
                             analysis_id=cast(uuid.UUID, analysis.id),
                             layer_id=cast(uuid.UUID, layer.id),
-                            raw_events=layer_result.events,
+                            raw_events=enriched_events,
                             method_version=layer_result.method_version,
                         )
-                else:
-                    layer_output = self.fixture_processor.process_layer(
-                        analysis=analysis,
-                        attempt=attempt,
-                        layer_type=layer.layer_type,
+                except Exception as e:
+                    logger.error(
+                        "Layer '%s' execution failed on analysis %s: %s",
+                        layer.layer_type,
+                        analysis.id,
+                        str(e),
+                        exc_info=True,
                     )
-                    layer.status = layer_output["status"]  # type: ignore[assignment]
-                    layer.quality_label = layer_output["quality_label"]  # type: ignore[assignment]
-                    layer.metrics = layer_output["metrics"]  # type: ignore[assignment]
-                    layer.method_version = layer_output["method_version"]  # type: ignore[assignment]
+                    layer.status = LayerStatusEnum.FAILED.value  # type: ignore[assignment]
+                    layer.error_code = "LAYER_PROCESSING_ERROR"  # type: ignore[assignment]
+                    layer.error_details = {"reason": str(e)}  # type: ignore[assignment]
 
             # Fencing Token Validation before publication
             is_token_valid = await self.attempt_repo.validate_fencing_token(

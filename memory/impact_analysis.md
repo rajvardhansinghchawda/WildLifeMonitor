@@ -80,3 +80,24 @@ This document records the architectural, data model, security, and operational i
 ### Regression Controls & Verification
 - **Test Coverage**: 41 consolidated automated tests in Docker covering SCL masking, zero-denominator exclusion, temporal compositing, 8-connected polygonization, MinIO SHA256 verification, corrupt artifact write rejection, idempotent event extraction, and result manifest spec compliance.
 
+---
+
+## Phase 4: Additional Change Layers
+
+### Architectural & Scientific Impact
+- **Independent Layer Fault Isolation**: Multi-sensor layer execution is decoupled. A failure or unsupported state in one layer (e.g., GFW or water) does not abort or invalidate other successful layers; the job resolves to `partial`.
+- **Zero-Baseline Water Null Invariant**: Relative percentage change calculation mathematically asserts `None` when baseline water area is 0.0, avoiding division-by-zero or misleading 0.0% / 100% reports.
+- **Physical Reality vs Spectral Probability**: Built-up layer strictly surfaces "probability change" rather than making unsubstantiated physical "construction area" claims.
+- **Batched Spatial Tree Optimization**: Infrastructure proximity uses `shapely.STRtree` to batch nearest-feature queries once per analysis AOI ($O(1)$ query count), preventing $N$ expensive database or external API lookups.
+- **Epistemic Clarity in Context**: Clear distinction between "nearest known feature in cached dataset" and absolute absence in the real world. Context failures emit warnings and never invalidate change layers.
+
+### Data Model & Persistence Impact
+- **Layer Error Classification**: `AnalysisLayer` stores structured `error_code` and `error_details` (JSONB) exposed through `GET /analyses/{id}` to facilitate debugging.
+- **Multi-Method ChangeEvents**: Supports `watergaincandidate`, `waterlosscandidate`, and `builtupprobabilitychangecandidate` alongside vegetation events.
+
+### Security & Operational Impact
+- **Provider Access Gating**: External GFW alerts provider is securely disabled (`GFW_ENABLED=false`) until Phase 0 credentials verification. In-flight requests receive transparent `unsupported` responses rather than unhandled connection exceptions.
+
+### Regression Controls & Verification
+- **Test Coverage**: 52 consolidated automated tests in Docker covering water gain/loss/ambiguity, zero-baseline water null relative change, builtup probability labeling, multi-layer independent failure isolation (`partial` resolution), GFW explicit unsupported reporting, and spatial-tree batching query counts.
+

@@ -28,6 +28,8 @@ class AnalysisCreateResponse(BaseModel):
 class LayerStatusItem(BaseModel):
     type: str
     status: str
+    error_code: Optional[str] = None
+    error_details: Optional[Dict[str, Any]] = None
 
 
 class AnalysisStatusResponse(BaseModel):

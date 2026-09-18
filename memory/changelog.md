@@ -147,3 +147,46 @@ Migration or deployment steps: MinIO bucket 'wildlife-artifacts' must exist or b
 Next dependency: Phase 4 (P4-ADDITIONAL-LAYERS).
 ```
 
+---
+
+## Phase 4: Additional Change Layers (`P4-ADDITIONAL-LAYERS`)
+
+### Prompt
+Add water-change and built-up-change methods as independent layers using the same Protocol/fixture pattern from Phase 3, plus context enrichment, without letting any one layer's failure affect another's. Implement zero-baseline-water null relative change, builtup probability-vs-area labeling, GFW disabled explicit unsupported capability, and batched spatial-tree context enrichment.
+
+### Thinking
+- **Independent Layer Resilience (`systemdesign.md`)**: In multi-sensor monitoring, layers must resolve independently. A failure in water change or external GFW provider must never abort other layers or fail the entire job if another layer succeeded. The job resolves to `partial` whenever at least one requested change layer succeeds while another fails or is unsupported.
+- **Scientific Integrity in Water Accounting**: When baseline water area is 0.0, relative percentage change cannot be computed mathematically ($x / 0$). Imputing 0.0 or 100% is scientifically invalid; the value must strictly be `None` (null in JSON).
+- **Physical Reality vs Spectral Probability in Built-Up Detection**: Satellite reflectance changes cannot prove physical construction. All outputs must be labeled "probability change", never "construction area".
+- **DSA Batching for Infrastructure Proximity**: Overpass feature queries must be executed once per analysis AOI rather than $N$ times for $N$ events ($O(1)$ query count). Centroid lookups are accelerated using `shapely.STRtree`.
+- **Epistemic Accuracy in Context Disclaimer**: Distance to the nearest known feature in an open-source dataset is not proof of absence in the physical world; responses must clearly label features as "nearest known feature in cached source" with an explicit disclaimer.
+
+### Result (Official Handover Format)
+```text
+Task: P4-ADDITIONAL-LAYERS
+Status: Complete and verified
+Files changed:
+  - backend/app/analysis/water.py (Water classification, gain/loss/ambiguity masks, zero-baseline null relative change, 8-conn component polygonization)
+  - backend/app/providers/fixture_water_provider.py (Synthetic water change fixture provider with zero-baseline and fail-water test injection modes)
+  - backend/app/analysis/builtup.py (Builtup probability classification, probability difference calculation, 8-conn polygonization, probability change labeling)
+  - backend/app/providers/fixture_builtup_provider.py (Synthetic builtup provider labeled probability change with fail-builtup test mode)
+  - backend/app/providers/gfw_provider.py (GFW provider gated behind GFW_ENABLED=false reporting explicit unsupported state with reason)
+  - backend/app/services/context_enrichment_service.py (Batched spatial-tree STRtree nearest-feature search with nearest known wording)
+  - backend/app/workers/analysis_worker.py (Wired multi-layer providers, independent execution loops, context enrichment, and partial status resolution)
+  - backend/app/schemas/analysis.py (Added error_code and error_details to LayerStatusItem)
+  - backend/app/services/analysis_service.py (Populated error_code and error_details in get_analysis_status)
+  - backend/tests/test_water_analysis.py (3 tests: classification/ambiguity, gain/loss transitions, zero-baseline null percentage)
+  - backend/tests/test_builtup_analysis.py (2 tests: probability classification and strict probability change labeling)
+  - backend/tests/test_context_enrichment.py (3 tests: batching query count, nearest known wording, context failure resilience)
+  - backend/tests/test_multi_layer_resolution.py (3 tests: multi-layer all-succeed, independent failure resolves partial, GFW disabled unsupported)
+Behavior implemented: Multi-layer independent analysis pipeline supporting vegetation, water, builtup, and GFW forest alerts; zero-baseline null relative change for water; probability change labeling for built-up change; GFW disabled capability reporting; batched spatial-tree context enrichment for road/settlement proximity; and independent layer failure isolation (job resolves to partial).
+Contract changes: GET /api/v1/analyses/{id} LayerStatusItem exposes error_code and error_details for failed or unsupported layers.
+Tests executed: 52 automated tests in Docker with PostgreSQL 16 + PostGIS + Redis + MinIO (pytest tests/ -v).
+Test results: 52/52 passed in 10.63s; Ruff check 100% clean; Ruff format 100% clean; Mypy 0 errors in 58 source files.
+Provider checks executed: Synthetic water and builtup providers exercised against deterministic fixtures; GFW verified in disabled state (GFW_ENABLED=false).
+Known limitations: External Overpass and GFW providers remain mocked/fixture-backed pending external credential and network integration.
+Migration or deployment steps: None (schemas and tables support all multi-layer metadata).
+Next dependency: Phase 5 (P5-INVESTIGATION-WORKFLOW).
+```
+
+
