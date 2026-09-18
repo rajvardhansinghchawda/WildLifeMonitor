@@ -43,7 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
       name: 'Explore Map',
       href: '/explore',
       icon: MapIcon,
-      badge: 'LIVE',
+      badge: null,
     },
     {
       name: 'Change Analysis',
@@ -55,7 +55,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
       name: 'Hotspots',
       href: '/hotspots',
       icon: Flame,
-      badge: '5',
+      badge: null,
     },
     {
       name: 'Areas',
@@ -79,7 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
       name: 'Alerts',
       href: '/alerts',
       icon: Bell,
-      badge: '2',
+      badge: null,
       badgeColor: 'bg-red-500/20 text-red-400 border-red-500/30',
     },
     {

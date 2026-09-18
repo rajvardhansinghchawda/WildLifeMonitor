@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from app.core.config import Settings
 
 
-def test_config_defaults():
+def test_config_defaults(monkeypatch):
     """Verify default configurations align with spec.md and backendhandoverfile.md.
 
     _env_file=None keeps this hermetic: without it, pydantic-settings still reads
@@ -12,6 +12,8 @@ def test_config_defaults():
     so this test's result would depend on whatever is configured on the machine
     running it rather than on the code's actual declared defaults.
     """
+    monkeypatch.delenv("GEE_PROJECT_ID", raising=False)
+    monkeypatch.delenv("GOOGLE_APPLICATION_CREDENTIALS", raising=False)
     config = Settings(
         _env_file=None,
         APP_ENV="development",

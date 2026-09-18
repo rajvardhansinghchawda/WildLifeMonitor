@@ -16,6 +16,8 @@ from app.providers.gee.pipeline import (
     _region,
     _s2_ndvi_collection,
 )
+from shapely.geometry import shape
+
 from app.services.analysis_validation import calculate_polygon_area_km2
 
 DW_CLASSES = [
@@ -38,7 +40,7 @@ def _scale_for(area_km2: float) -> int:
 def compute_statistics(aoi: Dict[str, Any], start: date, end: date) -> Dict[str, Any]:
     ensure_initialized()
     region = _region(aoi)
-    area_km2 = calculate_polygon_area_km2(aoi)
+    area_km2 = calculate_polygon_area_km2(shape(aoi))
     scale = _scale_for(area_km2)
     dw = (
         ee.ImageCollection(DW_COLLECTION)
@@ -90,7 +92,7 @@ def compute_timeline(aoi: Dict[str, Any], end: date, months: int = 24) -> Dict[s
     """Monthly median NDVI (cloud-masked) and surface-water hectares for the last `months`."""
     ensure_initialized()
     region = _region(aoi)
-    area_km2 = calculate_polygon_area_km2(aoi)
+    area_km2 = calculate_polygon_area_km2(shape(aoi))
     scale = _scale_for(area_km2) * 2
     start = ee.Date(end.isoformat()).advance(-months, "month")
     starts = ee.List.sequence(0, months - 1).map(lambda i: start.advance(ee.Number(i), "month"))
