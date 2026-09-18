@@ -201,3 +201,51 @@ Persistent context and execution log across sessions per memory protocol.
   - Push: Successful (`eff8e2e..ed41c55 backend -> backend`)
   - Remote: `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git`
 
+## [2026-09-19 05:15] Phase 23 — Landing Page PR Merge & Auth Bypass Reversion
+- Agent: Fullstack Lead & Security Systems Engineer
+- User Request: Review and merge PR #1 (`feat/landing` -> `backend`) from collaborator with enhanced landing page, verify conflicts, and ensure system integrity.
+- Actions:
+  - Fetched and diffed `origin/feat/landing`.
+  - Identified 48 changed files (landing page expansion, new blog/feature pages, public assets).
+  - Detected critical security bypass in `frontend/src/lib/auth.tsx` (`BYPASS_USER` hardcoding).
+  - Merged PR cleanly (0 git conflicts).
+  - Reverted temporary `BYPASS_USER` in `auth.tsx` to restore genuine JWT token authentication and route protection.
+- Verification:
+  - Git pull merged cleanly (3,942 insertions).
+  - Authenticated session verification confirmed.
+- Git:
+  - Commit: `9ab9e42` ("fix: remove temporary auth bypass from feat/landing PR — restore proper JWT authentication")
+  - Push: Successful (`ed41c55..9ab9e42 backend -> backend`)
+
+## [2026-09-19 05:25] Phase 24 — Comprehensive Documentation Suite & Mermaid Flowcharts
+- Agent: Principal Technical Architect & Systems Engineer
+- User Request: Create 3 comprehensive, exhaustive Markdown documentation files:
+  1. `USER_MANUAL.md`: Complete platform user guide so anyone can navigate and operate the system effortlessly.
+  2. `SYSTEM_ARCHITECTURE_AND_TECH_STACK.md`: Deep technical stack breakdown detailing every technology used, where it is used, and how it functions.
+  3. `PROBLEM_STATEMENT_AND_WORKFLOW.md`: Mapping of the platform against all 5 Problem Statement mandates, complete end-to-end system workflow, and rich Mermaid flowcharts for every single functionality.
+- Implementation:
+  - Created `docs/USER_MANUAL.md`:
+    - 13 comprehensive chapters (Getting Started, Public Demo Portal, Investigator Dashboard, Change Analysis Studio, Satellite Comparison Slider, Hotspot Inspector, Timeline Viewer, Explore & Areas, Reports & Alerts, Admin Panel, 5 PS Symbols Guide, FAQs).
+  - Created `docs/SYSTEM_ARCHITECTURE_AND_TECH_STACK.md`:
+    - Detailed technical analysis across all layers: Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS, Leaflet/React-Leaflet, Recharts, FastAPI, Python 3.11, PostgreSQL 15, PostGIS 3.3, MinIO S3 Object Storage, Redis, Google Earth Engine (Sentinel-2 L2A, Dynamic World LULC), NASA FIRMS VIIRS (375m), OpenStreetMap Nominatim/Overpass, Docker Compose.
+    - Complete technology matrix table with versions, responsibilities, and code locations.
+  - Created `docs/PROBLEM_STATEMENT_AND_WORKFLOW.md`:
+    - Complete 1-to-1 mapping of the 5 PS Pillars: [⌖] AOI Selection, [🔥] Deforestation & Wildfire Alerts, [🌿] Vegetation Loss & Degradation, [💧] Water Bodies & Wetland Dynamics, [🏢] Urban Expansion & Encroachment.
+    - 11 production-grade Mermaid flowcharts covering every system pipeline and UI workflow:
+      1. Master System Architecture & Data Flow
+      2. AOI Selection & Global Habitat Geocoding
+      3. Sentinel-2 Image Acquisition & Cloud Masking (GEE)
+      4. Spectral Indexing & Land Cover Processing (NDVI, NDWI, NDBI, Dynamic World)
+      5. NASA FIRMS Active Fire Detection Pipeline
+      6. Deforestation & Threat Hotspot Clustering
+      7. Dual-Card Satellite Comparison Slider Engine
+      8. Change Analysis Studio (Tri-View & Swipe Mode)
+      9. Field Patrol Dispatch & Investigation Workflow
+      10. Role-Based Access Control & Anti-Poaching Security
+      11. Automated Intelligence Report Generation & Export
+- Verification:
+  - TypeScript: `npx tsc --noEmit` passed with 0 errors.
+  - Pytest: 105 passed out of 105 tests (100% pass) in backend container.
+  - Documentation files verified in `d:/firebox/CodeNiti/docs/`.
+- Git:
+  - Staged, committed, and pushed to `origin/backend`.
