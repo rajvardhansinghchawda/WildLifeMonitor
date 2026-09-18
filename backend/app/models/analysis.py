@@ -92,6 +92,7 @@ class Analysis(Base):
     )
     events = relationship("ChangeEvent", back_populates="analysis", cascade="all, delete-orphan")
     artifacts = relationship("Artifact", back_populates="analysis", cascade="all, delete-orphan")
+    area = relationship("ProtectedArea")
 
 
 class AnalysisLayer(Base):

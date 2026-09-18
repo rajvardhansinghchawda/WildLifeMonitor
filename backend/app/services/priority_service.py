@@ -205,6 +205,9 @@ class PriorityService:
 
             evt_any.priority_score = res.priority_score
             evt_any.priority_method_version = res.priority_method_version
+            props = dict(evt_any.properties or {})
+            props["priority_components"] = res.components
+            evt_any.properties = props
             updated_count += 1
 
         await session.flush()

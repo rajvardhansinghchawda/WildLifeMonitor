@@ -19,7 +19,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Radio,
+  Shield,
+  Users,
 } from 'lucide-react';
+
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -91,7 +94,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
       icon: Settings,
       badge: null,
     },
+    {
+      name: 'Admin Console',
+      href: '/admin',
+      icon: Shield,
+      badge: 'ADMIN',
+      badgeColor: 'bg-red-500/20 text-red-400 border-red-500/30',
+    },
+    {
+      name: 'Members & RBAC',
+      href: '/admin/members',
+      icon: Users,
+      badge: null,
+    },
   ];
+
 
   return (
     <aside

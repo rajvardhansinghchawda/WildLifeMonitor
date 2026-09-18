@@ -60,6 +60,13 @@ async def get_current_principal(
         return UserPrincipal(user_id="dev-analyst-01", email="analyst@codeniti.local")
 
     elif settings.AUTH_MODE.lower() == "local":
+        # Support dev-user credentials in development environments
+        if settings.APP_ENV.lower() != "production" and credentials and credentials.credentials:
+            token = credentials.credentials
+            if token.startswith("dev-user:"):
+                user_id = token.split(":", 1)[1]
+                return UserPrincipal(user_id=user_id, email=f"{user_id}@codeniti.local")
+
         # Self-issued OAuth2 (password flow) access tokens, verified against the users table
         from app.services.auth_service import decode_access_token
 

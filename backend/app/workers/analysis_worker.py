@@ -274,7 +274,7 @@ class AnalysisWorker:
                         }
                         fixture_raster: Optional[bytes] = None
                         if not layer_result.payloads and settings.PROVIDER_MODE == "fixture":
-                            fixture_raster = b"II*    " + b" " * 100
+                            fixture_raster = bytes.fromhex("49492a0008000000") + bytes(100)
                         await self.artifact_service.publish_layer_manifest_and_raster(
                             session=session,
                             analysis_id=cast(uuid.UUID, analysis.id),
