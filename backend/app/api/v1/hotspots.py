@@ -14,6 +14,7 @@ from app.models.area import ProtectedArea
 from app.models.event import ChangeEvent
 from app.schemas.portal import HotspotItem, HotspotListResponse
 from app.services import portal_queries as pq
+from app.services.hotspot_summarizer import HotspotSummarizerService
 
 router = APIRouter(prefix="/hotspots", tags=["Hotspots"])
 
@@ -200,3 +201,45 @@ async def get_hotspot(
         "layer_provenance": dict(layer.provenance or {}) if layer else {},  # type: ignore[arg-type]
         "layer_warnings": list(layer.warnings or []) if layer else [],  # type: ignore[arg-type]
     }
+
+
+@router.get("/{hotspot_id}/summary")
+async def get_hotspot_summary(
+    hotspot_id: str,
+    lang: str = Query("en", description="en | hinglish | hi"),
+    scope: ReadScope = Depends(get_read_scope),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, Any]:
+    """Natural language field intelligence summary for a hotspot, synthesized via LLM or deterministic engine."""
+    try:
+        eid = uuid.UUID(hotspot_id)
+    except ValueError:
+        raise NotFoundException(message="Invalid hotspot identifier.")
+    event = (
+        await db.execute(
+            select(ChangeEvent).where(
+                ChangeEvent.id == eid, ChangeEvent.workspace_id.in_(scope.workspace_ids)
+            )
+        )
+    ).scalar_one_or_none()
+    if event is None:
+        raise NotFoundException(message="Hotspot not found.")
+    analysis = (
+        await db.execute(select(Analysis).where(Analysis.id == event.analysis_id))
+    ).scalar_one()
+    area_name = None
+    if analysis.area_id:
+        area_name = (
+            await db.execute(select(ProtectedArea.name).where(ProtectedArea.id == analysis.area_id))
+        ).scalar_one_or_none()
+    curated = await pq.public_workspace_ids(db)
+    item = pq.build_hotspot(
+        event,
+        analysis,
+        area_name,
+        curated,
+        read_only=analysis.workspace_id != scope.own_workspace_id,
+        include_geometry=False,
+    )
+    telemetry = item.model_dump()
+    return await HotspotSummarizerService.generate_summary(telemetry, lang=lang)

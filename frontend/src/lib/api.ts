@@ -146,6 +146,17 @@ export interface HotspotDetail extends Hotspot {
   layer_warnings: string[];
 }
 
+export interface HotspotSummaryResponse {
+  headline: string;
+  short_summary: string;
+  full_brief: string;
+  key_takeaways: string[];
+  recommended_action: string;
+  confidence: string;
+  source: 'groq_llm' | 'deterministic_engine';
+  language: string;
+}
+
 export interface Paged<T> {
   items: T[];
   total: number;
@@ -495,6 +506,8 @@ export const api = {
         method: 'PATCH',
         json: body,
       }),
+    summary: (id: string, lang = 'en') =>
+      request<HotspotSummaryResponse>(`/hotspots/${id}/summary${qs({ lang })}`),
   },
 
   alerts: {

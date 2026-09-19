@@ -10,6 +10,7 @@ import api, { ApiError, HotspotDetail } from '@/lib/api';
 import { useApi } from '@/lib/use-api';
 import { fmtDate, fmtHa, fmtNum } from '@/lib/format';
 import { formatCoordinatesWithPlace } from '@/lib/geo-names';
+import { HotspotAiSummaryCard } from '@/components/hotspots/HotspotAiSummaryCard';
 
 const GeoMap = dynamic(() => import('@/components/map/GeoMap'), { ssr: false });
 
@@ -262,6 +263,9 @@ function DetailPanel({ h, onChanged }: { h: HotspotDetail; onChanged: () => void
       <p className="text-[11px] text-slate-500">
         {h.area_name ?? 'Custom AOI'} · detected {fmtDate(h.detected_at)}
       </p>
+
+      {/* Natural Language Field Intelligence Brief */}
+      <HotspotAiSummaryCard hotspot={h} />
 
       <div>
         <Row k="Affected area" v={fmtHa(h.affected_area_ha)} />
