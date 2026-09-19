@@ -551,3 +551,34 @@ ajesh.sharma@forest.gov.in (Senior Director NTCA - Admin Role)
   - Remote: https://github.com/rajvardhansinghchawda/WildLifeMonitor.git
   - Status: Clean working tree, fully synced with GitHub.
 
+## [2026-09-19 12:35] Phase 37 — Visual Habitat Change Contrast, Multi-Spectral Shaders & 4-Pillar Interactive Compare Slider
+- Agent: Principal GIS & Satellite UI Systems Architect
+- User Request:
+  - Fix compare slider working so habitat changes over 4-5 years (e.g. 2021 vs 2026) are vividly and clearly visible on the map canvas according to the 4 Problem Statement pillars (Deforestation crimson, Vegetation degradation amber, Water body depletion cyan, Human encroachment purple).
+  - Provide a plan first, obtain approval, and then execute.
+- Plan & Approval:
+  - Authored comprehensive architectural plan in `implementation_plan.md` addressing multi-spectral shaders, scaled organic disturbance polygons, live floating comparison HUD, and interactive 4-pillar legend filters. Explicitly approved by the user.
+- Implementation Details:
+  1. Multi-Spectral CSS Filters & Pulse Keyframes (`frontend/src/app/globals.css`):
+     - Added `.sat-baseline-tiles` (lush chlorophyll green, saturating 1.25, contrast 1.15) for pristine baseline canopy.
+     - Added `.sat-observed-tiles` (arid degraded, sepia 0.35, hue-rotate -15deg, saturation 0.85) for visible 5-year drydown/degradation.
+     - Added `.sat-ndvi-baseline`, `.sat-ndvi-observed`, `.sat-ndwi-baseline`, `.sat-ndwi-observed`, `.sat-urban-tiles`.
+     - Added `@keyframes deforest-pulse` and `.animate-deforest-pulse` for pulsing outer radar halos on critical disturbance zones.
+  2. Canvas Disturbance Scaling & High-Contrast Overlays (`frontend/src/components/map/ComparisonLeafletMap.tsx`):
+     - Added `viewMode` prop support with dynamic `obsTileClass` mapping.
+     - Added `baseCanopy` overlay (lush emerald green `#10b981` polygon) on the baseline layer.
+     - Scaled disturbance polygon radius from 420m to `Math.max(1200, Math.sqrt(((h.affected_area_ha || 4.5) * 10000) / Math.PI) * 2.8)` ensuring immediate visibility at macro/regional zoom levels (zoom 9-14).
+     - Upgraded deforestation polygons to vivid crimson (`#ef4444`, `fillColor: '#dc2626'`, `fillOpacity: 0.72`) with outer pulsing radar halos.
+     - Assigned `pane: targetPane` to auxiliary layers (`waterPoly`, `roadLine`, `wp`, `sm`) so they clip cleanly with the slider handle.
+  3. Interactive 4-Pillar Legend & Floating Comparison HUD (`frontend/src/components/map/TemporalCompareSlider.tsx`):
+     - Wired `viewMode` directly to `ComparisonLeafletMap` and incorporated it into the map instance key.
+     - Mounted floating comparison inspector HUD pill right above the draggable split divider handle: `${baselineYear}: Pristine (NDVI ${baseNdvi.toFixed(2)}) ➔ ${observedYear}: ${forestDeltaPct < 0 ? ...} (${filteredHotspots.length} Alerts)`.
+     - Upgraded the bottom-right Change Detection legend to interactive PS Pillar filter buttons (`pointer-events-auto`), allowing users to click and toggle Deforestation, Vegetation Degradation, Water Body Depletion, and Human Encroachment overlays.
+- Verification:
+  - TypeScript compiler check (`tsc --noEmit`): 0 errors across entire Next.js codebase.
+  - HTTP 200 validated on `http://127.0.0.1:3000/compare` with dynamic chunks loaded.
+- Git:
+  - Branch: backend
+  - Status: Staged and committed in Phase 37.
+
+
