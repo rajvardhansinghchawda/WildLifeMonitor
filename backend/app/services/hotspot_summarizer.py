@@ -160,14 +160,15 @@ class HotspotSummarizerService:
         fallback = build_deterministic_summary(telemetry, lang=lang)
 
         # Step 2: If Groq API key is missing, return fallback immediately
-        api_key = settings.GROQAPIKEY
-        if not api_key:
+        raw_keys = settings.GROQAPIKEY or ""
+        api_keys = [k.strip() for k in raw_keys.split(",") if k.strip()]
+        if not api_keys:
             return fallback
 
         # Step 3: Attempt fast LLM completion (4-second ceiling)
-        raw_models = settings.GROQMODEL or "openai/gpt-oss-120b,qwen/qwen3.8-27b,openai/gpt-oss-20b"
+        raw_models = settings.GROQMODEL or "llama-3.3-70b-versatile,llama-3.1-8b-instant,qwen/qwen3.8-27b"
         models = [m.strip() for m in raw_models.split(",") if m.strip()]
-        model = models[0] if models else "openai/gpt-oss-120b"
+        model = models[0] if models else "llama-3.3-70b-versatile"
 
         lang_instruction = (
             "Write in natural, fluent HINGLISH (conversational Hindi in Roman/English script, e.g. 'Is sector me...')."
@@ -176,7 +177,7 @@ class HotspotSummarizerService:
         )
 
         system_prompt = (
-            "You are 'TerraWatch Habitat Intelligence AI', an expert wildlife GIS analyst.\n"
+            "You are 'Ranger Mitra Habitat Intelligence AI', an expert wildlife GIS analyst.\n"
             "Your role is to translate raw satellite telemetry into a concise, actionable field intelligence brief.\n"
             f"{lang_instruction}\n"
             "CRITICAL GROUNDING RULES:\n"
@@ -196,40 +197,41 @@ class HotspotSummarizerService:
             f"- recommended_action: string (1 direct patrol action instruction)"
         )
 
-        try:
-            async with httpx.AsyncClient(timeout=4.0) as client:
-                resp = await client.post(
-                    f"{GROQ_BASE_URL}/chat/completions",
-                    headers={"Authorization": f"Bearer {api_key}"},
-                    json={
-                        "model": model,
-                        "messages": [
-                            {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": user_content},
-                        ],
-                        "temperature": 0.1,
-                        "response_format": {"type": "json_object"},
-                    },
-                )
-            if resp.status_code == 200:
-                raw_json = resp.json()["choices"][0]["message"]["content"]
-                # Clean up any potential markdown wrapper
-                clean_json = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_json.strip())
-                parsed = json.loads(clean_json)
-                return {
-                    "headline": str(parsed.get("headline") or fallback["headline"]),
-                    "short_summary": str(parsed.get("short_summary") or fallback["short_summary"]),
-                    "full_brief": str(parsed.get("full_brief") or fallback["full_brief"]),
-                    "key_takeaways": list(parsed.get("key_takeaways") or fallback["key_takeaways"]),
-                    "recommended_action": str(
-                        parsed.get("recommended_action") or fallback["recommended_action"]
-                    ),
-                    "confidence": "high",
-                    "source": "groq_llm",
-                    "language": lang,
-                }
-            logger.warning("Groq API returned status %s; falling back to deterministic", resp.status_code)
-        except Exception as exc:
-            logger.warning("Groq summarization failed or timed out (%s); using deterministic fallback", exc)
+        for key in api_keys:
+            try:
+                async with httpx.AsyncClient(timeout=4.0) as client:
+                    resp = await client.post(
+                        f"{GROQ_BASE_URL}/chat/completions",
+                        headers={"Authorization": f"Bearer {key}"},
+                        json={
+                            "model": model,
+                            "messages": [
+                                {"role": "system", "content": system_prompt},
+                                {"role": "user", "content": user_content},
+                            ],
+                            "temperature": 0.1,
+                            "response_format": {"type": "json_object"},
+                        },
+                    )
+                if resp.status_code == 200:
+                    raw_json = resp.json()["choices"][0]["message"]["content"]
+                    # Clean up any potential markdown wrapper
+                    clean_json = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw_json.strip())
+                    parsed = json.loads(clean_json)
+                    return {
+                        "headline": str(parsed.get("headline") or fallback["headline"]),
+                        "short_summary": str(parsed.get("short_summary") or fallback["short_summary"]),
+                        "full_brief": str(parsed.get("full_brief") or fallback["full_brief"]),
+                        "key_takeaways": list(parsed.get("key_takeaways") or fallback["key_takeaways"]),
+                        "recommended_action": str(
+                            parsed.get("recommended_action") or fallback["recommended_action"]
+                        ),
+                        "confidence": "high",
+                        "source": "groq_llm",
+                        "language": lang,
+                    }
+                logger.warning("Groq API returned status %s on key; trying next key if available", resp.status_code)
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Groq summary synthesis failed on key (%s); trying next key", exc)
 
         return fallback
