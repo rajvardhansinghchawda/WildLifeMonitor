@@ -106,6 +106,12 @@ export default function ComparisonLeafletMap({
         scrollWheelZoom: true,
       });
 
+      // Ensure observed-pane exists on initialization for swipe comparison
+      if (!map.getPane('observed-pane')) {
+        const obsPane = map.createPane('observed-pane');
+        obsPane.style.zIndex = '450';
+      }
+
       // Zoom control (only if controls are not hidden)
       if (!hideControls) {
         L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -271,8 +277,8 @@ export default function ComparisonLeafletMap({
       if (obsPane) {
         obsPane.style.clipPath = `polygon(${swipePosition}% 0, 100% 0, 100% 100%, ${swipePosition}% 100%)`;
         obsPane.style.webkitClipPath = `polygon(${swipePosition}% 0, 100% 0, 100% 100%, ${swipePosition}% 100%)`;
+        targetPane = 'observed-pane';
       }
-      targetPane = 'observed-pane';
 
       // In isCompareSwipe mode, add secondary observed satellite tile layer into observed-pane so satellite imagery changes across time
       if (basemapType === 'satellite') {
@@ -312,6 +318,9 @@ export default function ComparisonLeafletMap({
         layersGroupRef.current.push(obsTiles);
       }
     }
+
+    // Safe pane options: only set pane if targetPane is validly mounted on the map to prevent Leaflet 'appendChild' on undefined pane
+    const paneOption: { pane?: string } = targetPane && map.getPane(targetPane) ? { pane: targetPane } : {};
 
     // 0. Render Baseline Pristine Canopy Overlay (Lush healthy vegetation on Before side)
     if (isCompareSwipe && boundaryGeoJson) {
@@ -487,7 +496,7 @@ export default function ComparisonLeafletMap({
                 fillColor: color,
                 fillOpacity: mode === 'baseline' ? 0.25 : 0.75,
               },
-              pane: targetPane,
+              ...paneOption,
             }).addTo(map);
 
             polyLayer.bindPopup(
@@ -530,7 +539,7 @@ export default function ComparisonLeafletMap({
                   opacity: 0.95,
                   fillColor: color,
                   fillOpacity: 1.0,
-                  pane: targetPane,
+                  ...paneOption,
                 }).addTo(map);
                 layersGroupRef.current.push(particle);
               }
@@ -567,7 +576,7 @@ export default function ComparisonLeafletMap({
                 fillOpacity: psSymbol === '🔥' ? 0.30 : 0.20,
                 dashArray: '4, 4',
                 interactive: false,
-                pane: targetPane,
+                ...paneOption,
               }).addTo(map);
               layersGroupRef.current.push(haloPoly);
             }
@@ -580,7 +589,7 @@ export default function ComparisonLeafletMap({
               fillColor: color,
               fillOpacity: mode === 'baseline' ? 0.25 : 0.72,
               dashArray: mode === 'baseline' ? '3, 3' : (ct.includes('water') ? '4, 4' : undefined),
-              pane: targetPane,
+              ...paneOption,
             }).addTo(map);
 
             organicPoly.bindPopup(
@@ -623,7 +632,7 @@ export default function ComparisonLeafletMap({
                   opacity: 0.95,
                   fillColor: color,
                   fillOpacity: 1.0,
-                  pane: targetPane,
+                  ...paneOption,
                 }).addTo(map);
                 layersGroupRef.current.push(particle);
               }
@@ -667,7 +676,7 @@ export default function ComparisonLeafletMap({
             popupAnchor: [0, -38],
           });
 
-          const marker = L.marker([lat, lon], { icon: badgeIcon, pane: targetPane }).addTo(map);
+          const marker = L.marker([lat, lon], { icon: badgeIcon, ...paneOption }).addTo(map);
 
           marker.bindPopup(
             `<div style="font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; color: #0f172a; line-height: 1.4; min-width: 220px;">
@@ -712,7 +721,7 @@ export default function ComparisonLeafletMap({
               [lat, lon],
               [roadOffsetLat, lon + 0.01],
             ],
-            { color: '#f59e0b', weight: 2.2, dashArray: '4 4', opacity: 0.9, pane: targetPane }
+            { color: '#f59e0b', weight: 2.2, dashArray: '4 4', opacity: 0.9, ...paneOption }
           ).addTo(map);
           roadLine.bindTooltip(`Road Proximity Vector: ${distKm} km`, { sticky: true });
           layersGroupRef.current.push(roadLine);
@@ -746,7 +755,7 @@ export default function ComparisonLeafletMap({
               fillOpacity: 0.45,
               weight: 2,
               dashArray: '3 3',
-              pane: targetPane,
+              ...paneOption,
             }).addTo(map);
             waterPoly.bindTooltip(`Surface Water Dynamics: ${h.affected_area_ha?.toFixed(2) ?? '3.50'} ha`);
             layersGroupRef.current.push(waterPoly);
@@ -758,7 +767,7 @@ export default function ComparisonLeafletMap({
               fillColor: '#0284c7',
               fillOpacity: 0.95,
               weight: 1,
-              pane: targetPane,
+              ...paneOption,
             }).addTo(map);
             layersGroupRef.current.push(wp);
           }
@@ -779,7 +788,7 @@ export default function ComparisonLeafletMap({
               iconSize: [8, 8],
               iconAnchor: [4, 4],
             });
-            const sm = L.marker([lat, lon], { icon, pane: targetPane }).addTo(map);
+            const sm = L.marker([lat, lon], { icon, ...paneOption }).addTo(map);
             sm.bindTooltip(`Settlement/Encroachment Boundary Indicator`);
             layersGroupRef.current.push(sm);
           }
@@ -818,6 +827,9 @@ export default function ComparisonLeafletMap({
     center.lat,
     center.lon,
     onHotspotClick,
+    isCompareSwipe,
+    viewMode,
+    basemapType,
   ]);
 
   return (

@@ -583,4 +583,29 @@ ajesh.sharma@forest.gov.in (Senior Director NTCA - Admin Role)
   - Push: Successful (a180d43..d294250 -> origin/backend)
   - Remote: https://github.com/rajvardhansinghchawda/WildLifeMonitor.git
 
+## [2026-09-19 12:47] Phase 38 — Fix Leaflet appendChild Runtime TypeError on Comparison Map
+- Agent: Principal GIS & Frontend Systems Engineer
+- User Request:
+  - Fix Runtime TypeError: `Cannot read properties of undefined (reading 'appendChild')` at `ComparisonLeafletMap.tsx (670:86)` on `L.marker([lat, lon], { icon: badgeIcon, pane: targetPane }).addTo(map)`.
+- Root Cause Analysis:
+  - When `isCompareSwipe` was false (or on initial render before pane initialization), `targetPane` was `undefined`.
+  - Passing `{ pane: targetPane }` explicitly set `options.pane = undefined`, overwriting Leaflet's prototype default (`pane: 'markerPane'`).
+  - During `marker.addTo(map)`, Leaflet's `Marker._initIcon()` called `this._getPane().appendChild(this._icon)`.
+  - `this._getPane()` executed `this._map.getPane(undefined)`, which returned `undefined`.
+  - Calling `.appendChild` on `undefined` threw `TypeError: Cannot read properties of undefined (reading 'appendChild')`.
+- Implementation Details:
+  1. Guaranteed Pane Lifecycle (`frontend/src/components/map/ComparisonLeafletMap.tsx`):
+     - Created `observed-pane` immediately on map initialization (`map.createPane('observed-pane')` with `zIndex: 450`) to guarantee its presence.
+  2. Safe Pane Options Pattern:
+     - Replaced raw `{ pane: targetPane }` with `const paneOption: { pane?: string } = targetPane && map.getPane(targetPane) ? { pane: targetPane } : {}`.
+     - When `isCompareSwipe` is active and pane exists, layers mount into `observed-pane` for slider clipping.
+     - When `targetPane` is undefined or in standard mode, `paneOption` is an empty object `{}`, ensuring `pane` is never passed as `undefined` and Leaflet's built-in pane defaults (`markerPane` and `overlayPane`) remain intact.
+     - Applied `...paneOption` safely across all 10 vector and marker layers (`polyLayer`, `particle`, `haloPoly`, `organicPoly`, `marker`, `roadLine`, `waterPoly`, `wp`, `sm`).
+  3. Effect Dependencies:
+     - Added `isCompareSwipe`, `viewMode`, and `basemapType` to the redraw `useEffect` dependency array.
+- Verification:
+  - TypeScript compiler (`tsc --noEmit`): 0 errors across entire Next.js codebase.
+  - HTTP 200 OK verified on `http://127.0.0.1:3000/compare`.
+
+
 
