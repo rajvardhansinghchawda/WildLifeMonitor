@@ -42,6 +42,12 @@ ACCOUNTS = [
         "panel": "Executive & Government Oversight (/dashboard, /admin, /reports)",
     },
     {
+        "email": "command@vanyora.org",
+        "full_name": "Central Command Lead",
+        "role": RoleEnum.ADMIN.value,
+        "panel": "Central Command & Strategic Operations (/dashboard, /admin, /reports)",
+    },
+    {
         "email": "viewer@wildlife.gov",
         "full_name": "Field Observer / Viewer",
         "role": RoleEnum.VIEWER.value,

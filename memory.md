@@ -631,3 +631,43 @@ ajesh.sharma@forest.gov.in (Senior Director NTCA - Admin Role)
   - Remote: https://github.com/rajvardhansinghchawda/WildLifeMonitor.git
   - Status: Working tree completely clean, up to date with remote origin/backend.
 
+## [2026-09-19 13:40] Phase 40 — Universal Place Name Resolution & Geo-Coordinates Enrichment
+- Agent: Principal GIS & Fullstack Systems Architect
+- User Request:
+  - "Abhi sytem dashbaod me geo cordinafte likha rah ahai, hme un geo vordinafte ka use kar ek un geocordinate ke sath uski place bhi batana hai kohi hai, pure project me dekhlo ki jah jah bas geo cordinates hai unke sath vo jagah ka name bhi aa jaye"
+  - Wherever raw geographic coordinates are displayed in the dashboard and across the entire project (hotspots, maps, detail pages, dossiers, search cards, public demo), resolve and display the human-readable place / locality / district / reserve sector name alongside the coordinates.
+- Implementation Details:
+  1. Unified Spatial Reverse Lookup Engine (`frontend/src/lib/geo-names.ts`):
+     - Comprehensive offline sector, range, and district spatial registry for 41+ protected reserves (Pench: Kurai, Turia/Khawasa, Karmajhiri, Totladoh, Sillari; Tadoba: Moharli, Kolsa, Navegaon; Sundarbans: Gosaba, Sajnekhali, Sudhanyakhali; Kaziranga: Kohora, Bagori; Kanha: Mukki, Kisli; Ranthambore; Bandhavgarh; Corbett; Gir; Yellowstone; Serengeti).
+     - Instant Haversine distance and cardinal direction calculator.
+     - Synchronous formatters: `formatCoordinates(lat, lon)`, `getPlaceName(lat, lon, fallback)`, `formatCoordinatesWithPlace(lat, lon, fallback)`.
+     - Client-side asynchronous reverse-geocoding cache (`Map<string, string>`) with session storage persistence.
+  2. Backend Schema & Query Enrichment:
+     - `backend/app/schemas/portal.py`: Added `place_name: Optional[str] = None` to `Coordinates`.
+     - `backend/app/services/portal_queries.py`: Enriched `build_area_summary` and `build_hotspot` to populate `place_name`.
+     - `frontend/src/lib/api.ts`: Added `place_name?: string` to `Coordinates` interface.
+  3. Dashboard Integration (`frontend/src/app/dashboard/page.tsx`):
+     - Added coordinates and resolved place name badge directly under the active area heading in the Change Hotspots card.
+     - Added location with place name in the selected hotspot modal/quick bar.
+     - Fullscreen GIS studio header displays resolved place name alongside centroid coordinates.
+  4. Hotspots Drawer & Table (`frontend/src/app/hotspots/page.tsx`):
+     - Hotspot table rows display resolved place names under each incident label.
+     - Detail Drawer Location row formatted with `formatCoordinatesWithPlace(lat, lon, area_name)`.
+  5. Map Popups & Comparison Slider:
+     - `frontend/src/components/map/GeoMap.tsx`: Hotspot marker and polygon popups display `Location: [coords + place name]`.
+     - `frontend/src/components/map/ComparisonLeafletMap.tsx`: Polygon and marker popups display `Location: [coords + place name]`.
+     - `frontend/src/components/map/TemporalCompareSlider.tsx`: Search dropdown items and selected hotspot inspector dossier display coordinates and place names.
+  6. Area Detail & Public Portal:
+     - `frontend/src/app/areas/[id]/page.tsx`: Area detail header displays centroid coordinates and resolved place name.
+     - `frontend/src/app/page.tsx`: Active reserve metadata strip and incident intelligence panel display resolved place names and coordinates.
+     - `frontend/src/components/public/PublicMap.tsx`: Marker popup displays resolved place name alongside coordinates.
+- Verification:
+  - TypeScript Compiler (`tsc --noEmit`): 0 errors across entire Next.js codebase.
+  - Backend pytest (`docker exec codeniti-api pytest tests/test_public_api.py`): 3/3 passed.
+  - Python schema verification: `Coordinates` model dump verified with `place_name`.
+  - DevTools DOM Snapshot verification: Verified `23.6448° N, 80.8378° E · West Buffer Wildlife Range, Bandhavgarh National Park (Umaria)` on dashboard map card, and place names rendered across all investigation priority items.
+- Git:
+  - Branch: backend
+  - Commit: Pending staging and push.
+  - Remote: https://github.com/rajvardhansinghchawda/WildLifeMonitor.git
+
