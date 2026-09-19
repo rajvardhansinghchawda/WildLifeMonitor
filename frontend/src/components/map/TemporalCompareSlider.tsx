@@ -39,6 +39,7 @@ import {
 import api, { AreaSummary, Hotspot, Timeline } from '@/lib/api';
 import { fmtHa, fmtDate, fmtNum } from '@/lib/format';
 import { formatCoordinatesWithPlace } from '@/lib/geo-names';
+import { HotspotAiSummaryCard } from '@/components/hotspots/HotspotAiSummaryCard';
 import type { RasterOverlayConfig } from '@/components/map/ComparisonLeafletMap';
 import { getPublicDemonstrations, getPublicEvents } from '@/lib/public-api';
 
@@ -1539,6 +1540,11 @@ export default function TemporalCompareSlider({
                   )}
                 </span>
               </div>
+            </div>
+
+            {/* Natural Language AI Threat Summary */}
+            <div className="mt-2.5">
+              <HotspotAiSummaryCard hotspot={selectedHotspot} />
             </div>
           </div>
         )}
