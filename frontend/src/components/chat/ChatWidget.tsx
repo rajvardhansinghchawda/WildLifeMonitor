@@ -122,7 +122,7 @@ const SHOW_VOICE_CALLING_AGENT = false;
 export default function ChatWidget({
   loadAnalyses,
   send,
-  title = 'Ask the Habitat',
+  title = 'Ranger Mitra',
   notice,
   eventHref,
 }: Props) {
@@ -310,7 +310,7 @@ export default function ChatWidget({
           {SHOW_VOICE_CALLING_AGENT && (
             <button
               onClick={() => setIsCallOpen(true)}
-              aria-label="Call Habitat AI Ranger"
+              aria-label="Call Ranger Mitra"
               className="group relative flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white text-xs font-semibold shadow-xl shadow-emerald-950/70 transition-all hover:scale-105 active:scale-95 border border-emerald-400/40"
             >
               <span className="relative flex h-2.5 w-2.5">
@@ -318,14 +318,14 @@ export default function ChatWidget({
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
               </span>
               <PhoneCall className="w-4 h-4 text-white group-hover:rotate-12 transition-transform" />
-              <span className="tracking-wide">Call AI Ranger</span>
+              <span className="tracking-wide">Call Ranger Mitra</span>
             </button>
           )}
 
           {/* Text Chat Button with subtle glowing pulse */}
           <button
             onClick={() => setOpen(true)}
-            aria-label="Open Habitat AI Assistant"
+            aria-label="Open Ranger Mitra AI Assistant"
             className="group flex items-center gap-2.5 px-4 py-3 rounded-full bg-slate-900/95 hover:bg-slate-800 text-slate-100 hover:text-white text-xs font-semibold shadow-2xl shadow-emerald-950/40 transition-all hover:scale-105 active:scale-95 border border-emerald-500/30 backdrop-blur-md"
           >
             <span className="relative flex h-2 w-2">
@@ -376,7 +376,7 @@ export default function ChatWidget({
                     setIsCallOpen(true);
                   }}
                   aria-label="Switch to Voice Call"
-                  title="Switch to Voice Call with AI Ranger"
+                  title="Switch to Voice Call with Ranger Mitra"
                   className="flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-[10px] font-medium transition-colors"
                 >
                   <PhoneCall className="w-3 h-3 animate-pulse text-emerald-400" />
@@ -497,7 +497,7 @@ export default function ChatWidget({
                 <div className="p-3 rounded-xl bg-gradient-to-br from-slate-900/90 to-slate-950/90 border border-slate-800 text-xs text-slate-300 space-y-1.5">
                   <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-xs">
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Welcome to Habitat AI</span>
+                    <span>Welcome to Ranger Mitra</span>
                   </div>
                   <p className="text-[11px] text-slate-400 leading-relaxed">
                     Ask any question in **Hinglish, Hindi, or English**. I provide 100% grounded answers directly from Sentinel-2 and Earth Engine satellite telemetry for **{reserveLabel}**.
@@ -649,7 +649,7 @@ export default function ChatWidget({
                 onChange={handleTextareaInput}
                 onKeyDown={handleKeyDown}
                 maxLength={2000}
-                placeholder={listening ? 'Listening to speech…' : 'Ask anything in Hinglish, Hindi, or English… (Shift+Enter for newline)'}
+                placeholder={listening ? 'Listening to speech…' : 'Ask anything to Ranger Mitra in Hinglish, Hindi, or English… (Shift+Enter for newline)'}
                 className="w-full resize-none min-h-[38px] max-h-[120px] py-2 px-3 rounded-xl bg-slate-900 border border-slate-700/80 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 leading-relaxed"
               />
             </div>

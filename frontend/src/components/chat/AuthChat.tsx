@@ -76,6 +76,7 @@ async function send(
 export default function AuthChat() {
   return (
     <ChatWidget
+      title="Ranger Mitra"
       loadAnalyses={loadAnalyses}
       send={send}
       eventHref={(id) => `/hotspots?id=${id}`}

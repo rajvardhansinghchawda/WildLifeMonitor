@@ -220,7 +220,7 @@ export default function VoiceCallModal({
 
       setAiSpokenText(plain);
       setIsAiSpeaking(true);
-      setStatusText('Habitat AI Ranger Speaking...');
+      setStatusText('Ranger Mitra Speaking...');
 
       const utterance = new SpeechSynthesisUtterance(plain);
       utterance.lang = currentSpeechTag;
@@ -447,7 +447,7 @@ export default function VoiceCallModal({
       stopRingTone();
       playConnectChime();
       setCallState('connected');
-      setStatusText('Habitat AI Ranger Online. Speak freely...');
+      setStatusText('Ranger Mitra Online. Speak freely...');
 
       void setupAudioVisualizer();
       startSpeechRecognition();
@@ -456,7 +456,7 @@ export default function VoiceCallModal({
       const selectedOption = options.find((o) => o.id === activeAnalysisId);
       const reserveName = selectedOption ? selectedOption.label.split('·')[0].trim() : 'Protected Reserve';
       speakSpokenAnswer(
-        `Habitat AI Ranger online for ${reserveName}. Monitoring active. How can I assist your field investigation today?`
+        `Ranger Mitra online for ${reserveName}. Monitoring active. How can I assist your field investigation today?`
       );
 
       // Start call timer
