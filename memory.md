@@ -305,3 +305,24 @@ Persistent context and execution log across sessions per memory protocol.
   - Commit: `1b74915` ("docs: add Phase 26 comprehensive multi-portal end-to-end QA certification")
   - Push: Successful (`574746a..1b74915 backend -> backend`)
   - Remote: `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git`
+
+## [2026-09-19 09:07] Phase 27 — AI Conservation Chatbot ("Ask the Habitat") Deep QA Audit & Verification
+- Agent: Professional QA Lead & AI Test Engineer
+- User Request: Thoroughly test the Chatbot across both portals (Public and Authenticated) to verify end-to-end operation and produce a detailed diagnostic report identifying working features and potential issues.
+- Testing Performed:
+  1. **Backend Integration & LLM Tool Calling**:
+     - Verified `POST /api/v1/public/chat` and `POST /api/v1/analyses/{id}/chat`.
+     - Verified `GroqClient` with `openai/gpt-oss-120b` and fallback chain.
+     - Verified tool-calling pipeline (`get_analysis_summary`, `get_events`, `get_priority_ranking`).
+     - Verified grounding guardrails: responses strictly quote database metrics (79,645 ha, 0.64 ha vegetation loss, 0.52 ha water gain) with zero hallucination.
+     - Verified multilingual support: Hindi query ("इस रिज़र्व में पानी का क्या बदलाव आया है?") answered accurately in Devanagari script.
+  2. **Frontend UI & Interactive Testing (Chrome DevTools MCP)**:
+     - `PublicChat` on Landing page (`/`): Tested modal trigger, preset prompt clicks ("Summarise this analysis."), and custom free-text queries ("How many total hectares were monitored in this analysis?"). Verified streaming response, Markdown bullet list rendering, and Text-to-Speech "Read aloud" button.
+     - `AuthChat` on Investigator Dashboard (`/dashboard`): Verified modal trigger, analysis selector dropdown with 41 parks, authenticated JWT bearer token propagation, and live summary extraction for Pench National Park.
+  3. **Identified Edge Cases & Diagnostic Points**:
+     - Documented Groq API key dependency, in-memory rate limiting (8 req/min), mobile button z-index, and pre-computed analysis prerequisites.
+- Verification:
+  - Chatbot Tests: `python -m pytest tests/test_chat_agent.py -q` — 19 passed, 0 failed.
+  - End-to-end API HTTP 200 response time: ~3.8 seconds.
+- Git:
+  - Staged, committed, and pushed to `origin/backend`.
