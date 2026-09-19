@@ -436,6 +436,27 @@ async def test_groq_client_raises_when_every_model_fails(monkeypatch):
         await client.complete([], [])
 
 
+@pytest.mark.asyncio
+async def test_groq_client_falls_back_to_second_api_key_when_first_exhausted(monkeypatch):
+    from app.services.chat_agent import GroqClient
+
+    client = GroqClient(api_key="key1,key2", models="model-primary")
+    keys_used = []
+
+    async def fake_post(model, messages, tools):
+        keys_used.append(client.api_key)
+        if client.api_key == "key1":
+            return _Resp(429)  # Key 1 rate-limited
+        return _Resp(200, {"choices": [{"message": {"role": "assistant", "content": "key2 response"}}]})
+
+    monkeypatch.setattr(client, "_post", fake_post)
+    reply = await client.complete([{"role": "user", "content": "hi"}], [])
+    assert "key1" in keys_used
+    assert "key2" in keys_used
+    assert reply["content"] == "key2 response"
+    assert client.api_key == "key2"
+
+
 # ------------------------------------------------------------------ public (no login) chat
 @pytest.mark.asyncio
 async def test_public_chat_only_serves_public_analyses_with_generalised_coords(

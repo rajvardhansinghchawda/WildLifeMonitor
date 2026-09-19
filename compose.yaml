@@ -69,7 +69,7 @@ services:
       GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/macro-shore-471006-c3-822bdbdaa0b9.json
       OBJECT_STORAGE_PUBLIC_ENDPOINT: http://localhost:9000
       FIRMS_MAP_KEY: ${FIRMS_MAP_KEY:-66a86eb1bccf10d464a978f78af683fe}
-      GROQAPIKEY: ${GROQAPIKEY:-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}
+      GROQAPIKEY: ${GROQAPIKEY:-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,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}
       GROQMODEL: ${GROQMODEL:-llama-3.3-70b-versatile,llama-3.1-8b-instant,openai/gpt-oss-20b,qwen/qwen3.8-27b}
       ALLOWED_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
       LOG_LEVEL: INFO

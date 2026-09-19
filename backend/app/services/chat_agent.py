@@ -175,20 +175,36 @@ class ChatLLM(Protocol):
 
 
 class GroqClient:
-    """Groq chat client with an ordered model fallback chain.
+    """Groq chat client with multi-API-key pool and ordered model fallback chain.
 
-    GROQMODEL may list several models separated by commas. When one is rate limited (429),
-    overloaded (5xx) or fails to produce a valid tool call (400), the next model is tried, and
-    the working model stays selected for the rest of the request.
+    GROQAPIKEY may list multiple keys separated by commas. When one key is rate limited (429)
+    or exhausted, the next key in the pool is tried seamlessly.
+    GROQMODEL may list several models separated by commas. When one model is rate limited,
+    the next model is tried.
     """
 
     RETRYABLE = {400, 404, 408, 413, 429, 500, 502, 503, 504}
 
     def __init__(self, api_key: Optional[str] = None, models: Optional[str] = None):
-        self.api_key = api_key if api_key is not None else settings.GROQAPIKEY
+        raw_keys = api_key if api_key is not None else settings.GROQAPIKEY
+        self.api_keys: List[str] = [k.strip() for k in (raw_keys or "").split(",") if k.strip()]
+        self.active_key_idx: int = 0
         raw = models or settings.GROQMODEL
-        self.models = [m.strip() for m in raw.split(",") if m.strip()]
-        self.active = 0
+        self.models: List[str] = [m.strip() for m in raw.split(",") if m.strip()]
+        self.active: int = 0
+
+    @property
+    def api_key(self) -> str:
+        if not self.api_keys:
+            return ""
+        return self.api_keys[self.active_key_idx % len(self.api_keys)]
+
+    @api_key.setter
+    def api_key(self, value: str):
+        if value:
+            if value not in self.api_keys:
+                self.api_keys.insert(0, value)
+            self.active_key_idx = self.api_keys.index(value)
 
     async def _post(self, model: str, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]):
         async with httpx.AsyncClient(timeout=60.0) as client:
@@ -207,35 +223,56 @@ class GroqClient:
     async def complete(
         self, messages: List[Dict[str, Any]], tools: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
-        if not self.api_key:
+        if not self.api_keys:
             raise ChatUnavailableError("GROQAPIKEY is not configured.")
         if not self.models:
             raise ChatUnavailableError("GROQMODEL is empty.")
+
         last_error = "no model attempted"
-        for idx in range(self.active, len(self.models)):
-            model = self.models[idx]
-            try:
-                resp = await self._post(model, messages, tools)
-            except httpx.HTTPError as exc:
-                last_error = f"{model}: {exc}"
-                logger.warning("groq model %s failed: %s", model, exc)
-                continue
-            if resp.status_code == 200:
-                self.active = idx
-                message = resp.json()["choices"][0]["message"]
-                out = {
-                    k: message[k]
-                    for k in ("role", "content", "tool_calls")
-                    if message.get(k) is not None
-                }
-                if isinstance(out.get("content"), str):
-                    out["content"] = THINK_RE.sub("", out["content"]).strip()
-                return out
-            last_error = f"{model}: HTTP {resp.status_code} {resp.text[:200]}"
-            logger.warning("groq model %s unavailable (%s); trying next", model, resp.status_code)
-            if resp.status_code not in self.RETRYABLE:
-                break
-        raise ChatUnavailableError(f"All chat models failed. Last: {last_error}")
+        num_keys = len(self.api_keys)
+
+        for key_attempt in range(num_keys):
+            self.active_key_idx = (self.active_key_idx) % num_keys
+            key_tag = f"key-{self.active_key_idx + 1}"
+
+            for idx in range(self.active, len(self.models)):
+                model = self.models[idx]
+                try:
+                    resp = await self._post(model, messages, tools)
+                except httpx.HTTPError as exc:
+                    last_error = f"{model} ({key_tag}): {exc}"
+                    logger.warning("groq model %s on %s failed: %s", model, key_tag, exc)
+                    continue
+
+                if resp.status_code == 200:
+                    self.active = idx
+                    message = resp.json()["choices"][0]["message"]
+                    out = {
+                        k: message[k]
+                        for k in ("role", "content", "tool_calls")
+                        if message.get(k) is not None
+                    }
+                    if isinstance(out.get("content"), str):
+                        out["content"] = THINK_RE.sub("", out["content"]).strip()
+                    return out
+
+                last_error = f"{model} ({key_tag}): HTTP {resp.status_code} {resp.text[:200]}"
+                logger.warning(
+                    "groq model %s on %s unavailable (%s); trying next",
+                    model,
+                    key_tag,
+                    resp.status_code,
+                )
+                if resp.status_code not in self.RETRYABLE:
+                    break
+
+            # If all models failed or rate-limited on this key, rotate to next key in pool
+            if key_attempt < num_keys - 1:
+                self.active_key_idx = (self.active_key_idx + 1) % num_keys
+                self.active = 0  # Reset model index for new key
+                logger.info("Rotating to next Groq API key in pool (index %s)", self.active_key_idx)
+
+        raise ChatUnavailableError(f"All chat models and API keys failed. Last: {last_error}")
 
 
 @dataclass
