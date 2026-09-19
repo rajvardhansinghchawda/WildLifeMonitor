@@ -1,0 +1,59 @@
+"""Post-generation safety layer for chat answers.
+
+Deterministic checks only (no second LLM):
+  1. Every UUID mentioned in the answer must have appeared in a tool result of this request.
+  2. No causal or over-certain language (the system prompt forbids it; we enforce it).
+"""
+
+import re
+from dataclasses import dataclass
+from typing import Iterable, Optional, Set
+
+UUID_RE = re.compile(
+    r"\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b"
+)
+
+FORBIDDEN_PHRASES = re.compile(
+    r"\b(caused by|because of|due to|resulted from|result of|led to|responsible for|"
+    r"confirmed deforestation|habitat (?:was |is |has been )?destroyed|destroyed the habitat)\b",
+    re.IGNORECASE,
+)
+# Causal wording in the supported Indian languages / Hinglish (word boundaries do not apply).
+FORBIDDEN_NON_ENGLISH = re.compile(
+    r"(के कारण|की वजह से|के चलते|का कारण|क्योंकि|कारण से|karan se|wajah se|ke karan|kyunki|"
+    r"मुळे|কারণে|காரணமாக|కారణంగా|કારણે|ਕਾਰਨ|ಕಾರಣದಿಂದ)",
+    re.IGNORECASE,
+)
+
+RETRY_REMINDER = (
+    "Your previous answer referenced data not returned by any tool. Only use tool results. "
+    "Do not state causes, and do not mention any event ID that a tool did not return."
+)
+FALLBACK_ANSWER = (
+    "I couldn't generate a fully grounded answer — please rephrase or ask about a specific event."
+)
+
+
+@dataclass
+class ValidationResult:
+    ok: bool
+    reason: Optional[str] = None
+
+
+_DASHES = dict.fromkeys(map(ord, "‐‑‒–—―−"), "-")
+
+
+def extract_uuids(text: str) -> Set[str]:
+    """UUIDs in text; models often emit non-breaking/unicode hyphens, so normalise them first."""
+    return {m.lower() for m in UUID_RE.findall(text.translate(_DASHES))}
+
+
+def validate_answer(answer: str, known_ids: Iterable[str]) -> ValidationResult:
+    known = {k.lower() for k in known_ids}
+    unknown = extract_uuids(answer) - known
+    if unknown:
+        return ValidationResult(False, f"ungrounded_ids:{sorted(unknown)}")
+    phrase = FORBIDDEN_PHRASES.search(answer) or FORBIDDEN_NON_ENGLISH.search(answer)
+    if phrase:
+        return ValidationResult(False, f"forbidden_language:{phrase.group(0).lower()}")
+    return ValidationResult(True)

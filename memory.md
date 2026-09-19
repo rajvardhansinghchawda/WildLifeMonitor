@@ -252,3 +252,20 @@ Persistent context and execution log across sessions per memory protocol.
   - Commit: `66619c5` ("docs: add user manual, system tech stack architecture, and problem statement flowcharts")
   - Push: Successful (`9ab9e42..66619c5 backend -> backend`)
   - Remote: `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git`
+
+## [2026-09-19 05:33] Phase 25 — AI Conservation Chatbot Assistant Integration
+- Agent: Fullstack & AI Systems Engineer
+- User Request: Add, commit, and push chatbot changes across backend and frontend.
+- Exploration & Discovery:
+  - Discovered backend chatbot implementation (`backend/app/api/v1/chat.py`, `backend/app/services/chat_agent.py`, `backend/app/services/chat_tools.py`, `backend/app/services/chat_validator.py`, `backend/tests/test_chat_agent.py`).
+  - Discovered frontend chatbot components (`frontend/src/components/chat/AuthChat.tsx`, `frontend/src/components/chat/ChatWidget.tsx`, `frontend/src/components/chat/ChatMarkdown.tsx`, `frontend/src/components/chat/PublicChat.tsx`).
+  - Audited all files to confirm zero hardcoded secrets or API keys.
+- Implementation & Integration:
+  - Backend: Grounded multi-turn chat agent supporting LLM tool calling (querying reserves, hotspots, active fires, and telemetry) with strict anti-poaching and factual validation.
+  - Frontend: Reusable floating `ChatWidget` with Markdown rendering, integrated into both `PublicChat` (public portal) and `AuthChat` (investigator portal with authenticated bearer token).
+- Verification:
+  - TypeScript: `npx tsc --noEmit` — 0 errors.
+  - Pytest: `python -m pytest tests/test_chat_agent.py -q` — 19 passed, 0 failed.
+- Git:
+  - Branch: `backend`
+  - Remote: `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git`
