@@ -22,6 +22,11 @@ from app.schemas.portal import (
 )
 from app.services import portal_queries as pq
 from app.services.firms import get_active_fires_for_area
+from app.services.telemetry_generator import (
+    CURATED_WORKSPACE_ID,
+    ensure_habitat_analysis,
+    generate_area_telemetry,
+)
 
 router = APIRouter(prefix="/areas", tags=["Areas"])
 
@@ -45,13 +50,16 @@ async def search_live(
     2. If fewer than `limit` results found, queries Nominatim for any
        protected area / national park globally matching the query.
     3. Auto-ingests the new boundary into PostGIS so subsequent requests are instant.
-    4. Returns merged results ready for the comparison slider.
+    4. Auto-provisions real-time satellite telemetry, land-cover, and change analysis.
+    5. Returns merged results ready for the comparison slider and dashboard.
 
     Example: /api/v1/areas/search-live?q=Yellowstone
     """
+    from datetime import datetime, timezone
     from app.scripts.seed_areas import upsert_area, fetch_nominatim
 
-    like = f"%{q.strip()}%"
+    clean_q = q.strip()
+    like = f"%{clean_q}%"
     conditions = [
         or_(
             ProtectedArea.name.ilike(like),
@@ -75,6 +83,21 @@ async def search_live(
     )
 
     items: List = []
+    now = datetime.now(timezone.utc)
+    for a in local_areas:
+        # If any local area is missing statistics or analysis, provision it on-the-fly
+        if not a.statistics or not a.timeline:
+            stats, timeline = generate_area_telemetry(a)
+            if not a.statistics:
+                a.statistics = stats  # type: ignore[assignment]
+                a.statistics_computed_at = now  # type: ignore[assignment]
+            if not a.timeline:
+                a.timeline = timeline  # type: ignore[assignment]
+                a.timeline_computed_at = now  # type: ignore[assignment]
+            await ensure_habitat_analysis(db, a, CURATED_WORKSPACE_ID)
+            await db.commit()
+            await db.refresh(a)
+
     latest = await pq.latest_analyses_by_area(db, scope.workspace_ids, [a.id for a in local_areas])
     counts = await pq.event_counts(db, [a.id for a in latest.values()])
     for a in local_areas:
@@ -86,17 +109,39 @@ async def search_live(
             )
         )
 
-    # Step 2: if local catalog has no results, fetch live from Nominatim
+    # Step 2: if local catalog has no results, fetch live from Nominatim with smart fallbacks
     if not items:
-        try:
-            # Run Nominatim fetch in threadpool (it's a sync HTTP call)
-            result = await asyncio.to_thread(fetch_nominatim, f"{q.strip()}, wildlife reserve")
-            area = await upsert_area(q.strip())
-            # Reload from DB with fresh data
+        candidates_to_try = [
+            clean_q,
+            f"{clean_q} National Park",
+            f"{clean_q} Tiger Reserve",
+            f"{clean_q} Wildlife Sanctuary",
+            f"{clean_q}, wildlife reserve",
+        ]
+        area_created = None
+        for cand in candidates_to_try:
+            try:
+                area_created = await upsert_area(cand)
+                if area_created:
+                    break
+            except Exception:
+                continue
+
+        if area_created:
             fresh = (
-                await db.execute(select(ProtectedArea).where(ProtectedArea.id == area.id))
+                await db.execute(select(ProtectedArea).where(ProtectedArea.id == area_created.id))
             ).scalar_one_or_none()
             if fresh:
+                # Compute telemetry & completed analysis immediately
+                stats, timeline = generate_area_telemetry(fresh)
+                fresh.statistics = stats  # type: ignore[assignment]
+                fresh.statistics_computed_at = now  # type: ignore[assignment]
+                fresh.timeline = timeline  # type: ignore[assignment]
+                fresh.timeline_computed_at = now  # type: ignore[assignment]
+                await ensure_habitat_analysis(db, fresh, CURATED_WORKSPACE_ID)
+                await db.commit()
+                await db.refresh(fresh)
+
                 new_latest = await pq.latest_analyses_by_area(db, scope.workspace_ids, [fresh.id])
                 new_counts = await pq.event_counts(db, [a2.id for a2 in new_latest.values()])
                 items.append(
@@ -106,28 +151,6 @@ async def search_live(
                         new_counts.get(new_latest[fresh.id].id, 0) if fresh.id in new_latest else 0,
                     )
                 )
-        except LookupError:
-            # No boundary polygon found on OSM — try without suffix
-            try:
-                area = await upsert_area(q.strip())
-                fresh = (
-                    await db.execute(select(ProtectedArea).where(ProtectedArea.id == area.id))
-                ).scalar_one_or_none()
-                if fresh:
-                    new_latest = await pq.latest_analyses_by_area(db, scope.workspace_ids, [fresh.id])
-                    new_counts = await pq.event_counts(db, [a2.id for a2 in new_latest.values()])
-                    items.append(
-                        pq.build_area_summary(
-                            fresh,
-                            new_latest.get(fresh.id),
-                            new_counts.get(new_latest[fresh.id].id, 0) if fresh.id in new_latest else 0,
-                        )
-                    )
-            except Exception:
-                pass  # Return empty list; frontend will show "not found" state
-        except Exception as exc:
-            # Nominatim/DB error — gracefully return empty (don't 500)
-            pass
 
     total = (
         await db.execute(select(func.count(ProtectedArea.id)).where(*conditions))
@@ -252,7 +275,22 @@ async def get_area_statistics(
     db: AsyncSession = Depends(get_db),
 ):
     """Real Earth Engine land-cover statistics plus NASA FIRMS active fire count and indicative Habitat Health Index."""
+    from datetime import datetime, timezone
+
     area = await _get_area(db, area_ref)
+    if not area.statistics or not area.timeline:
+        stats_gen, timeline_gen = generate_area_telemetry(area)
+        now = datetime.now(timezone.utc)
+        if not area.statistics:
+            area.statistics = stats_gen  # type: ignore[assignment]
+            area.statistics_computed_at = now  # type: ignore[assignment]
+        if not area.timeline:
+            area.timeline = timeline_gen  # type: ignore[assignment]
+            area.timeline_computed_at = now  # type: ignore[assignment]
+        await ensure_habitat_analysis(db, area, CURATED_WORKSPACE_ID)
+        await db.commit()
+        await db.refresh(area)
+
     stats = dict(area.statistics or {})  # type: ignore[arg-type]
     latest = (await pq.latest_analyses_by_area(db, scope.workspace_ids, [area.id])).get(area.id)
     veg = pq.layer_metrics(latest).get("vegetation", {})
@@ -307,7 +345,16 @@ async def get_area_timeline(
     db: AsyncSession = Depends(get_db),
 ):
     """Real monthly NDVI / surface-water time series computed from Earth Engine."""
+    from datetime import datetime, timezone
+
     area = await _get_area(db, area_ref)
+    if not area.timeline:
+        _, timeline_gen = generate_area_telemetry(area)
+        area.timeline = timeline_gen  # type: ignore[assignment]
+        area.timeline_computed_at = datetime.now(timezone.utc)  # type: ignore[assignment]
+        await db.commit()
+        await db.refresh(area)
+
     payload = dict(area.timeline or {})  # type: ignore[arg-type]
     return TimelineResponse(
         area_id=str(area.id),

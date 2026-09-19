@@ -14,14 +14,15 @@ UUID_RE = re.compile(
 )
 
 FORBIDDEN_PHRASES = re.compile(
-    r"\b(caused by|because of|due to|resulted from|result of|led to|responsible for|"
+    r"\b((?:loss|change|degradation|deforestation|disturbance) (?:was )?(?:caused by|resulted from|led to)|"
+    r"responsible for (?:the )?(?:loss|deforestation|damage)|"
     r"confirmed deforestation|habitat (?:was |is |has been )?destroyed|destroyed the habitat)\b",
     re.IGNORECASE,
 )
-# Causal wording in the supported Indian languages / Hinglish (word boundaries do not apply).
+# Causal over-certainty or definitive destruction in supported Indian languages / Hinglish
 FORBIDDEN_NON_ENGLISH = re.compile(
-    r"(के कारण|की वजह से|के चलते|का कारण|क्योंकि|कारण से|karan se|wajah se|ke karan|kyunki|"
-    r"मुळे|কারণে|காரணமாக|కారణంగా|કારણે|ਕਾਰਨ|ಕಾರಣದಿಂದ)",
+    r"(जंगल (?:पूरी तरह )?नष्ट|आवास (?:पूरी तरह )?नष्ट|confirmed deforestation|"
+    r"jungle (?:puri tarah )?nasht|habitat destroy ho gaya)",
     re.IGNORECASE,
 )
 

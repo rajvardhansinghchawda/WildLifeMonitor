@@ -22,7 +22,7 @@ class ChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
     conversation_history: Optional[List[Dict[str, str]]] = Field(default=None, max_length=100)
     language: Optional[str] = Field(
-        default=None, max_length=5, description="en|hi|mr|bn|ta|te|gu|kn|pa; omit to auto-detect"
+        default=None, max_length=20, description="en|hi|hinglish|mr|bn|ta|te|gu|kn|pa; omit to auto-detect"
     )
 
 

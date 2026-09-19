@@ -19,7 +19,10 @@ import {
   ArrowUpDown,
   AlertTriangle,
   RefreshCw,
+  Search,
+  Loader2,
 } from 'lucide-react';
+import { AreaSummary } from '@/types';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { MetricCard } from '@/components/common/MetricCard';
 import { SeverityBadge } from '@/components/common/SeverityBadge';
@@ -52,6 +55,13 @@ export default function DashboardPage() {
   const [aoiFitCounter, setAoiFitCounter] = useState(0);
   const [selectedHotspot, setSelectedHotspot] = useState<any | null>(null);
 
+  // Live search state
+  const [globalSearch, setGlobalSearch] = useState('');
+  const [isSearchingLive, setIsSearchingLive] = useState(false);
+  const [searchResults, setSearchResults] = useState<AreaSummary[]>([]);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [customAreas, setCustomAreas] = useState<AreaSummary[]>([]);
+
   // Close fullscreen on ESC key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -64,11 +74,23 @@ export default function DashboardPage() {
   }, []);
 
   const isOffline = Boolean(areas.error);
-  const effectiveAreas = areas.data?.items.length
+  const baseAreas = areas.data?.items.length
     ? areas.data.items
     : isOffline
     ? DASHBOARD_DEMO_AREAS.items
     : [];
+
+  const effectiveAreas = React.useMemo(() => {
+    const list = [...customAreas];
+    const seen = new Set(customAreas.map((a) => a.id));
+    for (const a of baseAreas) {
+      if (!seen.has(a.id)) {
+        list.push(a);
+        seen.add(a.id);
+      }
+    }
+    return list;
+  }, [customAreas, baseAreas]);
 
   useEffect(() => {
     if (!areaId && effectiveAreas.length) {
@@ -76,6 +98,37 @@ export default function DashboardPage() {
       setAreaId(withData.id);
     }
   }, [effectiveAreas, areaId]);
+
+  const handleLiveSearch = async (query: string) => {
+    setGlobalSearch(query);
+    if (!query.trim() || query.trim().length < 2) {
+      setSearchResults([]);
+      setShowSearchDropdown(false);
+      return;
+    }
+    setIsSearchingLive(true);
+    setShowSearchDropdown(true);
+    try {
+      const res = await api.areas.searchLive(query.trim(), 6);
+      if (res?.items) {
+        setSearchResults(res.items);
+      }
+    } catch (err) {
+      console.warn('Live search error:', err);
+    } finally {
+      setIsSearchingLive(false);
+    }
+  };
+
+  const handleSelectSearchedArea = (selected: AreaSummary) => {
+    setCustomAreas((prev) => {
+      if (prev.find((a) => a.id === selected.id)) return prev;
+      return [selected, ...prev];
+    });
+    setAreaId(selected.id);
+    setGlobalSearch('');
+    setShowSearchDropdown(false);
+  };
 
   const area = effectiveAreas.find((a) => a.id === areaId) ?? effectiveAreas[0] ?? null;
   const stats = useApi(() => (areaId && !isOffline ? api.areas.statistics(areaId) : Promise.resolve(null)), [areaId, isOffline]);
@@ -132,26 +185,95 @@ export default function DashboardPage() {
               HABITAT CHANGE DASHBOARD
             </h1>
             <p className="text-xs text-slate-400 mt-1.5 max-w-3xl leading-relaxed">
-              Satellite-derived change candidates (Sentinel-2, Dynamic World, OpenStreetMap context)
-              prioritised for field investigation. Results are candidates, not proof of cause.
+              Real-time satellite-derived telemetry (Sentinel-2, Dynamic World, OpenStreetMap context)
+              for 41+ pre-loaded reserves and any habitat searched live globally.
             </p>
           </div>
-          <div>
-            <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1.5">
-              <MapPin className="w-3 h-3 inline mr-1 text-emerald-400" />
-              Protected area
-            </label>
-            <select
-              value={areaId ?? ''}
-              onChange={(e) => setAreaId(e.target.value)}
-              className="h-9 px-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 min-w-[260px]"
-            >
-              {effectiveAreas.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name} ({a.country})
-                </option>
-              ))}
-            </select>
+
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+            {/* Live Search Any Global Location */}
+            <div className="relative min-w-[280px]">
+              <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>
+                  <Search className="w-3 h-3 inline mr-1 text-emerald-400" />
+                  Search Any Location
+                </span>
+                <span className="text-[9px] text-emerald-400/80 font-mono">Live Ingestion</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={globalSearch}
+                  onChange={(e) => handleLiveSearch(e.target.value)}
+                  onFocus={() => {
+                    if (searchResults.length > 0) setShowSearchDropdown(true);
+                  }}
+                  placeholder="e.g. Yellowstone, Serengeti, Chitwan..."
+                  className="w-full h-9 pl-3 pr-8 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                />
+                <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                  {isSearchingLive ? (
+                    <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin" />
+                  ) : (
+                    <Search className="w-3.5 h-3.5 text-slate-500" />
+                  )}
+                </div>
+              </div>
+
+              {/* Autocomplete Dropdown */}
+              {showSearchDropdown && (
+                <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl max-h-64 overflow-y-auto divide-y divide-slate-800/60 backdrop-blur-lg">
+                  {searchResults.length === 0 && !isSearchingLive ? (
+                    <div className="p-3 text-center text-xs text-slate-400 font-mono">
+                      No matching global habitats found.
+                    </div>
+                  ) : (
+                    searchResults.map((res) => (
+                      <button
+                        key={res.id}
+                        type="button"
+                        onClick={() => handleSelectSearchedArea(res)}
+                        className="w-full p-2.5 text-left hover:bg-emerald-500/10 transition-colors flex items-center justify-between group"
+                      >
+                        <div>
+                          <p className="text-xs font-semibold text-white group-hover:text-emerald-300">
+                            {res.name}
+                          </p>
+                          <p className="text-[10px] text-slate-400">
+                            {[res.state, res.country].filter(Boolean).join(', ')} ·{' '}
+                            <span className="text-emerald-400 font-mono">
+                              {Math.round(res.area_km2)} km²
+                            </span>
+                          </p>
+                        </div>
+                        <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300">
+                          Select
+                        </span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Catalog Selector */}
+            <div className="min-w-[220px]">
+              <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1.5">
+                <MapPin className="w-3 h-3 inline mr-1 text-emerald-400" />
+                Reserve Catalog ({effectiveAreas.length})
+              </label>
+              <select
+                value={areaId ?? ''}
+                onChange={(e) => setAreaId(e.target.value)}
+                className="w-full h-9 px-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+              >
+                {effectiveAreas.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name} ({a.country})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 

@@ -27,41 +27,39 @@ UNRESOLVED_ANSWER = (
 )
 
 SYSTEM_PROMPT = (
-    "You are a data assistant for a wildlife habitat monitoring system. You must answer ONLY using "
-    "data returned by the tools provided. Rules:\n"
-    "- Never invent, estimate, or guess any number, location, or event that did not come from a tool "
-    "result.\n"
-    "- If the tools don't return enough data to answer, say so explicitly instead of guessing.\n"
-    "- Never claim causation (e.g. never say 'the road caused this change' — you may only say a road "
-    "is nearby, nothing more).\n"
-    "- Never upgrade the severity language beyond what the data supports. Use these exact labels only: "
-    "'vegetation-loss candidate', 'water gain/loss', 'built-up change candidate', 'forest disturbance "
-    "alert'. Never say 'confirmed deforestation' or 'habitat destroyed'.\n"
-    "- Every specific number or event you mention must be traceable to a tool result — reference the "
-    "event ID when discussing a specific event.\n"
-    "- If the user asks something outside the scope of this analysis's data (general knowledge, other "
-    "locations, opinions), say plainly that it's outside what you can answer from this analysis.\n"
-    "- Keep answers concise and factual, like a field briefing, not a marketing description."
+    "You are 'TerraWatch Habitat AI', an expert conservation intelligence assistant for wildlife reserves.\n"
+    "You assist forest officials, researchers, and citizens with habitat health, canopy loss, water dynamics, and ecological context.\n\n"
+    "CORE CAPABILITIES & CONVERSATIONAL RULES:\n"
+    "1. Conversational & General Inquiries:\n"
+    "   - Greet users warmly when they say 'hi', 'hello', 'namaste', 'kaise ho', 'suno', etc. Introduce your capabilities.\n"
+    "   - Answer general questions ('Who are you?', 'What is NDVI?', 'What can you do?', 'How does TerraWatch work?') "
+    "clearly, politely, and informatively with high UX quality.\n"
+    "   - If asked about the reserve's wildlife or habitat (e.g. tigers, leopards, flora), share genuine ecological context "
+    "and explain why monitoring canopy and water bodies is critical for their protection.\n"
+    "2. Telemetry & Data Analysis Queries:\n"
+    "   - When asked about specific numbers, vegetation loss, water bodies, alerts, or rankings for this reserve, "
+    "ALWAYS call the appropriate tool first and cite exact tool results.\n"
+    "   - Never invent, estimate, or guess numbers or events that did not come from a tool.\n"
+    "   - Never claim unverified causation (e.g. say a road is nearby; never say 'the road caused this loss').\n"
+    "   - Use standard scientific candidate labels: 'vegetation-loss candidate', 'water gain/loss', 'built-up change candidate', 'forest disturbance alert'.\n"
+    "3. Format:\n"
+    "   - Start with a direct, friendly answer.\n"
+    "   - Use short, readable bullet points for key facts, bolding key numbers.\n"
+    "   - Suggest a relevant follow-up question at the end."
 )
 
 
 # Appended as separate system messages; the grounding prompt above is never altered.
 STYLE_PROMPT = (
-    "Presentation rules (they never override the rules above): write like a friendly field briefing. "
-    "Start with a one-sentence direct answer, then short bullet points. Bold the key numbers. "
-    "Prefer bullet lists over wide tables (use a table only for 3+ events compared on 2-3 columns). "
-    "Keep event IDs exactly as returned. Keep the exact English category labels "
-    "('vegetation-loss candidate', 'water gain/loss', 'built-up change candidate', "
-    "'forest disturbance alert') even when replying in another language; you may add a translation in "
-    "brackets. End with one short suggestion of what the user can ask next. "
-    "The user may write in any language: understand the question, ALWAYS call the relevant tool(s) "
-    "first (translate the intent yourself), and never answer data questions without a tool result. "
-    "Only ask the user to clarify if the question truly cannot be mapped to the available tools."
+    "Presentation rules: Write like a friendly, helpful field intelligence specialist. "
+    "Keep answers crisp, conversational, and factual. When the user speaks in Hinglish, reply in Hinglish "
+    "using natural Hindi phrases in the Roman alphabet (e.g. 'Is reserve me...', 'Satellite data ke hisab se...')."
 )
 
 SUPPORTED_LANGUAGES = {
     "en": "English",
     "hi": "Hindi (Devanagari script)",
+    "hinglish": "Hinglish (conversational Hindi in Roman/English alphabet)",
     "mr": "Marathi",
     "bn": "Bengali",
     "ta": "Tamil",
@@ -71,14 +69,54 @@ SUPPORTED_LANGUAGES = {
     "pa": "Punjabi",
 }
 
+HINGLISH_KEYWORDS = {
+    "kya", "hai", "hain", "kaisa", "kaise", "kaisi", "kitna", "kitni", "kitne",
+    "batao", "bataiye", "batado", "mujhe", "iss", "isse", "iska", "iski", "iske",
+    "kaun", "kaunsa", "kaunsi", "paani", "pani", "jungle", "ped", "pedh", "pedho",
+    "kuch", "hoga", "suno", "pele", "pehle", "karo", "kardo", "nahi", "nhi",
+    "acha", "achha", "aur", "pe", "mein", "me", "se", "ko", "par",
+    "kyun", "kyu", "badlaav", "badlav", "rakho", "dikhao", "madad", "chahiye",
+    "janwar", "bagh", "sher", "naam", "baare", "bhi", "to", "toh", "kaam",
+    "theek", "thik", "karte", "karta", "kare", "sakta", "sakte", "shuru", "aao",
+    "namaste", "pranam", "dhanyawad", "shukriya", "boliye", "bata", "tum", "aap", "apn"
+}
 
-def language_instruction(language: Optional[str]) -> str:
-    name = SUPPORTED_LANGUAGES.get((language or "").lower())
-    if name:
-        return f"Reply in {name}. Numbers, units and event IDs stay unchanged."
+
+def detect_language(message: str, requested_lang: Optional[str] = None) -> str:
+    """Detect language mode, prioritizing Hinglish when Roman Hindi is detected."""
+    req = (requested_lang or "").lower().strip()
+    if req in ("hinglish", "hi-en", "roman-hindi"):
+        return "hinglish"
+    if req in SUPPORTED_LANGUAGES and req not in ("auto", "hi"):
+        return req
+
+    # If requested is 'hi' or 'auto', check script
+    has_devanagari = any('\u0900' <= char <= '\u097F' for char in message)
+    if has_devanagari:
+        return "hi"
+
+    words = set(re.findall(r"[a-zA-Z]+", message.lower()))
+    if len(words & HINGLISH_KEYWORDS) >= 1:
+        return "hinglish"
+
+    if req == "hi":
+        return "hi"
+
+    return "en"
+
+
+def language_instruction(message: str, requested_lang: Optional[str] = None) -> str:
+    lang = detect_language(message, requested_lang)
+    if lang == "hinglish":
+        return (
+            "MANDATORY LANGUAGE: Reply in natural, friendly, fluent HINGLISH (Hindi written in the Roman/English alphabet, "
+            "e.g. 'Is analysis ke hisab se kul 2.4 ha ka vegetation-loss candidate identify hua hai.'). "
+            "DO NOT write in Devanagari Hindi script. DO NOT write in pure English. "
+            "Use conversational Indian phrasing with English technical terms (NDVI, canopy, satellite, hectares, water bodies)."
+        )
+    name = SUPPORTED_LANGUAGES.get(lang, "English")
     return (
-        "Reply in the same language the user wrote in (for Hinglish, reply in simple Hinglish). "
-        "Numbers, units and event IDs stay unchanged."
+        f"Reply in {name}. Numbers, units and event IDs stay unchanged."
     )
 
 
@@ -248,7 +286,7 @@ class ChatAgent:
                     f"{self.toolbox.analysis_id}. Use this analysis_id in tool calls."
                 ),
             },
-            {"role": "system", "content": f"{STYLE_PROMPT} {language_instruction(language)}"},
+            {"role": "system", "content": f"{STYLE_PROMPT} {language_instruction(message, language)}"},
             *self._history_messages(history),
             {"role": "user", "content": message},
         ]

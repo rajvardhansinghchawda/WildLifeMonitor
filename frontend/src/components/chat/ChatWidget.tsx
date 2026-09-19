@@ -40,7 +40,8 @@ interface Props {
 
 // speech = BCP-47 tag for the browser's speech recognition / synthesis
 const LANGUAGES: Array<{ code: string; label: string; speech: string }> = [
-  { code: 'auto', label: 'Auto-detect', speech: 'en-IN' },
+  { code: 'auto', label: 'Auto-detect (Hinglish/English)', speech: 'en-IN' },
+  { code: 'hinglish', label: 'Hinglish (Hindi in English letters)', speech: 'en-IN' },
   { code: 'en', label: 'English', speech: 'en-IN' },
   { code: 'hi', label: 'हिन्दी (Hindi)', speech: 'hi-IN' },
   { code: 'mr', label: 'मराठी (Marathi)', speech: 'mr-IN' },
@@ -54,6 +55,12 @@ const LANGUAGES: Array<{ code: string; label: string; speech: string }> = [
 
 const SUGGESTIONS: Record<string, string[]> = {
   en: ['Summarise this analysis.', 'What are the top 3 events by priority?', 'What does the water layer show?'],
+  hinglish: [
+    'Is analysis ka summary batao.',
+    'Top priority ke 3 events kaunse hain?',
+    'Forest cover aur water me kya badlav aaya?',
+    'Aap meri kya madad kar sakte ho?',
+  ],
   hi: ['इस विश्लेषण का सारांश दो।', 'प्राथमिकता के अनुसार शीर्ष 3 घटनाएँ बताओ।', 'जल परत क्या दिखाती है?'],
   mr: ['या विश्लेषणाचा सारांश सांगा.', 'प्राधान्यानुसार पहिल्या 3 घटना सांगा.'],
   bn: ['এই বিশ্লেষণের সারসংক্ষেপ দাও।', 'অগ্রাধিকার অনুযায়ী শীর্ষ ৩টি ঘটনা বলো।'],
