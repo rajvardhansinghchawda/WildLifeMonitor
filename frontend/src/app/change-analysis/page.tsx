@@ -102,10 +102,14 @@ function ChangeAnalysisInner() {
 
   // 3. User Controls & View Modes (Directly aligned with Problem Statement)
   const [selectedPSRequirement, setSelectedPSRequirement] = useState<PSRequirementType>('vegetation');
-  const [comparisonMode, setComparisonMode] = useState<ComparisonMode>('side-by-side');
+  const [comparisonMode, setComparisonMode] = useState<ComparisonMode>('swipe');
   const [swipePosition, setSwipePosition] = useState<number>(50); // percentage
   const [basemapType, setBasemapType] = useState<'satellite' | 'dark'>('satellite');
   const [aoiZoomCounter, setAoiZoomCounter] = useState(0);
+
+  // Synchronized map view for flawless dual-layer compare slider
+  const [syncedCenter, setSyncedCenter] = useState<{ lat: number; lon: number }>({ lat: 21.695, lon: 79.248 });
+  const [syncedZoom, setSyncedZoom] = useState<number>(10);
 
   // Fullscreen state: which map card covers the full screen individually
   const [fullscreenCard, setFullscreenCard] = useState<'baseline' | 'observed' | 'difference' | 'swipe' | null>(null);
@@ -161,6 +165,13 @@ function ChangeAnalysisInner() {
   const currentArea = useMemo(() => {
     return areas.find((a) => a.id === selectedAreaId) || areas[0] || null;
   }, [areas, selectedAreaId]);
+
+  // Sync center whenever currentArea coordinates are available
+  useEffect(() => {
+    if (currentArea?.coordinates) {
+      setSyncedCenter(currentArea.coordinates);
+    }
+  }, [currentArea?.coordinates?.lat, currentArea?.coordinates?.lon]);
 
   // Load complete backend data whenever selectedAreaId or selectedPSRequirement changes
   useEffect(() => {
@@ -717,6 +728,18 @@ function ChangeAnalysisInner() {
               </span>
               <div className="flex items-center bg-slate-900 p-0.5 rounded-md border border-slate-800">
                 <button
+                  id="mode-btn-swipe"
+                  onClick={() => setComparisonMode('swipe')}
+                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                    comparisonMode === 'swipe'
+                      ? 'bg-emerald-500 text-slate-950 font-semibold shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Compare Slider (Overlay)
+                </button>
+                <button
+                  id="mode-btn-side-by-side"
                   onClick={() => setComparisonMode('side-by-side')}
                   className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
                     comparisonMode === 'side-by-side'
@@ -727,16 +750,7 @@ function ChangeAnalysisInner() {
                   Side by Side
                 </button>
                 <button
-                  onClick={() => setComparisonMode('swipe')}
-                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                    comparisonMode === 'swipe'
-                      ? 'bg-emerald-500 text-slate-950 font-semibold shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Swipe
-                </button>
-                <button
+                  id="mode-btn-difference"
                   onClick={() => setComparisonMode('difference')}
                   className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
                     comparisonMode === 'difference'
@@ -744,7 +758,7 @@ function ChangeAnalysisInner() {
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  Difference
+                  Heatmap
                 </button>
               </div>
             </div>
@@ -1190,25 +1204,29 @@ function ChangeAnalysisInner() {
                 </div>
               )}
 
-              {/* SWIPE MODE (Split Slider) */}
+              {/* SWIPE MODE: UNIFIED OVERLAY MAP VIEWPORT (Comparing Old Baseline Underneath vs Current Observed On Top) */}
               {comparisonMode === 'swipe' && (
-                <div className="relative h-[360px] w-full rounded-lg overflow-hidden border border-slate-800 bg-[#080e1b] select-none">
-                  {/* Base Layer: Baseline */}
+                <div className="relative h-[540px] w-full rounded-xl overflow-hidden border border-slate-800 bg-[#080e1b] select-none shadow-2xl">
+                  {/* Layer 1: Underneath (Old / Start Date Clean Sentinel-2 Baseline Satellite View) */}
                   <div className="absolute inset-0">
                     <ComparisonLeafletMap
                       key={`swipe-base-${currentArea?.id || 'base'}-${aoiZoomCounter}`}
-                      center={mapCenter}
+                      center={syncedCenter}
+                      zoom={syncedZoom}
+                      syncCenter={syncedCenter}
+                      syncZoom={syncedZoom}
                       boundaryGeoJson={boundaryGeoJson}
                       mode="baseline"
                       rasterOverlay={baselineOverlay}
                       showBoundary={layerBoundary}
                       showHotspots={false}
                       basemapType={basemapType}
+                      hideControls={true}
                       height="100%"
                     />
                   </div>
 
-                  {/* Top Layer: Observed (Clipped by slider position) */}
+                  {/* Layer 2: Top Layer (Current / Specific Date WITH Change Overlays & Micro-Particles, clipped by slider position) */}
                   <div
                     className="absolute inset-0 pointer-events-none"
                     style={{ clipPath: `polygon(${swipePosition}% 0, 100% 0, 100% 100%, ${swipePosition}% 100%)` }}
@@ -1216,13 +1234,23 @@ function ChangeAnalysisInner() {
                     <div className="w-full h-full pointer-events-auto">
                       <ComparisonLeafletMap
                         key={`swipe-obs-${currentArea?.id || 'obs'}-${aoiZoomCounter}`}
-                        center={mapCenter}
+                        center={syncedCenter}
+                        zoom={syncedZoom}
+                        syncCenter={syncedCenter}
+                        syncZoom={syncedZoom}
+                        onViewChange={(c, z) => {
+                          setSyncedCenter(c);
+                          setSyncedZoom(z);
+                        }}
                         boundaryGeoJson={boundaryGeoJson}
                         hotspots={hotspots}
                         mode="observed"
-                        rasterOverlay={comparisonOverlay}
+                        rasterOverlay={changeOverlay || comparisonOverlay}
                         showBoundary={layerBoundary}
                         showHotspots={layerHotspots}
+                        showRoads={layerRoads}
+                        showWater={layerWater}
+                        showSettlements={layerSettlements}
                         basemapType={basemapType}
                         onHotspotClick={(h) => setSelectedHotspot(h)}
                         height="100%"
@@ -1230,13 +1258,16 @@ function ChangeAnalysisInner() {
                     </div>
                   </div>
 
-                  {/* Draggable Vertical Split Handle */}
+                  {/* Draggable Vertical Glowing Split Divider */}
                   <div
-                    className="absolute top-0 bottom-0 w-1 bg-white cursor-ew-resize flex items-center justify-center z-20 shadow-[0_0_10px_rgba(255,255,255,0.7)]"
+                    className="absolute top-0 bottom-0 w-0.5 bg-gradient-to-b from-emerald-400 via-white to-emerald-400 cursor-ew-resize flex items-center justify-center z-[500] shadow-[0_0_14px_rgba(16,185,129,0.85)] pointer-events-none"
                     style={{ left: `${swipePosition}%` }}
                   >
-                    <div className="w-7 h-7 rounded-full bg-slate-900 border-2 border-white flex items-center justify-center text-white shadow-xl -ml-0.5">
-                      <ArrowUpDown className="w-3.5 h-3.5 rotate-90" />
+                    <div className="w-9 h-9 rounded-full bg-slate-950/95 border-2 border-emerald-400/90 flex items-center justify-center text-white shadow-2xl backdrop-blur-md pointer-events-none">
+                      <div className="flex items-center text-xs font-mono font-bold text-emerald-300 gap-0.5">
+                        <span>⟨</span>
+                        <span>⟩</span>
+                      </div>
                     </div>
                   </div>
 
@@ -1250,26 +1281,77 @@ function ChangeAnalysisInner() {
                     max="100"
                     value={swipePosition}
                     onChange={(e) => setSwipePosition(Number(e.target.value))}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-30"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-[520]"
                   />
 
-                  {/* On-map badges */}
-                  <div className="absolute top-3 left-3 px-2.5 py-1 rounded bg-slate-900/80 backdrop-blur border border-slate-700 text-xs font-mono text-emerald-400 z-10 pointer-events-none">
-                    ◄ Baseline ({baselineDates.slice(0, 7)})
+                  {/* Top-Left Floating Badge: Old / Baseline Date */}
+                  <div className="absolute top-3.5 left-3.5 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-slate-700/80 shadow-xl z-[500] pointer-events-none">
+                    <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded">
+                      {baselineDates ? baselineDates.slice(0, 4) : '2021'}
+                    </span>
+                    <span className="text-xs font-mono text-slate-200">
+                      {baselineDates ? baselineDates.slice(0, 7) : 'Apr 2021'} · Sentinel 2 (Baseline)
+                    </span>
                   </div>
-                  <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
-                    <div className="px-2.5 py-1 rounded bg-slate-900/80 backdrop-blur border border-slate-700 text-xs font-mono text-amber-400 pointer-events-none">
-                      Observed ({comparisonDates.slice(0, 7)}) ►
+
+                  {/* Top-Right Floating Badge: Current / Observed Date + Fullscreen */}
+                  <div className="absolute top-3.5 right-3.5 flex items-center gap-2 z-[500]">
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-slate-700/80 shadow-xl pointer-events-none">
+                      <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">
+                        {comparisonDates ? comparisonDates.slice(0, 4) : '2026'}
+                      </span>
+                      <span className="text-xs font-mono text-slate-200">
+                        {comparisonDates ? comparisonDates.slice(0, 7) : 'Apr 2026'} · Sentinel 2 (Current)
+                      </span>
                     </div>
                     <button
                       id="fullscreen-btn-swipe"
                       title="View Swipe Map Full Screen"
                       aria-label="View Swipe Map Full Screen"
                       onClick={() => setFullscreenCard('swipe')}
-                      className="p-1.5 rounded bg-slate-900/80 backdrop-blur border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors shadow-lg"
+                      className="p-1.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors shadow-xl"
                     >
-                      <Maximize2 className="w-3.5 h-3.5" />
+                      <Maximize2 className="w-4 h-4" />
                     </button>
+                  </div>
+
+                  {/* Bottom-Left Floating GIS Scale Bar */}
+                  <div className="absolute bottom-3.5 left-3.5 px-3 py-1.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-slate-800 text-[10px] font-mono text-slate-300 z-[500] pointer-events-none flex items-center gap-2.5 shadow-xl">
+                    <div className="flex items-center gap-1">
+                      <span className="w-3 h-1 bg-slate-200 inline-block"></span>
+                      <span className="w-3 h-1 bg-slate-500 inline-block"></span>
+                      <span className="w-3 h-1 bg-slate-200 inline-block"></span>
+                    </div>
+                    <span>0 — 2.5 — 5 km</span>
+                  </div>
+
+                  {/* Bottom-Right Floating Glassmorphic Change Detection Legend (Matching Video) */}
+                  <div className="absolute bottom-3.5 right-3.5 max-w-xs p-3.5 rounded-xl bg-slate-950/90 backdrop-blur-md border border-slate-700/80 shadow-2xl z-[500] pointer-events-none text-left">
+                    <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-800">
+                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">Change Detection</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5 text-[11px] font-mono">
+                      <div className="flex items-center gap-2 text-slate-300">
+                        <span className="w-3 h-3 rounded-sm bg-rose-500 shrink-0 shadow-[0_0_6px_rgba(244,63,94,0.6)]" />
+                        <span>Deforestation (Forest Loss)</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-300">
+                        <span className="w-3 h-3 rounded-sm bg-amber-500 shrink-0 shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
+                        <span>Vegetation Loss / Degradation</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-300">
+                        <span className="w-3 h-3 rounded-sm bg-cyan-400 shrink-0 shadow-[0_0_6px_rgba(6,182,212,0.6)]" />
+                        <span>Water Body Change</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <span className="w-3 h-3 rounded-sm bg-slate-600 shrink-0" />
+                        <span>No Significant Change</span>
+                      </div>
+                    </div>
+                    <div className="mt-2.5 pt-1.5 border-t border-slate-800/80 text-[9px] font-mono text-slate-400 leading-tight">
+                      Satellite Data: Sentinel 2 | Period: {baselineDates ? baselineDates.slice(0, 4) : '2021'} - {comparisonDates ? comparisonDates.slice(0, 4) : '2026'} | Area: {currentArea?.name || 'Protected Area'}
+                    </div>
                   </div>
                 </div>
               )}
@@ -1314,9 +1396,9 @@ function ChangeAnalysisInner() {
               )}
             </div>
 
-            {/* 2. REAL KPI SUMMARY STATS CARDS (MAPPED TO 5 PS PILLARS) */}
+            {/* 2. REAL KPI SUMMARY STATS CARDS (MAPPED TO REFERENCE VIDEO KEY INSIGHTS) */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {/* Pillar 5: Deforestation (Severe Canopy Drop) */}
+              {/* Card 1: Forest Cover Lost (Pillar 5: Deforestation) */}
               <div
                 onClick={() => setSelectedPSRequirement('deforestation')}
                 className="bg-[#0b1528] hover:bg-[#0e1b33] cursor-pointer rounded-xl border border-slate-800/80 p-3.5 flex items-center gap-3 transition-all"
@@ -1325,28 +1407,28 @@ function ChangeAnalysisInner() {
                   <Flame className="w-5 h-5 text-rose-400" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">5. DEFORESTATION</span>
+                  <span className="text-[10px] font-mono uppercase text-slate-400 block">Forest Cover Lost</span>
                   <div className="text-lg font-bold font-mono text-rose-400">
-                    {activeMetrics ? `${activeMetrics.severeLossHa.toFixed(1)} ha` : '0.0 ha'}
+                    {activeMetrics ? `-${activeMetrics.severeLossHa.toFixed(1)} ha` : '-0.0 ha'}
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">
-                    {activeMetrics?.deforestationAlertCount || 0} critical canopy alerts
+                    {activeMetrics?.deforestationAlertCount || 0} critical alerts
                   </span>
                 </div>
               </div>
 
-              {/* Pillar 2: Vegetation Loss & Biomass */}
+              {/* Card 2: Vegetation Decline (Pillar 2: Degradation) */}
               <div
                 onClick={() => setSelectedPSRequirement('vegetation')}
                 className="bg-[#0b1528] hover:bg-[#0e1b33] cursor-pointer rounded-xl border border-slate-800/80 p-3.5 flex items-center gap-3 transition-all"
               >
-                <div className="w-10 h-10 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
-                  <Trees className="w-5 h-5 text-emerald-400" />
+                <div className="w-10 h-10 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
+                  <Trees className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">2. VEGETATION LOSS</span>
-                  <div className="text-lg font-bold font-mono text-emerald-400">
-                    {activeMetrics ? `${activeMetrics.vegLossKm2.toFixed(1)} km²` : '0.0 km²'}
+                  <span className="text-[10px] font-mono uppercase text-slate-400 block">Vegetation Decline</span>
+                  <div className="text-lg font-bold font-mono text-amber-400">
+                    {activeMetrics ? `-${(activeMetrics.vegLossKm2 * 100).toFixed(1)} ha` : '-0.0 ha'}
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">
                     Net: {activeMetrics ? `${activeMetrics.netKm2 > 0 ? '+' : ''}${activeMetrics.netKm2.toFixed(1)} km²` : '0.0'}
@@ -1354,7 +1436,7 @@ function ChangeAnalysisInner() {
                 </div>
               </div>
 
-              {/* Pillar 3: Water Bodies */}
+              {/* Card 3: Water Body Reduction (Pillar 3: Water Dynamics) */}
               <div
                 onClick={() => setSelectedPSRequirement('water')}
                 className="bg-[#0b1528] hover:bg-[#0e1b33] cursor-pointer rounded-xl border border-slate-800/80 p-3.5 flex items-center gap-3 transition-all"
@@ -1363,17 +1445,17 @@ function ChangeAnalysisInner() {
                   <Droplets className="w-5 h-5 text-cyan-400" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">3. WATER BODIES</span>
+                  <span className="text-[10px] font-mono uppercase text-slate-400 block">Water Body Reduction</span>
                   <div className="text-lg font-bold font-mono text-cyan-400">
-                    {activeMetrics ? `${activeMetrics.waterLossHa.toFixed(1)} ha` : '0.0 ha'}
+                    {activeMetrics ? `-${activeMetrics.waterLossHa.toFixed(1)} ha` : '-0.0 ha'}
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">
-                    Extent: {activeMetrics?.totalWaterKm2.toFixed(1)} km²
+                    Surface: {activeMetrics?.totalWaterKm2.toFixed(1)} km²
                   </span>
                 </div>
               </div>
 
-              {/* Pillar 4: Urban Expansion */}
+              {/* Card 4: New Agricultural Land / Builtup (Pillar 4: Urban Expansion) */}
               <div
                 onClick={() => setSelectedPSRequirement('builtup')}
                 className="bg-[#0b1528] hover:bg-[#0e1b33] cursor-pointer rounded-xl border border-slate-800/80 p-3.5 flex items-center gap-3 transition-all"
@@ -1382,12 +1464,12 @@ function ChangeAnalysisInner() {
                   <Building2 className="w-5 h-5 text-purple-400" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">4. URBAN EXPANSION</span>
+                  <span className="text-[10px] font-mono uppercase text-slate-400 block">New Agri / Builtup</span>
                   <div className="text-lg font-bold font-mono text-purple-400">
-                    {activeMetrics ? `${activeMetrics.totalUrbanHa.toFixed(1)} ha` : '0.0 ha'}
+                    {activeMetrics ? `+${(activeMetrics.builtupGainHa || activeMetrics.totalUrbanHa || 0).toFixed(1)} ha` : '+0.0 ha'}
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">
-                    Corridor Growth: +{(activeMetrics?.builtupGainHa || 0).toFixed(1)} ha
+                    Expansion: +{(activeMetrics?.builtupGainHa || 0).toFixed(1)} ha
                   </span>
                 </div>
               </div>
@@ -1902,7 +1984,10 @@ function ChangeAnalysisInner() {
                 <div className="absolute inset-0">
                   <ComparisonLeafletMap
                     key={`fs-swipe-base-${currentArea?.id || 'base'}-${aoiZoomCounter}`}
-                    center={mapCenter}
+                    center={syncedCenter}
+                    zoom={syncedZoom}
+                    syncCenter={syncedCenter}
+                    syncZoom={syncedZoom}
                     boundaryGeoJson={boundaryGeoJson}
                     mode="baseline"
                     rasterOverlay={baselineOverlay}
@@ -1912,10 +1997,11 @@ function ChangeAnalysisInner() {
                     showWater={layerWater}
                     showSettlements={layerSettlements}
                     basemapType={basemapType}
+                    hideControls={true}
                     height="100%"
                   />
                 </div>
-                {/* Swipe Top Layer: Observed */}
+                {/* Swipe Top Layer: Observed with Change Overlays */}
                 <div
                   className="absolute inset-0 pointer-events-none"
                   style={{ clipPath: `polygon(${swipePosition}% 0, 100% 0, 100% 100%, ${swipePosition}% 100%)` }}
@@ -1923,11 +2009,18 @@ function ChangeAnalysisInner() {
                   <div className="w-full h-full pointer-events-auto">
                     <ComparisonLeafletMap
                       key={`fs-swipe-obs-${currentArea?.id || 'obs'}-${aoiZoomCounter}`}
-                      center={mapCenter}
+                      center={syncedCenter}
+                      zoom={syncedZoom}
+                      syncCenter={syncedCenter}
+                      syncZoom={syncedZoom}
+                      onViewChange={(c, z) => {
+                        setSyncedCenter(c);
+                        setSyncedZoom(z);
+                      }}
                       boundaryGeoJson={boundaryGeoJson}
                       hotspots={hotspots}
                       mode="observed"
-                      rasterOverlay={comparisonOverlay}
+                      rasterOverlay={changeOverlay || comparisonOverlay}
                       showBoundary={layerBoundary}
                       showHotspots={layerHotspots}
                       showRoads={layerRoads}
@@ -1941,11 +2034,14 @@ function ChangeAnalysisInner() {
                 </div>
                 {/* Swipe Handle */}
                 <div
-                  className="absolute top-0 bottom-0 w-1 bg-white cursor-ew-resize flex items-center justify-center z-20 shadow-[0_0_15px_rgba(255,255,255,0.8)]"
+                  className="absolute top-0 bottom-0 w-0.5 bg-gradient-to-b from-emerald-400 via-white to-emerald-400 cursor-ew-resize flex items-center justify-center z-20 shadow-[0_0_15px_rgba(16,185,129,0.9)] pointer-events-none"
                   style={{ left: `${swipePosition}%` }}
                 >
-                  <div className="w-8 h-8 rounded-full bg-slate-900 border-2 border-white flex items-center justify-center text-white shadow-2xl -ml-0.5">
-                    <ArrowUpDown className="w-4 h-4 rotate-90" />
+                  <div className="w-9 h-9 rounded-full bg-slate-950/95 border-2 border-emerald-400/90 flex items-center justify-center text-white shadow-2xl backdrop-blur-md pointer-events-none">
+                    <div className="flex items-center text-xs font-mono font-bold text-emerald-300 gap-0.5">
+                      <span>⟨</span>
+                      <span>⟩</span>
+                    </div>
                   </div>
                 </div>
                 <input
@@ -1957,6 +2053,51 @@ function ChangeAnalysisInner() {
                   onChange={(e) => setSwipePosition(Number(e.target.value))}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-30"
                 />
+
+                {/* Fullscreen HUD Badges */}
+                <div className="absolute top-4 left-4 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-slate-700/80 shadow-xl z-10 pointer-events-none">
+                  <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded">
+                    {baselineDates ? baselineDates.slice(0, 4) : '2021'}
+                  </span>
+                  <span className="text-xs font-mono text-slate-200">
+                    {baselineDates || 'Apr 2021'} · Baseline Satellite
+                  </span>
+                </div>
+
+                <div className="absolute top-4 right-20 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-slate-700/80 shadow-xl z-10 pointer-events-none">
+                  <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">
+                    {comparisonDates ? comparisonDates.slice(0, 4) : '2026'}
+                  </span>
+                  <span className="text-xs font-mono text-slate-200">
+                    {comparisonDates || 'Apr 2026'} · Observed Change Layer
+                  </span>
+                </div>
+
+                {/* Floating Legend in Fullscreen */}
+                <div className="absolute bottom-5 right-5 max-w-xs p-3.5 rounded-xl bg-slate-950/90 backdrop-blur-md border border-slate-700/80 shadow-2xl z-10 pointer-events-none text-left">
+                  <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-800">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">Change Detection</span>
+                  </div>
+                  <div className="grid grid-cols-1 gap-1.5 text-[11px] font-mono">
+                    <div className="flex items-center gap-2 text-slate-300">
+                      <span className="w-3 h-3 rounded-sm bg-rose-500 shrink-0 shadow-[0_0_6px_rgba(244,63,94,0.6)]" />
+                      <span>Deforestation (Forest Loss)</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-300">
+                      <span className="w-3 h-3 rounded-sm bg-amber-500 shrink-0 shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
+                      <span>Vegetation Loss / Degradation</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-300">
+                      <span className="w-3 h-3 rounded-sm bg-cyan-400 shrink-0 shadow-[0_0_6px_rgba(6,182,212,0.6)]" />
+                      <span>Water Body Change</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <span className="w-3 h-3 rounded-sm bg-slate-600 shrink-0" />
+                      <span>No Significant Change</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               <ComparisonLeafletMap

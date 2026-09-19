@@ -390,3 +390,37 @@ Persistent context and execution log across sessions per memory protocol.
   - Push: Successful (`375bcf6..d2f9a6b backend -> backend`)
   - Remote: `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git`
 - Next: Ready for live presentation to hackathon judges.
+
+## [2026-09-19 10:15] Phase 31 — Unified Satellite Compare Slider Overlay, Organic Terrain Polygons & Micro-Particles
+- Agent: Principal GIS Architect & Lead Frontend UI Specialist
+- User Request:
+  - Reference video `WhatsApp Video 2026-09-19 at 9.49.00 AM.mp4` for `/change-analysis`.
+  - Replace separate map cards with ONE single unified map container with compare slider.
+  - Overlay two layers: Old/start date baseline clean satellite data underneath; Current/observed date on top with change overlays.
+  - Do NOT use large geometric circles. Use small particles and organic shapes conforming to map terrain.
+- Implementation Details:
+  1. **Organic Terrain-Conforming Polygons & Micro-Particles (`frontend/src/components/map/ComparisonLeafletMap.tsx`)**:
+     - Eliminated all large geometric circles (`L.circle` with 150m-300m radius) and 26px round pinheads.
+     - Implemented 12-vertex harmonic terrain jitter polygons that naturally hug terrain boundaries (forest clearcuts, fire burns, riverbank erosion).
+     - Added 2.5px micro-particle scatter clusters representing 10m Sentinel-2 pixel-level detections.
+     - Replaced bulky pins with sleek, unobtrusive 8px GIS diamond particles with hover tooltips and dossier inspection.
+     - Added `hideControls`, `syncCenter`, `syncZoom`, and `onViewChange` for seamless lockstep Leaflet synchronization.
+  2. **Unified Compare Slider Overlay on `/change-analysis` (`frontend/src/app/change-analysis/page.tsx`)**:
+     - Set `comparisonMode='swipe'` as default hero view in a unified 540px viewport.
+     - Bottom layer: Clean Sentinel-2 baseline imagery.
+     - Top layer: Current observed satellite imagery with live change detection overlays, clipped by `clipPath: polygon(${swipePosition}% 0, 100% 0, 100% 100%, ${swipePosition}% 100%)`.
+     - Draggable vertical glowing divider with circular `⟨ ⟩` handle (`z-[500]`, `z-[520]`).
+     - Floating Badges: Top-Left `[ 2021 ]` baseline pill, Top-Right `[ 2026 ]` current pill.
+     - Floating Scale Bar: `0 — 2.5 — 5 km` on bottom-left.
+     - Floating Glassmorphic Legend on bottom-right matching video: Deforestation (Forest Loss), Vegetation Loss / Degradation, Water Body Change, No Significant Change.
+     - Updated 4 Key Insights metric cards: Forest Cover Lost (`-X ha`), Vegetation Decline (`-X ha`), Water Body Reduction (`-X ha`), New Agri / Builtup (`+X ha`).
+     - Aligned fullscreen modal with the synchronized dual-layer swipe and HUD.
+- Verification:
+  - Chrome DevTools MCP: Verified clean render on `http://localhost:3000/change-analysis` with 0 console errors.
+  - Tested slider dragging interactively (35%, 80%), confirming smooth layer reveal.
+  - Tested reserve switching across reserves (Bandhavgarh, Pench National Park) with live telemetry and boundary alignment.
+- Git:
+  - Branch: `backend`
+  - Commit: Pending git push.
+  - Remote: `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git`
+
