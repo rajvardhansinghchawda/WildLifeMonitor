@@ -668,6 +668,8 @@ ajesh.sharma@forest.gov.in (Senior Director NTCA - Admin Role)
   - DevTools DOM Snapshot verification: Verified `23.6448° N, 80.8378° E · West Buffer Wildlife Range, Bandhavgarh National Park (Umaria)` on dashboard map card, and place names rendered across all investigation priority items.
 - Git:
   - Branch: backend
-  - Commit: Pending staging and push.
+  - Commit: 36426d9 ("feat: display resolved place names alongside geo-coordinates in dashboard and public demo")
+  - Push: Successful (0378363..36426d9 -> origin/backend)
   - Remote: https://github.com/rajvardhansinghchawda/WildLifeMonitor.git
+  - Status: Clean working tree, fully synchronized with GitHub.
 
