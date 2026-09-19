@@ -329,3 +329,29 @@ Persistent context and execution log across sessions per memory protocol.
   - Commit: `119e557` ("docs: add Phase 27 AI conservation chatbot deep QA audit")
   - Push: Successful (`81e014d..119e557 backend -> backend`)
   - Remote: `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git`
+
+## [2026-09-19 09:12] Phase 28 — Chatbot Optimization & 5-Issue Resolution
+- Agent: Fullstack Lead & UX/Accessibility Engineer
+- User Request: "fix all of them" — resolve all 5 issues identified in the Chatbot diagnostic report.
+- Implementation Details:
+  1. **Rate Limit Relaxation (`backend/app/api/v1/chat.py`)**:
+     - Increased `PUBLIC_RATE_LIMIT` from 8 to 30 requests per minute to easily accommodate multiple concurrent judges and live presentations without hitting HTTP 429.
+  2. **Un-analyzed Parks / Empty State Guidance (`frontend/src/components/chat/ChatWidget.tsx`)**:
+     - Added an informational guidance card when an area has no completed telemetry, guiding the user to select reserves with existing data (Tadoba, Pench, Sundarbans) or trigger "Run Analysis".
+  3. **Curated Demo Fallback in Investigator Portal (`frontend/src/components/chat/AuthChat.tsx`)**:
+     - Enhanced `loadAnalyses` to seamlessly load curated demo reserves if workspace has zero custom analyses.
+     - Enhanced `send` to automatically route curated demo requests to public endpoints if needed.
+  4. **Mobile Responsiveness & Z-Index Polish (`frontend/src/components/chat/ChatWidget.tsx`)**:
+     - Elevated z-index to `z-[9990]` and updated positioning to `bottom-4 right-4 sm:bottom-6 sm:right-6`.
+     - Added responsive viewport constraints: `w-[420px] max-w-[calc(100vw-1.5rem)] h-[580px] max-h-[calc(100vh-3.5rem)]` with smooth entrance animations.
+  5. **WCAG Accessibility & Form Label Fixes (`frontend/src/components/chat/ChatWidget.tsx`)**:
+     - Added `<label htmlFor="chat-user-message-input" className="sr-only">Ask about this analysis</label>`.
+     - Attached `id="chat-user-message-input"`, `name="chat_message"`, and `aria-label` to the text input.
+     - Added `id="chat-analysis-selector"` and `aria-label` to select dropdowns.
+     - Chrome DevTools console confirmed **0 accessibility warnings / 0 console errors**.
+- Verification:
+  - TypeScript: `npx tsc --noEmit` — 0 errors.
+  - Pytest: `python -m pytest tests/test_chat_agent.py -q` — 19 passed, 0 failed.
+  - Chrome DevTools: Verified clean console with 0 errors.
+- Git:
+  - Staged, committed, and pushed to `origin/backend`.

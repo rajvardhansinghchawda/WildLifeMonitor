@@ -77,13 +77,13 @@ async def chat_about_analysis(
 # ---------------------------------------------------------------- public (no login) chat
 public_router = APIRouter(prefix="/public", tags=["Public Chat"])
 
-PUBLIC_RATE_LIMIT = 8  # requests
+PUBLIC_RATE_LIMIT = 30  # generous rate limit for multi-judge hackathon evaluation
 PUBLIC_RATE_WINDOW_S = 60.0
 _public_hits: "dict[str, deque[float]]" = defaultdict(deque)
 
 
 def _rate_limited(client_ip: str) -> bool:
-    """Small in-process sliding window: protects the shared LLM quota from anonymous abuse."""
+    """In-process sliding window: protects the shared LLM quota while allowing smooth demonstration."""
     now = time.monotonic()
     hits = _public_hits[client_ip]
     while hits and now - hits[0] > PUBLIC_RATE_WINDOW_S:
