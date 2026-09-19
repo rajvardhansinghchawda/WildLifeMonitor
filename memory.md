@@ -436,3 +436,27 @@ Persistent context and execution log across sessions per memory protocol.
   - Created `implementation_plan.md` with complete architectural workflow, frontend `VoiceCallModal.tsx`, top navigation call launcher, telephony sound generator, and backend `voice_mode` integration.
 - Status: Awaiting user approval to proceed with execution.
 
+
+## [2026-09-19 10:37] Phase 32 — Fix Custom Date Persistence After Run Analysis
+- Fix: handleRunAnalysis in change-analysis/page.tsx now polls for fresh results after submission and reloads manifest, hotspots, and raster overlays.
+- Commit: 83ddcd7 — Push: Successful
+
+
+## [2026-09-19 11:05] Phase 33 - Panel Accounts Seeding & Chrome DevTools Login Verification
+- User Request: 'login nhi hora hai , test kari chrome dev tool se', 'sare credentail do sabb panel ke , or nhi hai to seed karo db me or do fast'
+- Action & Solution:
+  1. Created backend script ackend/app/scripts/seed_panel_accounts.py to seed dedicated accounts for every panel and role in PostgreSQL with standard bcrypt password password123 and active memberships.
+  2. Seeded 6 primary accounts:
+     - dmin@wildlife.gov (System Administrator - Admin Role)
+     - nalyst@wildlife.gov (Senior GIS Analyst - Analyst Role)
+     - anger@wildlife.gov (Ranger Lead - Analyst/Ranger Role)
+     - invest@codeniti.dev (Forensic Investigator - Admin Role)
+     - ajesh.sharma@forest.gov.in (Senior Director NTCA - Admin Role)
+     - iewer@wildlife.gov (Field Observer - Viewer Role)
+  3. Tested and verified end-to-end in Chrome using chrome-devtools-mcp:
+     - Navigated to http://localhost:3000/login
+     - Form submission with credentials passed, authenticated, and redirected to /dashboard
+     - Admin route /admin verified accessible and displaying system telemetry.
+- Verification:
+  - Database: All 6 accounts validated with uthenticate() in FastAPI auth service.
+  - Browser: Chrome DevTools MCP snapshot verified redirect to /dashboard and /admin.
