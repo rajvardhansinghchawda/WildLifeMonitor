@@ -3,11 +3,74 @@
 import React from 'react';
 import Link from 'next/link';
 
-// Models often emit non-breaking / unicode hyphens inside UUIDs, so accept them and normalise.
-const UUID_PART = /[0-9a-fA-F]{8}[-‐-―−][0-9a-fA-F]{4}[-‐-―−][0-9a-fA-F]{4}[-‐-―−][0-9a-fA-F]{4}[-‐-―−][0-9a-fA-F]{12}/;
-const INLINE = new RegExp(`(\\*\\*[^*]+\\*\\*|\`[^\`]+\`|${UUID_PART.source})`, 'g');
+// Models emit full UUIDs, 8-character hex hashes (#b4adf8ac, [#b4adf8ac]), or markdown links.
+const UUID_REGEX = /[0-9a-fA-F]{8}[-‐-―−][0-9a-fA-F]{4}[-‐-―−][0-9a-fA-F]{4}[-‐-―−][0-9a-fA-F]{4}[-‐-―−][0-9a-fA-F]{12}/;
+const INLINE = new RegExp(
+  `(\\*\\*[^*]+\\*\\*|\`[^\`]+\`|\\[[^\\]]+\\]\\([^)]+\\)|\\[📍?\\s*#?[0-9a-fA-F]{8}\\]|${UUID_REGEX.source}|#[0-9a-fA-F]{8}\\b)`,
+  'g'
+);
 
 const normaliseId = (raw: string) => raw.replace(/[‐-―−]/g, '-').toLowerCase();
+
+function EventChip({
+  id,
+  label,
+  eventHref,
+}: {
+  id: string;
+  label?: string;
+  eventHref?: (id: string) => string;
+}) {
+  const cleanId = id.replace(/^[📍\s#\[]+|[\]\s]+$/g, '').toLowerCase();
+  const shortId = cleanId.slice(0, 8);
+  const displayLabel = label ? label.replace(/^[📍\s#\[]+|[\]\s]+$/g, '') : shortId;
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 1. Dispatch custom event for any map component listening on the current page
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('vanyora:select-hotspot', {
+          detail: { id: cleanId },
+        })
+      );
+
+      const isHotspots = window.location.pathname.startsWith('/hotspots');
+      const isExplore = window.location.pathname.startsWith('/explore');
+
+      if (isHotspots) {
+        // On hotspots page: smoothly update query param in URL without full page reload
+        const url = new URL(window.location.href);
+        url.searchParams.set('id', cleanId);
+        window.history.pushState({}, '', url.toString());
+      } else if (!isExplore) {
+        // On other pages: route to hotspots page with event id
+        const targetUrl = eventHref ? eventHref(cleanId) : `/hotspots?id=${cleanId}`;
+        window.location.href = targetUrl;
+      }
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      title={`Click to view #${shortId} on interactive map & inspect GPS location`}
+      className="inline-flex items-center gap-1.5 px-2 py-0.5 my-0.5 mx-0.5 rounded-md bg-emerald-950/90 border border-emerald-500/60 text-emerald-300 font-mono text-[11px] font-medium align-baseline hover:bg-emerald-900 hover:border-emerald-400 hover:scale-105 active:scale-95 transition-all shadow-xs cursor-pointer group select-none"
+    >
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+      </span>
+      <span className="group-hover:underline font-semibold">📍 #{shortId}</span>
+      <span className="text-[9px] bg-emerald-900/80 text-emerald-300 px-1 py-0.2 rounded border border-emerald-700/50 opacity-80 group-hover:opacity-100 flex items-center gap-0.5">
+        <span>Map</span> ↗
+      </span>
+    </button>
+  );
+}
 
 function Inline({ text, eventHref }: { text: string; eventHref?: (id: string) => string }) {
   return (
@@ -28,25 +91,51 @@ function Inline({ text, eventHref }: { text: string; eventHref?: (id: string) =>
             </code>
           );
         }
-        if (new RegExp(`^${UUID_PART.source}$`).test(part)) {
-          const id = normaliseId(part);
-          const chip = (
-            <span
-              title={`View event ${id} on interactive map`}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-600/50 text-emerald-300 font-mono text-[10px] align-baseline hover:bg-emerald-900 hover:border-emerald-400 transition-all shadow-xs"
+
+        // Markdown links: [Label](url)
+        const linkMatch = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+        if (linkMatch) {
+          const [, linkLabel, linkUrl] = linkMatch;
+          // Check if link points to an event/hotspot
+          const hotspotUrlMatch = linkUrl.match(/\/hotspots\?id=([0-9a-fA-F-]+)/);
+          const hexMatch = linkLabel.match(/([0-9a-fA-F]{8})/);
+          if (hotspotUrlMatch) {
+            return <EventChip key={i} id={hotspotUrlMatch[1]} label={linkLabel} eventHref={eventHref} />;
+          }
+          if (hexMatch) {
+            return <EventChip key={i} id={hexMatch[1]} label={linkLabel} eventHref={eventHref} />;
+          }
+          return (
+            <a
+              key={i}
+              href={linkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-400 hover:text-emerald-300 underline"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>📍 #{id.slice(0, 8)}</span>
-            </span>
-          );
-          return eventHref ? (
-            <Link key={i} href={eventHref(id)} className="hover:opacity-90 transition-opacity">
-              {chip}
-            </Link>
-          ) : (
-            <React.Fragment key={i}>{chip}</React.Fragment>
+              {linkLabel}
+            </a>
           );
         }
+
+        // Bracketed Event ID: [#b4adf8ac] or [b4adf8ac]
+        const bracketMatch = part.match(/^\[📍?\s*#?([0-9a-fA-F]{8})\]$/);
+        if (bracketMatch) {
+          return <EventChip key={i} id={bracketMatch[1]} eventHref={eventHref} />;
+        }
+
+        // Standalone Hash ID: #b4adf8ac
+        const hashMatch = part.match(/^#([0-9a-fA-F]{8})$/);
+        if (hashMatch) {
+          return <EventChip key={i} id={hashMatch[1]} eventHref={eventHref} />;
+        }
+
+        // Full UUID
+        if (new RegExp(`^${UUID_REGEX.source}$`).test(part)) {
+          const id = normaliseId(part);
+          return <EventChip key={i} id={id} eventHref={eventHref} />;
+        }
+
         return <React.Fragment key={i}>{part}</React.Fragment>;
       })}
     </>

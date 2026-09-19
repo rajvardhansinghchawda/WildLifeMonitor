@@ -542,11 +542,15 @@ export default function ChatWidget({
                 {t.role === 'assistant' && (
                   <div className="flex items-center gap-2 mt-1 px-1">
                     {t.meta && (
-                      <span className="text-[9px] text-slate-500 font-mono flex items-center gap-1">
-                        <span className="text-emerald-400">✓</span>
-                        <span>{t.meta.grounded ? 'grounded in telemetry' : 'general query'}</span>
+                      <span className="text-[9px] text-slate-500 font-mono flex items-center gap-1.5">
+                        <span className={t.meta.grounded ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                          {t.meta.grounded ? '✓' : 'ℹ'}
+                        </span>
+                        <span className={t.meta.grounded ? 'text-emerald-400/90' : 'text-slate-400'}>
+                          {t.meta.grounded ? 'grounded in telemetry' : 'general LLM context (not in database)'}
+                        </span>
                         {t.meta.tools.length > 0 && (
-                          <span className="text-slate-600">
+                          <span className="text-slate-400">
                             · {Array.from(new Set(t.meta.tools)).map(tn => tn.replace('get_', '')).join(', ')}
                           </span>
                         )}

@@ -37,6 +37,7 @@ export default function PublicChat() {
     <ChatWidget
       loadAnalyses={loadAnalyses}
       send={send}
+      eventHref={(id) => `/hotspots?id=${id}`}
       notice="Public demo data only. Locations are generalised."
     />
   );

@@ -357,15 +357,43 @@ export default function GeoMap({
       layersRef.current.push(firmsLayer);
     }
 
-    // Auto-fit to boundary if available
-    if (fit && fit.isValid()) {
-      map.fitBounds(fit, { padding: [25, 25] });
-    } else if (overlays.length && overlays[0].bounds) {
-      map.fitBounds(overlays[0].bounds as any);
-    } else if (center) {
-      map.setView([center.lat, center.lon], 10);
+    // Auto-fit to boundary if available (only if no specific hotspot is selected)
+    if (!selectedId) {
+      if (fit && fit.isValid()) {
+        map.fitBounds(fit, { padding: [25, 25] });
+      } else if (overlays.length && overlays[0].bounds) {
+        map.fitBounds(overlays[0].bounds as any);
+      } else if (center) {
+        map.setView([center.lat, center.lon], 10);
+      }
     }
   }, [ready, boundary, hotspots, overlays, selectedId, onSelect, showFires]);
+
+  // Fly & Zoom to selected hotspot when selectedId changes
+  useEffect(() => {
+    if (!mapRef.current || !selectedId || !hotspots.length) return;
+    const clean = selectedId.replace(/^[📍\s#\[]+|[\]\s]+$/g, '').toLowerCase();
+    const sel = hotspots.find(
+      (h) => h.id.toLowerCase() === clean || h.id.toLowerCase().startsWith(clean)
+    );
+    if (sel) {
+      const lat = sel.coordinates?.lat ?? (sel as any).centroid_lat;
+      const lon = sel.coordinates?.lon ?? (sel as any).centroid_lon;
+      if (lat && lon) {
+        mapRef.current.flyTo([lat, lon], 14, { animate: true, duration: 1.0 });
+        setTimeout(() => {
+          layersRef.current.forEach((layer: any) => {
+            if (layer.getLatLng) {
+              const ll = layer.getLatLng();
+              if (Math.abs(ll.lat - lat) < 0.0005 && Math.abs(ll.lng - lon) < 0.0005) {
+                layer.openPopup();
+              }
+            }
+          });
+        }, 400);
+      }
+    }
+  }, [selectedId, hotspots]);
 
   return (
     <div
