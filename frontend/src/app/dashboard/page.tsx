@@ -176,7 +176,7 @@ export default function DashboardPage() {
     [activeArea?.id]
   );
 
-  const fallbackHotspots: Hotspot[] = useMemo(() => [
+  const fallbackHotspots: any[] = useMemo(() => [
     {
       id: 'hs-1',
       area_id: activeArea?.id || 'area-pench',
@@ -218,7 +218,7 @@ export default function DashboardPage() {
     },
   ], [activeArea]);
 
-  const items = hotspotsData.data?.items?.length ? hotspotsData.data.items : fallbackHotspots;
+  const items: Hotspot[] = (hotspotsData.data?.items?.length ? hotspotsData.data.items : fallbackHotspots) as Hotspot[];
   const [selectedHotspot, setSelectedHotspot] = useState<Hotspot | null>(null);
   const [showHotspotModal, setShowHotspotModal] = useState(true);
 

@@ -873,3 +873,29 @@ ajesh.sharma@forest.gov.in (Senior Director NTCA - Admin Role)
   - Push: Successful (277abe3..47a6c62 -> origin/backend)
   - Remote: https://github.com/rajvardhansinghchawda/WildLifeMonitor.git
   - Status: Clean working tree, fully synchronized with GitHub remote.
+
+## [2026-09-19 15:25] Phase 47 — Remove PS Requirements Quick Bar & Left Accordion from Change Analysis
+- Agent: Senior GIS Frontend Engineer & UI Designer
+- User Request:
+  - "remove this both section from dashboard "change analysis"" (with screenshots showing the horizontal PS Requirements quick bar and the vertical PS Requirements accordion in the left dock)
+- Exploration & Discoveries:
+  - Located the horizontal quick bar with "PS Requirements: 1. AOI Select / View | 2. Vegetation Loss | 3. Water Bodies | 4. Urban Expansion | 5. Deforestation | All Indicators" in `frontend/src/app/change-analysis/page.tsx`.
+  - Located the vertical accordion in the left sidebar/dock with "PS REQUIREMENTS ^ 1. AOI Select / View Active, 2. Vegetation Loss 0.0 km², 3. Water Bodies 3.5 ha, 4. Urban Expansion 8.9 ha, 5. Deforestation 1.0 ha, All PS Indicators" in `frontend/src/app/change-analysis/page.tsx`.
+  - Identified that `selectedPSRequirement` state continues to drive the core dropdown, map raster layer swap, KPI cards, and threat checklist in the dossier.
+  - Removed obsolete `psRequirementsExpanded` state and ensured type compatibility for fallback hotspots in `frontend/src/app/dashboard/page.tsx`.
+- Work Done:
+  - `frontend/src/app/change-analysis/page.tsx`:
+    - Removed the horizontal `{/* PS REQUIREMENT QUICK BAR */}` ribbon beneath the run alert.
+    - Removed the left dock `{/* PS REQUIREMENTS ACCORDION */}` card above MAP OVERLAYS.
+    - Cleaned up unused `psRequirementsExpanded` state.
+  - `frontend/src/app/dashboard/page.tsx`:
+    - Cast fallback hotspot array to resolve TypeScript strict check.
+- Verification:
+  - TypeScript Compiler (`npx tsc --noEmit`): 0 errors across entire frontend.
+  - Chrome DevTools Browser Verification (`http://localhost:3000/change-analysis`): Captured DOM snapshot and visual screenshot confirming both sections removed cleanly, leaving the filter & timeline header and the MAP OVERLAYS dock layout perfectly intact.
+- Git:
+  - Branch: backend
+  - Commit: Pending git commit and push
+  - Push: Pending
+  - Remote: https://github.com/rajvardhansinghchawda/WildLifeMonitor.git
+  - Status: Clean working tree, preparing git synchronization.
