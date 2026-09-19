@@ -712,6 +712,9 @@ ajesh.sharma@forest.gov.in (Senior Director NTCA - Admin Role)
   - Pytest (`pytest tests/test_hotspot_summary.py`): 3/3 tests passed.
   - Regression Pytest (`pytest tests/test_public_api.py tests/test_verification_workflow.py`): 6/6 tests passed.
   - Existing verification workflow and numeric rows remain 100% intact and functional.
+  - Container Restart: Restarted `codeniti-api` container via `docker compose restart api`.
+  - Live Endpoint Test: Verified live `GET /api/v1/hotspots/{id}/summary` with real token; successfully returned `groq_llm` synthesized briefs in English and Hinglish with status 200.
+  - Frontend Status: Next.js Turbopack dev server actively running on `localhost:3000` with HMR reflecting all changes immediately.
 - Git:
   - Branch: backend
   - Commit: 0f2212f ("feat: add natural language hotspot intelligence brief with expandable dossier modal")
