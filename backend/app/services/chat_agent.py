@@ -56,6 +56,15 @@ STYLE_PROMPT = (
     "using natural Hindi phrases in the Roman alphabet (e.g. 'Is reserve me...', 'Satellite data ke hisab se...')."
 )
 
+VOICE_PROMPT = (
+    "VOICE CALL MODE ACTIVE: The user is speaking with you over an interactive live audio phone call. "
+    "1. Keep answers conversational, crisp, and direct (1 to 3 short sentences maximum per turn). "
+    "2. NEVER use markdown symbols, asterisks (*), hashes (#), code blocks, or markdown tables. Speak in smooth flowing sentences. "
+    "3. Spell out numbers and measurements naturally for speech (e.g., 'about one hundred forty-eight hectares', 'NDVI decreased by zero point one four'). "
+    "4. NEVER mention internal UUIDs, hex strings, or raw database keys. "
+    "5. Sound warm, alert, and friendly like an expert wildlife reserve intelligence officer speaking over a field radio or phone call."
+)
+
 SUPPORTED_LANGUAGES = {
     "en": "English",
     "hi": "Hindi (Devanagari script)",
@@ -276,6 +285,7 @@ class ChatAgent:
         message: str,
         history: Optional[List[Dict[str, str]]] = None,
         language: Optional[str] = None,
+        voice_mode: bool = False,
     ) -> ChatResult:
         base: List[Dict[str, Any]] = [
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -287,9 +297,11 @@ class ChatAgent:
                 ),
             },
             {"role": "system", "content": f"{STYLE_PROMPT} {language_instruction(message, language)}"},
-            *self._history_messages(history),
-            {"role": "user", "content": message},
         ]
+        if voice_mode:
+            base.append({"role": "system", "content": VOICE_PROMPT})
+        base.extend(self._history_messages(history))
+        base.append({"role": "user", "content": message})
         for attempt in range(2):
             messages = list(base)
             if attempt == 1:

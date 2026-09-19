@@ -13,12 +13,19 @@ async function send(
   analysisId: string,
   message: string,
   history: Array<{ role: 'user' | 'assistant'; content: string }>,
-  language: string
+  language: string,
+  voiceMode?: boolean
 ) {
   const res = await fetch(`${PUBLIC_API_BASE}/public/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ analysis_id: analysisId, message, conversation_history: history, language: language === 'auto' ? undefined : language }),
+    body: JSON.stringify({
+      analysis_id: analysisId,
+      message,
+      conversation_history: history,
+      language: language === 'auto' ? undefined : language,
+      voice_mode: voiceMode ?? false,
+    }),
   });
   const body = await res.json().catch(() => null);
   if (!res.ok) throw new Error(body?.error?.message ?? `Chat failed (HTTP ${res.status})`);

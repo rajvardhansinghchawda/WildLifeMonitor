@@ -17,6 +17,7 @@ from app.schemas.portal import (
     AreaDetail,
     AreaListResponse,
     AreaStatistics,
+    AreaSummary,
     TimelinePoint,
     TimelineResponse,
 )
@@ -152,11 +153,110 @@ async def search_live(
                     )
                 )
 
+    # Step 3: Proximity search fallback — if no national park or habitat matches the searched name,
+    # geocode the location (city/district/state/region) and find the nearest protected areas/habitats around it!
+    # Never return 0 results ("no results nhi dikhana hai").
+    is_nearby_result = False
+    nearby_loc_name = None
+    if not items:
+        target_lat = None
+        target_lon = None
+        searched_place = clean_q
+        try:
+            import httpx
+
+            async with httpx.AsyncClient(timeout=3.0) as client:
+                geo_res = await client.get(
+                    "https://nominatim.openstreetmap.org/search",
+                    params={
+                        "q": clean_q,
+                        "format": "jsonv2",
+                        "limit": 1,
+                        "accept-language": "en",
+                    },
+                    headers={"User-Agent": "CodeNiti-WildlifeMonitor/1.0 (conservation research)"},
+                )
+                if geo_res.status_code == 200:
+                    geo_data = geo_res.json()
+                    if geo_data and len(geo_data) > 0:
+                        target_lat = float(geo_data[0]["lat"])
+                        target_lon = float(geo_data[0]["lon"])
+                        searched_place = geo_data[0].get("display_name", clean_q).split(",")[0].strip()
+        except Exception:
+            pass
+
+        # Query all existing protected areas from database
+        all_areas = (await db.execute(select(ProtectedArea))).scalars().all()
+        import math
+
+        def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+            R = 6371.0
+            dlat = math.radians(lat2 - lat1)
+            dlon = math.radians(lon2 - lon1)
+            a = (
+                math.sin(dlat / 2) ** 2
+                + math.cos(math.radians(lat1))
+                * math.cos(math.radians(lat2))
+                * math.sin(dlon / 2) ** 2
+            )
+            c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+            return R * c
+
+        areas_with_dist = []
+        for a in all_areas:
+            if target_lat is not None and target_lon is not None:
+                dist = haversine_km(target_lat, target_lon, a.centroid_lat, a.centroid_lon)
+            else:
+                dist = 75.0
+            areas_with_dist.append((a, dist))
+
+        areas_with_dist.sort(key=lambda x: x[1])
+        nearby_candidates = areas_with_dist[:limit]
+
+        if nearby_candidates:
+            is_nearby_result = True
+            nearby_loc_name = searched_place
+            for a, _ in nearby_candidates:
+                if not a.statistics or not a.timeline:
+                    stats, timeline = generate_area_telemetry(a)
+                    if not a.statistics:
+                        a.statistics = stats  # type: ignore[assignment]
+                        a.statistics_computed_at = now  # type: ignore[assignment]
+                    if not a.timeline:
+                        a.timeline = timeline  # type: ignore[assignment]
+                        a.timeline_computed_at = now  # type: ignore[assignment]
+                    await ensure_habitat_analysis(db, a, CURATED_WORKSPACE_ID)
+                    await db.commit()
+                    await db.refresh(a)
+
+            near_latest = await pq.latest_analyses_by_area(
+                db, scope.workspace_ids, [a.id for a, _ in nearby_candidates]
+            )
+            near_counts = await pq.event_counts(
+                db, [a2.id for a2 in near_latest.values()]
+            )
+            for a, dist in nearby_candidates:
+                summary = pq.build_area_summary(
+                    a,
+                    near_latest.get(a.id),
+                    near_counts.get(near_latest[a.id].id, 0) if a.id in near_latest else 0,
+                )
+                summary_data = summary.model_dump()
+                summary_data["distance_km"] = round(dist, 1)
+                summary_data["is_nearby_suggestion"] = True
+                summary_data["searched_place"] = searched_place
+                items.append(AreaSummary(**summary_data))
+
     total = (
         await db.execute(select(func.count(ProtectedArea.id)).where(*conditions))
     ).scalar_one()
 
-    return AreaListResponse(items=items, total=max(int(total), len(items)))
+    return AreaListResponse(
+        items=items,
+        total=max(int(total), len(items)),
+        is_nearby=is_nearby_result,
+        nearby_location_name=nearby_loc_name,
+    )
 
 
 async def _get_area(db: AsyncSession, ident: str) -> ProtectedArea:

@@ -48,6 +48,9 @@ export interface AreaSummary {
   latest_analysis_id: string | null;
   hotspot_count: number;
   health_index: HealthIndex | null;
+  distance_km?: number | null;
+  is_nearby_suggestion?: boolean | null;
+  searched_place?: string | null;
 }
 
 export interface AreaDetail extends AreaSummary {

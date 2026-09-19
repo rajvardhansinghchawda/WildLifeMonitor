@@ -24,6 +24,9 @@ class ChatRequest(BaseModel):
     language: Optional[str] = Field(
         default=None, max_length=20, description="en|hi|hinglish|mr|bn|ta|te|gu|kn|pa; omit to auto-detect"
     )
+    voice_mode: Optional[bool] = Field(
+        default=False, description="When true, format answers for natural voice speech and audio calls"
+    )
 
 
 class ChatResponse(BaseModel):
@@ -63,7 +66,10 @@ async def chat_about_analysis(
     agent = ChatAgent(llm, ChatToolbox(db, scope, parsed))
     try:
         result = await agent.run(
-            request.message, request.conversation_history, request.language
+            request.message,
+            request.conversation_history,
+            request.language,
+            voice_mode=bool(request.voice_mode),
         )
     except ChatUnavailableError as exc:
         raise AppException(
@@ -132,7 +138,10 @@ async def public_chat(
     agent = ChatAgent(llm, ChatToolbox(db, scope, parsed, coord_precision=2))
     try:
         result = await agent.run(
-            request.message, request.conversation_history, request.language
+            request.message,
+            request.conversation_history,
+            request.language,
+            voice_mode=bool(request.voice_mode),
         )
     except ChatUnavailableError as exc:
         raise AppException(

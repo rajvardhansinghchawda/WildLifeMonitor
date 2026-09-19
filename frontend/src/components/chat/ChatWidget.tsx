@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { MessageCircle, Mic, MicOff, Send, Trash2, Volume2, X } from 'lucide-react';
+import { MessageCircle, Mic, MicOff, PhoneCall, Send, Trash2, Volume2, X } from 'lucide-react';
 import ChatMarkdown from '@/components/chat/ChatMarkdown';
+import VoiceCallModal from '@/components/chat/VoiceCallModal';
 
 export interface ChatAnalysisOption {
   id: string;
@@ -30,7 +31,8 @@ interface Props {
     analysisId: string,
     message: string,
     history: ChatHistory,
-    language: string
+    language: string,
+    voiceMode?: boolean
   ) => Promise<ChatReply>;
   title?: string;
   notice?: string;
@@ -87,6 +89,7 @@ export default function ChatWidget({
   eventHref,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [isCallOpen, setIsCallOpen] = useState(false);
   const [options, setOptions] = useState<ChatAnalysisOption[]>([]);
   const [analysisId, setAnalysisId] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -108,17 +111,24 @@ export default function ChatWidget({
     } catch {
       /* storage unavailable */
     }
+
+    const handleVoiceCallTrigger = () => {
+      setOpen(false);
+      setIsCallOpen(true);
+    };
+    window.addEventListener('open-voice-call', handleVoiceCallTrigger);
+    return () => window.removeEventListener('open-voice-call', handleVoiceCallTrigger);
   }, []);
 
   useEffect(() => {
-    if (!open || options.length) return;
+    if ((!open && !isCallOpen) || options.length) return;
     loadAnalyses()
       .then((opts) => {
         setOptions(opts);
-        if (opts.length) setAnalysisId(opts[0].id);
+        if (opts.length && !analysisId) setAnalysisId(opts[0].id);
       })
       .catch((e) => setLoadError(e instanceof Error ? e.message : 'Could not load analyses'));
-  }, [open, options.length, loadAnalyses]);
+  }, [open, isCallOpen, options.length, loadAnalyses, analysisId]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -225,14 +235,31 @@ export default function ChatWidget({
   return (
     <>
       {!open && (
-        <button
-          onClick={() => setOpen(true)}
-          aria-label="Open chat assistant"
-          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9990] flex items-center gap-2 px-4 py-3 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xl shadow-emerald-950/60 transition-all hover:scale-105 active:scale-95"
-        >
-          <MessageCircle className="w-4 h-4" />
-          {title}
-        </button>
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9990] flex items-center gap-2">
+          {/* Real-time Voice Call Button */}
+          <button
+            onClick={() => setIsCallOpen(true)}
+            aria-label="Call Habitat AI Ranger"
+            className="group relative flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white text-xs font-semibold shadow-xl shadow-emerald-950/70 transition-all hover:scale-105 active:scale-95 border border-emerald-400/40"
+          >
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+            </span>
+            <PhoneCall className="w-4 h-4 text-white group-hover:rotate-12 transition-transform" />
+            <span className="tracking-wide">Call AI Ranger</span>
+          </button>
+
+          {/* Text Chat Button */}
+          <button
+            onClick={() => setOpen(true)}
+            aria-label="Open chat assistant"
+            className="flex items-center gap-2 px-4 py-3 rounded-full bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-semibold shadow-xl shadow-slate-950/60 transition-all hover:scale-105 active:scale-95 border border-slate-700 backdrop-blur-sm"
+          >
+            <MessageCircle className="w-4 h-4 text-emerald-400" />
+            {title}
+          </button>
+        </div>
       )}
 
       {open && (
@@ -245,6 +272,18 @@ export default function ChatWidget({
               </p>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setOpen(false);
+                  setIsCallOpen(true);
+                }}
+                aria-label="Switch to Voice Call"
+                title="Switch to Voice Call with AI Ranger"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-[10px] font-medium transition-colors"
+              >
+                <PhoneCall className="w-3 h-3 animate-pulse text-emerald-400" />
+                <span>Call Ranger</span>
+              </button>
               {turns.length > 0 && (
                 <button
                   onClick={() => setTurns([])}
@@ -407,6 +446,19 @@ export default function ChatWidget({
           </form>
         </div>
       )}
+
+      {/* Real-time Voice Call Modal */}
+      <VoiceCallModal
+        isOpen={isCallOpen}
+        onClose={() => setIsCallOpen(false)}
+        options={options}
+        activeAnalysisId={analysisId}
+        onSelectAnalysis={setAnalysisId}
+        language={language}
+        onLanguageChange={changeLanguage}
+        send={send}
+      />
     </>
   );
 }
+

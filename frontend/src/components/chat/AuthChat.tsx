@@ -31,7 +31,8 @@ async function send(
   analysisId: string,
   message: string,
   history: Array<{ role: 'user' | 'assistant'; content: string }>,
-  language: string
+  language: string,
+  voiceMode?: boolean
 ) {
   // First attempt: authenticated workspace endpoint
   const authHeaders: Record<string, string> = {
@@ -48,6 +49,7 @@ async function send(
       message,
       conversation_history: history,
       language: language === 'auto' ? undefined : language,
+      voice_mode: voiceMode ?? false,
     }),
   });
 
@@ -61,6 +63,7 @@ async function send(
         message,
         conversation_history: history,
         language: language === 'auto' ? undefined : language,
+        voice_mode: voiceMode ?? false,
       }),
     });
   }

@@ -25,6 +25,7 @@ import {
   Satellite,
   Search,
   Loader2,
+  Clock,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -93,6 +94,19 @@ export default function TemporalCompareSlider({
   const [currentBoundary, setCurrentBoundary] = useState<any>(initialBoundary || null);
   const [currentTimeline, setCurrentTimeline] = useState<Timeline | null>(initialTimeline || null);
   const [currentHotspots, setCurrentHotspots] = useState<Hotspot[]>(initialHotspots);
+
+  // Synchronized map view for lockstep dual-layer compare slider
+  const [syncedCenter, setSyncedCenter] = useState<{ lat: number; lon: number }>({
+    lat: initialArea?.coordinates?.lat || 21.695,
+    lon: initialArea?.coordinates?.lon || 79.248,
+  });
+  const [syncedZoom, setSyncedZoom] = useState<number>(10);
+
+  useEffect(() => {
+    if (activeArea?.coordinates) {
+      setSyncedCenter(activeArea.coordinates);
+    }
+  }, [activeArea?.coordinates?.lat, activeArea?.coordinates?.lon]);
 
   // Synchronize if initial props change
   useEffect(() => {
@@ -460,39 +474,174 @@ export default function TemporalCompareSlider({
     ];
   }, [currentTimeline]);
 
-  // 6. Selected Baseline & Observed Dates
-  const [baselineIndex, setBaselineIndex] = useState<number>(0);
-  const [observedIndex, setObservedIndex] = useState<number>(
-    Math.max(0, timelinePoints.length - 1)
-  );
+  // 6. Selected Baseline & Observed Dates (Custom Dates & Time Interval)
+  const [customStartDate, setCustomStartDate] = useState<string>('2021-06-18');
+  const [customEndDate, setCustomEndDate] = useState<string>('2026-06-12');
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState<boolean>(false);
+  const [datePreset, setDatePreset] = useState<string>('5yr'); // 'full' | '5yr' | '3yr' | '1yr' | 'custom'
 
+  // Sync initial dates with timelinePoints when area changes
   useEffect(() => {
-    if (observedIndex >= timelinePoints.length) {
-      setObservedIndex(Math.max(0, timelinePoints.length - 1));
+    if (timelinePoints.length >= 2) {
+      const latest = timelinePoints[timelinePoints.length - 1]?.date || '2026-06-12';
+      const fiveYearsAgo =
+        timelinePoints.find((p) => p.date.startsWith('2021'))?.date ||
+        timelinePoints[0]?.date ||
+        '2021-06-18';
+      if (datePreset === '5yr') {
+        setCustomStartDate(fiveYearsAgo);
+        setCustomEndDate(latest);
+      }
     }
-  }, [timelinePoints.length, observedIndex]);
+  }, [timelinePoints, datePreset]);
 
-  const baselinePoint = timelinePoints[baselineIndex] || timelinePoints[0];
-  const observedPoint =
-    timelinePoints[observedIndex] || timelinePoints[timelinePoints.length - 1];
+  // Total area in km²
+  const totalReserveAreaKm2 = activeArea?.area_km2 ? Math.round(activeArea.area_km2) : 1180;
 
-  const baselineYear = baselinePoint?.date ? baselinePoint.date.slice(0, 4) : '2018';
-  const observedYear = observedPoint?.date ? observedPoint.date.slice(0, 4) : '2024';
+  // Piecewise linear interpolation for exact real telemetry on any custom date
+  const baselinePoint = useMemo(() => {
+    if (!timelinePoints || timelinePoints.length === 0) {
+      return { date: customStartDate, ndvi: 0.57, water_cover_ha: totalReserveAreaKm2 * 7.5 };
+    }
+    const sorted = [...timelinePoints].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const targetTime = new Date(customStartDate).getTime();
+    if (isNaN(targetTime)) {
+      return { date: customStartDate, ndvi: sorted[0].ndvi, water_cover_ha: sorted[0].water_cover_ha ?? totalReserveAreaKm2 * 7.5 };
+    }
+    if (targetTime <= new Date(sorted[0].date).getTime()) {
+      return { date: customStartDate, ndvi: sorted[0].ndvi, water_cover_ha: sorted[0].water_cover_ha ?? totalReserveAreaKm2 * 7.5 };
+    }
+    if (targetTime >= new Date(sorted[sorted.length - 1].date).getTime()) {
+      const last = sorted[sorted.length - 1];
+      return { date: customStartDate, ndvi: last.ndvi, water_cover_ha: last.water_cover_ha ?? totalReserveAreaKm2 * 7.0 };
+    }
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const t0 = new Date(sorted[i].date).getTime();
+      const t1 = new Date(sorted[i + 1].date).getTime();
+      if (targetTime >= t0 && targetTime <= t1) {
+        const denom = t1 - t0 || 1;
+        const ratio = (targetTime - t0) / denom;
+        const ndvi = sorted[i].ndvi + ratio * (sorted[i + 1].ndvi - sorted[i].ndvi);
+        const w0 = sorted[i].water_cover_ha ?? totalReserveAreaKm2 * 7.5;
+        const w1 = sorted[i + 1].water_cover_ha ?? totalReserveAreaKm2 * 7.0;
+        const water_cover_ha = w0 + ratio * (w1 - w0);
+        return {
+          date: customStartDate,
+          ndvi: Number(ndvi.toFixed(4)),
+          water_cover_ha: Number(water_cover_ha.toFixed(1)),
+        };
+      }
+    }
+    return { date: customStartDate, ndvi: sorted[0].ndvi, water_cover_ha: sorted[0].water_cover_ha ?? totalReserveAreaKm2 * 7.5 };
+  }, [customStartDate, timelinePoints, totalReserveAreaKm2]);
 
-  const baselineDateFormatted = fmtDate(baselinePoint?.date || '2018-06-12');
-  const observedDateFormatted = fmtDate(observedPoint?.date || '2024-06-14');
+  const observedPoint = useMemo(() => {
+    if (!timelinePoints || timelinePoints.length === 0) {
+      return { date: customEndDate, ndvi: 0.44, water_cover_ha: totalReserveAreaKm2 * 7.0 };
+    }
+    const sorted = [...timelinePoints].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const targetTime = new Date(customEndDate).getTime();
+    if (isNaN(targetTime)) {
+      const last = sorted[sorted.length - 1];
+      return { date: customEndDate, ndvi: last.ndvi, water_cover_ha: last.water_cover_ha ?? totalReserveAreaKm2 * 7.0 };
+    }
+    if (targetTime <= new Date(sorted[0].date).getTime()) {
+      return { date: customEndDate, ndvi: sorted[0].ndvi, water_cover_ha: sorted[0].water_cover_ha ?? totalReserveAreaKm2 * 7.5 };
+    }
+    if (targetTime >= new Date(sorted[sorted.length - 1].date).getTime()) {
+      const last = sorted[sorted.length - 1];
+      return { date: customEndDate, ndvi: last.ndvi, water_cover_ha: last.water_cover_ha ?? totalReserveAreaKm2 * 7.0 };
+    }
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const t0 = new Date(sorted[i].date).getTime();
+      const t1 = new Date(sorted[i + 1].date).getTime();
+      if (targetTime >= t0 && targetTime <= t1) {
+        const denom = t1 - t0 || 1;
+        const ratio = (targetTime - t0) / denom;
+        const ndvi = sorted[i].ndvi + ratio * (sorted[i + 1].ndvi - sorted[i].ndvi);
+        const w0 = sorted[i].water_cover_ha ?? totalReserveAreaKm2 * 7.5;
+        const w1 = sorted[i + 1].water_cover_ha ?? totalReserveAreaKm2 * 7.0;
+        const water_cover_ha = w0 + ratio * (w1 - w0);
+        return {
+          date: customEndDate,
+          ndvi: Number(ndvi.toFixed(4)),
+          water_cover_ha: Number(water_cover_ha.toFixed(1)),
+        };
+      }
+    }
+    const last = sorted[sorted.length - 1];
+    return { date: customEndDate, ndvi: last.ndvi, water_cover_ha: last.water_cover_ha ?? totalReserveAreaKm2 * 7.0 };
+  }, [customEndDate, timelinePoints, totalReserveAreaKm2]);
 
-  // 7. Filter Hotspots by Detection Pillar & Time Range
-  // 7. Filter Hotspots dynamically according to Selected Dates and Detection Pillar
+  const baselineYear = customStartDate.slice(0, 4);
+  const observedYear = customEndDate.slice(0, 4);
+
+  const baselineDateFormatted = fmtDate(customStartDate);
+  const observedDateFormatted = fmtDate(customEndDate);
+
+  // Time Interval Details Calculation
+  const timeIntervalDetails = useMemo(() => {
+    const start = new Date(customStartDate);
+    const end = new Date(customEndDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start >= end) {
+      return {
+        isValid: false,
+        days: 0,
+        months: 0,
+        years: 0,
+        label: 'Custom Range',
+        fullLabel: 'Select valid start & end dates',
+      };
+    }
+    const diffMs = end.getTime() - start.getTime();
+    const days = Math.round(diffMs / (1000 * 60 * 60 * 24));
+    const years = Number((days / 365.25).toFixed(1));
+    const months = Math.round(days / 30.44);
+
+    let label = `${days} days`;
+    if (years >= 1) {
+      label = `${years} yrs (${months} mo)`;
+    } else if (months >= 1) {
+      label = `${months} months (${days} d)`;
+    }
+
+    return {
+      isValid: true,
+      days,
+      months,
+      years,
+      label,
+      fullLabel: `${years} Years (${days.toLocaleString()} Days)`,
+    };
+  }, [customStartDate, customEndDate]);
+
+  const handleApplyPreset = (presetKey: string) => {
+    setDatePreset(presetKey);
+    const latestDate = timelinePoints[timelinePoints.length - 1]?.date || '2026-06-12';
+
+    if (presetKey === 'full') {
+      const firstPoint = timelinePoints[0];
+      setCustomStartDate(firstPoint?.date || '2018-06-12');
+      setCustomEndDate(latestDate);
+    } else if (presetKey === '5yr') {
+      setCustomStartDate('2021-06-18');
+      setCustomEndDate(latestDate);
+    } else if (presetKey === '3yr') {
+      setCustomStartDate('2023-06-20');
+      setCustomEndDate(latestDate);
+    } else if (presetKey === '1yr') {
+      setCustomStartDate('2025-06-15');
+      setCustomEndDate(latestDate);
+    }
+  };
+
+  // 7. Filter Hotspots dynamically according to Custom Selected Dates and Detection Pillar
   const filteredHotspots = useMemo(() => {
     if (!currentHotspots || currentHotspots.length === 0) return [];
 
-    const baseYearNum = parseInt(baselineYear, 10) || 2018;
-    const obsYearNum = parseInt(observedYear, 10) || 2024;
-    const yearSpan = obsYearNum - baseYearNum;
-
-    // If observed year is before or same as baseline year, no change has occurred yet
-    if (yearSpan <= 0) return [];
+    const startTime = new Date(customStartDate).getTime();
+    const endTime = new Date(customEndDate).getTime();
+    if (isNaN(startTime) || isNaN(endTime) || startTime >= endTime) return [];
 
     // Filter by Pillar if a specific detection pillar is selected
     let matching = currentHotspots.filter((h) => {
@@ -515,7 +664,6 @@ export default function TemporalCompareSlider({
             (h as any).nearest_known_settlement_distance_m < 2000)
         );
       } else {
-        // 'vegetation' or general: show all changes that occurred over this period
         return true;
       }
     });
@@ -524,17 +672,31 @@ export default function TemporalCompareSlider({
       matching = currentHotspots;
     }
 
-    // Scale the count of visible alerts proportionally to the time interval
-    const maxSpan = 8; // 2018 to 2026
-    const fraction = Math.min(1.0, Math.max(0.35, yearSpan / maxSpan));
+    // Filter by detected_at timestamp if present, or scale realistically by time window duration
+    const dated = matching.filter((h) => {
+      if (h.detected_at) {
+        const hTime = new Date(h.detected_at).getTime();
+        if (!isNaN(hTime)) {
+          return hTime >= startTime && hTime <= endTime;
+        }
+      }
+      return true;
+    });
+
+    if (dated.length > 0 && dated.length < matching.length) {
+      return dated;
+    }
+
+    // Scale proportional to the selected custom interval against max reference period (8 years)
+    const intervalDays = Math.max(30, (endTime - startTime) / (1000 * 60 * 60 * 24));
+    const fraction = Math.min(1.0, Math.max(0.2, intervalDays / (8 * 365.25)));
     const countToShow = Math.max(1, Math.round(matching.length * fraction));
 
     return matching.slice(0, countToShow);
-  }, [currentHotspots, detectionType, baselineYear, observedYear]);
+  }, [currentHotspots, detectionType, customStartDate, customEndDate]);
+
 
   // 8. Dynamic Analytics Calculations for the 3 Cards
-  const totalReserveAreaKm2 = activeArea?.area_km2 ? Math.round(activeArea.area_km2) : 1180;
-
   // Forest Cover calculations
   const baseNdvi = baselinePoint?.ndvi ?? 0.62;
   const obsNdvi = observedPoint?.ndvi ?? 0.50;
@@ -840,52 +1002,197 @@ export default function TemporalCompareSlider({
             <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none -ml-1" />
           </div>
 
-          {/* 4. Dates Range Selector */}
-          <div className="flex items-center gap-1.5 bg-[#0e172e] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
-            <Calendar className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-            <div className="flex flex-col">
-              <span className="text-[9px] text-slate-400 uppercase font-mono leading-none">Dates</span>
-              <div className="flex items-center gap-1">
-                <select
-                  id="satellite-baseline-date"
-                  value={baselineIndex}
-                  onChange={(e) => {
-                    const idx = Number(e.target.value);
-                    setBaselineIndex(idx);
-                    if (idx >= observedIndex && idx < timelinePoints.length - 1) {
-                      setObservedIndex(idx + 1);
-                    }
-                  }}
-                  className="bg-transparent text-xs text-white font-medium focus:outline-none cursor-pointer"
-                >
-                  {timelinePoints.map((pt, i) => (
-                    <option key={`b-${i}`} value={i} className="bg-[#0b1324] text-white">
-                      {pt.date.slice(0, 4)}
-                    </option>
-                  ))}
-                </select>
-                <span className="text-slate-400 text-[10px]">➔</span>
-                <select
-                  id="satellite-observed-date"
-                  value={observedIndex}
-                  onChange={(e) => {
-                    const idx = Number(e.target.value);
-                    setObservedIndex(idx);
-                    if (idx <= baselineIndex && idx > 0) {
-                      setBaselineIndex(idx - 1);
-                    }
-                  }}
-                  className="bg-transparent text-xs text-white font-medium focus:outline-none cursor-pointer"
-                >
-                  {timelinePoints.map((pt, i) => (
-                    <option key={`o-${i}`} value={i} className="bg-[#0b1324] text-white">
-                      {pt.date.slice(0, 4)}
-                    </option>
-                  ))}
-                </select>
+          {/* 4. Interactive Custom Dates Range & Time Interval Selector */}
+          <div className="relative">
+            <div className="flex items-center gap-2 bg-[#0e172e] border border-slate-700/80 hover:border-emerald-500/50 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 transition-all shadow-md">
+              <Calendar className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+              <div className="flex flex-col">
+                <div className="flex items-center justify-between gap-1.5">
+                  <span className="text-[9px] text-slate-400 uppercase font-mono leading-none">
+                    Interval
+                  </span>
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 font-mono border border-emerald-500/40">
+                    {timeIntervalDetails.label}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  {/* Start Date Picker (Baseline) */}
+                  <input
+                    id="satellite-baseline-date"
+                    type="date"
+                    min="2016-01-01"
+                    max={customEndDate || "2026-12-31"}
+                    value={customStartDate}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCustomStartDate(val);
+                      setDatePreset('custom');
+                    }}
+                    title="Baseline Start Date (Before)"
+                    className="bg-slate-900/90 border border-slate-700/90 rounded px-1.5 py-0.5 text-xs text-emerald-300 font-mono focus:outline-none focus:border-emerald-400 cursor-pointer"
+                  />
+                  <span className="text-slate-400 text-[10px] font-bold">➔</span>
+                  {/* End Date Picker (Observed) */}
+                  <input
+                    id="satellite-observed-date"
+                    type="date"
+                    min={customStartDate || "2016-01-01"}
+                    max="2026-12-31"
+                    value={customEndDate}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCustomEndDate(val);
+                      setDatePreset('custom');
+                    }}
+                    title="Observed End Date (After)"
+                    className="bg-slate-900/90 border border-slate-700/90 rounded px-1.5 py-0.5 text-xs text-rose-300 font-mono focus:outline-none focus:border-rose-400 cursor-pointer"
+                  />
+
+                  {/* Popover toggle for quick presets */}
+                  <button
+                    id="satellite-presets-toggle-btn"
+                    type="button"
+                    onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                    title="Quick Interval Presets (1-Yr, 3-Yr, 5-Yr, Full)"
+                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-emerald-300 transition-colors flex items-center gap-0.5"
+                  >
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isDatePickerOpen ? 'rotate-180 text-emerald-400' : ''}`} />
+                  </button>
+                </div>
               </div>
             </div>
-            <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none -ml-1" />
+
+            {/* Presets & Interval Info Dropdown Popover */}
+            {isDatePickerOpen && (
+              <div className="absolute top-full left-0 mt-1.5 w-80 bg-[#0a1222]/95 border border-slate-700/90 rounded-xl shadow-2xl p-3 z-[9999] backdrop-blur-xl space-y-2.5">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                    <span className="text-xs font-semibold text-white font-mono">
+                      Quick Interval Presets
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setIsDatePickerOpen(false)}
+                    className="text-slate-400 hover:text-white p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {/* Preset Buttons Grid */}
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleApplyPreset('5yr');
+                      setIsDatePickerOpen(false);
+                    }}
+                    className={`px-2.5 py-2 rounded-lg text-left text-xs border transition-all ${
+                      datePreset === '5yr'
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                        : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <div className="font-semibold text-emerald-400 flex items-center justify-between">
+                      <span>5-Year Window</span>
+                      <span className="text-[9px] font-mono opacity-75">Active</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">2021-06-18 ➔ 2026-06-12</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleApplyPreset('3yr');
+                      setIsDatePickerOpen(false);
+                    }}
+                    className={`px-2.5 py-2 rounded-lg text-left text-xs border transition-all ${
+                      datePreset === '3yr'
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                        : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <div className="font-semibold text-amber-400 flex items-center justify-between">
+                      <span>3-Year Loss</span>
+                      <span className="text-[9px] font-mono opacity-75">Recent</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">2023-06-20 ➔ 2026-06-12</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleApplyPreset('1yr');
+                      setIsDatePickerOpen(false);
+                    }}
+                    className={`px-2.5 py-2 rounded-lg text-left text-xs border transition-all ${
+                      datePreset === '1yr'
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                        : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <div className="font-semibold text-cyan-400 flex items-center justify-between">
+                      <span>1-Year Cycle</span>
+                      <span className="text-[9px] font-mono opacity-75">Annual</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">2025-06-15 ➔ 2026-06-12</div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleApplyPreset('full');
+                      setIsDatePickerOpen(false);
+                    }}
+                    className={`px-2.5 py-2 rounded-lg text-left text-xs border transition-all ${
+                      datePreset === 'full'
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                        : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                    }`}
+                  >
+                    <div className="font-semibold text-purple-400 flex items-center justify-between">
+                      <span>Full Horizon</span>
+                      <span className="text-[9px] font-mono opacity-75">8 Years</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">2018-06-12 ➔ 2026-06-12</div>
+                  </button>
+                </div>
+
+                {/* Direct Presets from Actual Backend Captured Passes */}
+                {timelinePoints.length > 0 && (
+                  <div className="pt-2 border-t border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                      Sentinel-2 Cloud-Free Pass Dates:
+                    </span>
+                    <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                      {timelinePoints.map((pt, idx) => (
+                        <button
+                          key={pt.date}
+                          type="button"
+                          onClick={() => {
+                            if (idx === 0) setCustomStartDate(pt.date);
+                            else setCustomEndDate(pt.date);
+                            setDatePreset('custom');
+                          }}
+                          className="px-1.5 py-0.5 text-[9px] font-mono rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700"
+                        >
+                          {pt.date}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Footer summary */}
+                <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between font-mono">
+                  <span>Selected Time Span:</span>
+                  <span className="text-emerald-400 font-semibold">
+                    {timeIntervalDetails.fullLabel}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 5. Compare Button (Vibrant Emerald Green) */}
@@ -937,192 +1244,119 @@ export default function TemporalCompareSlider({
         </div>
       </div>
 
-      {/* ----------------- TWO CARDS WHOSE SIZE IS CONTROLLED BY SLIDER ----------------- */}
-      <div className={`w-full relative bg-[#040812] overflow-hidden select-none rounded-2xl border border-slate-800 shadow-2xl ${isFullscreen ? 'flex-1 min-h-0' : 'h-[560px]'}`}>
-        <div className="flex w-full h-full relative">
-          
-          {/* ================= CARD 1: LEFT CARD (OLD DATE / BEFORE PARAMETERS) ================= */}
-          <div
-            style={{ width: `${swipePosition}%` }}
-            className="relative h-full overflow-hidden flex flex-col border-r-2 border-emerald-500/40 bg-[#070d18] transition-[width] duration-75 ease-out"
-          >
-            {/* Top Embedded Parameter Header for Left Card */}
-            <div className="absolute top-3 left-3 right-4 z-[1000] pointer-events-none">
-              <div className="bg-[#070d1a]/95 backdrop-blur-md border border-emerald-500/60 rounded-xl p-2.5 shadow-2xl flex items-center justify-between border-l-4 border-l-emerald-500 pointer-events-auto">
-                <div className="min-w-0 pr-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono">
-                      BEFORE • {baselineYear}
-                    </span>
-                    <span className="text-xs font-mono font-bold text-white flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-emerald-400 shrink-0" />
-                      <span className="truncate">{baselineDateFormatted}</span>
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5 font-sans truncate">
-                    Original Baseline Parameters • {activeArea?.name}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 text-[10px] font-mono shrink-0">
-                  <div className="px-2 py-1 rounded bg-emerald-950/70 border border-emerald-500/40 text-emerald-300">
-                    NDVI: <b className="text-white">{baselinePoint?.ndvi?.toFixed(2) ?? '0.57'}</b>
-                  </div>
-                  <div className="px-2 py-1 rounded bg-slate-900/85 border border-slate-700 text-slate-300">
-                    Canopy: <b className="text-emerald-400">{baseForestKm2} km²</b>
-                  </div>
-                  <div className="px-2 py-1 rounded bg-slate-900/85 border border-slate-700 text-slate-300">
-                    Water: <b className="text-cyan-400">{baseWaterKm2} km²</b>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Left Real Satellite Map */}
-            <div className="w-full h-full">
-              <ComparisonLeafletMap
-                key={`card-left-${activeArea?.id}-${baselineYear}-${aoiZoomCounter}-${basemapType}`}
-                center={activeArea?.coordinates}
-                boundaryGeoJson={currentBoundary}
-                hotspots={filteredHotspots}
-                mode="baseline"
-                rasterOverlay={null}
-                showBoundary={true}
-                showHotspots={true}
-                showFires={false}
-                showMiniLegend={false}
-                basemapType={basemapType}
-                height="100%"
-              />
-            </div>
-
-            {/* Bottom Legend for Baseline Card */}
-            <div className="absolute bottom-3 left-3 z-[1000] bg-slate-950/90 backdrop-blur-md border border-emerald-500/40 rounded-lg px-2.5 py-1.5 text-[9px] font-mono text-slate-300 flex items-center gap-3 pointer-events-none select-none">
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block border border-white/60"></span>
-                <span>🟢 Intact Canopy</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block border border-white/60"></span>
-                <span>💧 Full Reservoir</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-1 bg-emerald-400 inline-block"></span>
-                <span>⌖ Protected AOI</span>
-              </span>
-            </div>
-          </div>
-
-          {/* ================= SLIDER DIVIDER (CONTROLLING SIZE OF BOTH CARDS) ================= */}
-          <div
-            className="absolute top-0 bottom-0 z-[1050] -translate-x-1/2 flex items-center justify-center cursor-ew-resize group pointer-events-none"
-            style={{ left: `${swipePosition}%` }}
-          >
-            {/* Glowing dividing line */}
-            <div className="w-1.5 h-full bg-gradient-to-b from-emerald-400 via-cyan-400 to-rose-400 shadow-[0_0_16px_rgba(56,189,248,0.8)]" />
-
-            {/* Center Circular Drag Handle */}
-            <div className="absolute w-12 h-12 rounded-full bg-slate-950 border-2 border-cyan-400 flex items-center justify-center text-cyan-300 shadow-[0_0_24px_rgba(56,189,248,0.9)] group-hover:scale-110 transition-transform">
-              <span className="font-mono text-xs font-bold tracking-tighter select-none">⟨ ⟩</span>
-            </div>
-
-            {/* Floating helper chip on hover */}
-            <div className="absolute -top-1 px-2.5 py-0.5 rounded-full bg-slate-950/90 border border-cyan-400/50 text-[9px] font-mono text-cyan-300 whitespace-nowrap shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              Drag to Resize Cards
-            </div>
-          </div>
-
-          {/* Range input for slider dragging */}
-          <input
-            id="satellite-swipe-range-input"
-            type="range"
-            min={18}
-            max={82}
-            value={swipePosition}
-            onChange={(e) => setSwipePosition(Number(e.target.value))}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-[1060]"
-            aria-label="Drag slider to resize Before vs After cards"
+      {/* ----------------- UNIFIED OVERLAY MAP CONTAINER (BEFORE UNDERNEATH, AFTER ON TOP, SLIDER CONTROLS SPLIT) ----------------- */}
+      <div className={`w-full relative bg-[#040812] overflow-hidden select-none rounded-2xl border border-slate-800 shadow-2xl ${isFullscreen ? 'flex-1 min-h-0' : 'h-[580px]'}`}>
+        
+        {/* ONE SINGLE MAP INSTANCE (SAME MAP CANVAS + TWO SATELLITE LAYERS + CLIPPING) */}
+        <div className="absolute inset-0">
+          <ComparisonLeafletMap
+            key={`single-map-${activeArea?.id}-${baselineYear}-${observedYear}-${detectionType}-${aoiZoomCounter}-${basemapType}`}
+            center={syncedCenter}
+            zoom={syncedZoom}
+            boundaryGeoJson={currentBoundary}
+            hotspots={filteredHotspots}
+            mode="observed"
+            isCompareSwipe={true}
+            swipePosition={swipePosition}
+            baselineRaster={baselineOverlay}
+            rasterOverlay={changeOverlay || comparisonOverlay}
+            showBoundary={true}
+            showHotspots={true}
+            showFires={detectionType === 'forest' || viewMode.includes('Fires')}
+            showMiniLegend={false}
+            basemapType={basemapType}
+            hideControls={true}
+            onViewChange={(c, z) => {
+              setSyncedCenter(c);
+              setSyncedZoom(z);
+            }}
+            onHotspotClick={(h) => setSelectedHotspot(h)}
+            height="100%"
           />
-
-          {/* ================= CARD 2: RIGHT CARD (CURRENT/OBSERVED DATE / CHANGES) ================= */}
-          <div
-            style={{ width: `${100 - swipePosition}%` }}
-            className="relative h-full overflow-hidden flex flex-col border-l-2 border-rose-500/40 bg-[#070d18] transition-[width] duration-75 ease-out"
-          >
-            {/* Top Embedded Parameter Header for Right Card */}
-            <div className="absolute top-3 left-4 right-3 z-[1000] pointer-events-none">
-              <div className="bg-[#070d1a]/95 backdrop-blur-md border border-rose-500/60 rounded-xl p-2.5 shadow-2xl flex items-center justify-between border-r-4 border-r-rose-500 pointer-events-auto">
-                <div className="min-w-0 pr-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono">
-                      AFTER • {observedYear}
-                    </span>
-                    <span className="text-xs font-mono font-bold text-white flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-rose-400 shrink-0" />
-                      <span className="truncate">{observedDateFormatted}</span>
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5 font-sans truncate">
-                    Observed Changes & Threat Telemetry
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 text-[10px] font-mono shrink-0">
-                  <div className="px-2 py-1 rounded bg-slate-900/85 border border-slate-700 text-slate-300">
-                    NDVI: <b className="text-amber-400">{observedPoint?.ndvi?.toFixed(2) ?? '0.50'}</b>
-                    <span className="text-[9px] text-rose-400 ml-1">({ndviDelta >= 0 ? '+' : ''}{ndviDelta.toFixed(2)})</span>
-                  </div>
-                  <div className="px-2 py-1 rounded bg-rose-950/70 border border-rose-500/40 text-rose-300">
-                    Net Change: <b className="text-white">{forestDeltaPct.toFixed(1)}%</b>
-                  </div>
-                  <div className="px-2 py-1 rounded bg-rose-950/85 border border-rose-500/60 text-rose-300 font-bold flex items-center gap-1">
-                    <span>🔥</span> {filteredHotspots.length} Alerts
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Real Satellite Map with Changes */}
-            <div className="w-full h-full">
-              <ComparisonLeafletMap
-                key={`card-right-${activeArea?.id}-${observedYear}-${detectionType}-${aoiZoomCounter}-${basemapType}`}
-                center={activeArea?.coordinates}
-                boundaryGeoJson={currentBoundary}
-                hotspots={filteredHotspots}
-                mode="observed"
-                rasterOverlay={viewMode === 'Difference Heatmap' ? changeOverlay : null}
-                showBoundary={true}
-                showHotspots={true}
-                showFires={detectionType === 'forest' || viewMode.includes('Fires')}
-                showMiniLegend={false}
-                basemapType={basemapType}
-                onHotspotClick={(h) => setSelectedHotspot(h)}
-                height="100%"
-              />
-            </div>
-
-            {/* Bottom Legend for Changes Card */}
-            <div className="absolute bottom-3 right-3 z-[1000] bg-slate-950/90 backdrop-blur-md border border-rose-500/40 rounded-lg px-2.5 py-1.5 text-[9px] font-mono text-slate-300 flex items-center gap-2.5 pointer-events-none select-none">
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-600 inline-block border border-white/60"></span>
-                <span>🔴 Deforestation</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block border border-white/60"></span>
-                <span>🟡 Degradation</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block border border-white/60"></span>
-                <span>🔵 Water Dynamics</span>
-              </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded bg-purple-500 inline-block border border-white/60"></span>
-                <span>🏢 Encroachment</span>
-              </span>
-            </div>
-          </div>
-
         </div>
 
-        {/* Scale Bar (Bottom Left, Matching Reference Image) */}
+        {/* Draggable Vertical Glowing Split Divider */}
+        <div
+          className="absolute top-0 bottom-0 w-1 bg-gradient-to-b from-emerald-400 via-cyan-300 to-emerald-400 cursor-ew-resize flex items-center justify-center z-[500] shadow-[0_0_16px_rgba(16,185,129,0.9)] pointer-events-none"
+          style={{ left: `${swipePosition}%` }}
+        >
+          <div className="w-10 h-10 rounded-full bg-slate-950/95 border-2 border-emerald-400 flex items-center justify-center text-white shadow-2xl backdrop-blur-md pointer-events-none">
+            <div className="flex items-center text-xs font-mono font-bold text-emerald-300 gap-0.5">
+              <span>◀</span>
+              <span>▶</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Range input for buttery-smooth slider dragging across whole map */}
+        <input
+          id="satellite-swipe-range-input"
+          type="range"
+          min={0}
+          max={100}
+          value={swipePosition}
+          onChange={(e) => setSwipePosition(Number(e.target.value))}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-[520]"
+          aria-label="Interactive change comparison swipe handle"
+        />
+
+        {/* Top-Left Floating Badge: Before / Baseline Date Telemetry */}
+        <div className="absolute top-3.5 left-3.5 z-[500] pointer-events-none">
+          <div className="bg-[#070d1a]/95 backdrop-blur-md border border-emerald-500/60 rounded-xl p-2.5 shadow-2xl flex items-center gap-3 border-l-4 border-l-emerald-500">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono">
+                  BEFORE • {baselineYear}
+                </span>
+                <span className="text-xs font-mono font-bold text-white flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-emerald-400 shrink-0" />
+                  <span>{baselineDateFormatted}</span>
+                </span>
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5 font-sans">
+                Clean Baseline Satellite Imagery • {activeArea?.name}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] font-mono shrink-0">
+              <div className="px-2 py-1 rounded bg-emerald-950/70 border border-emerald-500/40 text-emerald-300">
+                NDVI: <b className="text-white">{baseNdvi.toFixed(2)}</b>
+              </div>
+              <div className="px-2 py-1 rounded bg-slate-900/85 border border-slate-700 text-slate-300">
+                Canopy: <b className="text-emerald-400">{baseForestKm2} km²</b>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Top-Right Floating Badge: After / Observed Date Telemetry */}
+        <div className="absolute top-3.5 right-3.5 z-[500] pointer-events-none">
+          <div className="bg-[#070d1a]/95 backdrop-blur-md border border-rose-500/60 rounded-xl p-2.5 shadow-2xl flex items-center gap-3 border-r-4 border-r-rose-500">
+            <div className="flex items-center gap-1.5 text-[10px] font-mono shrink-0">
+              <div className="px-2 py-1 rounded bg-rose-950/80 border border-rose-500/50 text-rose-300 font-bold flex items-center gap-1">
+                <span>🔥</span> {filteredHotspots.length} Alerts
+              </div>
+              <div className="px-2 py-1 rounded bg-rose-950/70 border border-rose-500/40 text-rose-300">
+                Net: <b className="text-white">{forestDeltaPct.toFixed(1)}%</b>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="flex items-center justify-end gap-2">
+                <span className="text-xs font-mono font-bold text-white flex items-center gap-1">
+                  <Calendar className="w-3 h-3 text-rose-400 shrink-0" />
+                  <span>{observedDateFormatted}</span>
+                </span>
+                <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono">
+                  AFTER • {observedYear}
+                </span>
+              </div>
+              <div className="text-[10px] text-slate-400 mt-0.5 font-sans">
+                Observed Changes & Threat Telemetry
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom-Left Floating GIS Scale Bar */}
         <div className="absolute bottom-4 left-4 z-[500] flex flex-col gap-1 pointer-events-none select-none">
           <div className="flex items-center justify-between w-28 text-[9px] font-mono text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)] font-semibold">
             <span>0</span>
@@ -1135,12 +1369,43 @@ export default function TemporalCompareSlider({
           </div>
         </div>
 
-        {/* Zoom Controls & AOI Target (Bottom Right, Matching Reference Image) */}
+        {/* Bottom-Right Floating Glassmorphic Change Detection Legend (Matching Reference Video) */}
+        <div className="absolute bottom-4 right-16 max-w-xs p-3 rounded-xl bg-slate-950/90 backdrop-blur-md border border-slate-700/80 shadow-2xl z-[500] pointer-events-none text-left select-none">
+          <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-slate-800">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[11px] font-mono font-bold text-slate-200 uppercase tracking-wider">
+              Change Detection (Swipe)
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-1 text-[10px] font-mono">
+            <div className="flex items-center gap-2 text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-sm bg-rose-500 shrink-0 shadow-[0_0_6px_rgba(244,63,94,0.6)]" />
+              <span>Deforestation (Forest Loss)</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-sm bg-amber-500 shrink-0 shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
+              <span>Vegetation Loss / Degradation</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-sm bg-cyan-400 shrink-0 shadow-[0_0_6px_rgba(6,182,212,0.6)]" />
+              <span>Water Body Dynamics</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-300">
+              <span className="w-2.5 h-2.5 rounded-sm bg-purple-500 shrink-0 shadow-[0_0_6px_rgba(168,85,247,0.6)]" />
+              <span>Urban Expansion</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Zoom Controls & AOI Target (Bottom Right) */}
         <div className="absolute bottom-4 right-4 z-[500] flex flex-col items-center gap-1.5 pointer-events-auto">
           <div className="flex flex-col bg-black/85 backdrop-blur-md border border-white/20 rounded-lg overflow-hidden shadow-2xl">
             <button
               id="satellite-zoom-in-btn"
-              onClick={() => setAoiZoomCounter((c) => c + 1)}
+              onClick={() => {
+                setSyncedZoom((z) => Math.min(18, z + 1));
+                setAoiZoomCounter((c) => c + 1);
+              }}
               title="Zoom In"
               className="w-7 h-7 flex items-center justify-center text-white hover:bg-white/20 transition-colors border-b border-white/10 text-sm font-bold"
             >
@@ -1148,7 +1413,10 @@ export default function TemporalCompareSlider({
             </button>
             <button
               id="satellite-zoom-out-btn"
-              onClick={() => setAoiZoomCounter((c) => c - 1)}
+              onClick={() => {
+                setSyncedZoom((z) => Math.max(4, z - 1));
+                setAoiZoomCounter((c) => c - 1);
+              }}
               title="Zoom Out"
               className="w-7 h-7 flex items-center justify-center text-white hover:bg-white/20 transition-colors text-sm font-bold"
             >
@@ -1158,7 +1426,13 @@ export default function TemporalCompareSlider({
 
           <button
             id="satellite-fit-aoi-btn"
-            onClick={() => setAoiZoomCounter((c) => c + 1)}
+            onClick={() => {
+              if (activeArea?.coordinates) {
+                setSyncedCenter(activeArea.coordinates);
+                setSyncedZoom(10);
+              }
+              setAoiZoomCounter((c) => c + 1);
+            }}
             title="Fit to Protected Area Boundary (AOI)"
             className="w-7 h-7 rounded-lg bg-black/85 backdrop-blur-md border border-white/20 flex items-center justify-center text-emerald-400 hover:text-white hover:bg-white/20 transition-colors shadow-2xl"
           >
@@ -1177,30 +1451,38 @@ export default function TemporalCompareSlider({
                     : selectedHotspot.change_type?.toLowerCase().includes('builtup')
                     ? '🏢'
                     : selectedHotspot.severity === 'critical'
-                    ? '🔥'
+                    ? '🚨'
                     : '🌿'}
                 </span>
-                <span>{selectedHotspot.change_label || selectedHotspot.change_type}</span>
+                <span>{selectedHotspot.change_label || selectedHotspot.change_type || 'Disturbance Event'}</span>
               </div>
               <button
                 onClick={() => setSelectedHotspot(null)}
-                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800"
+                className="text-slate-400 hover:text-white p-0.5 rounded transition-colors"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-3 h-3" />
               </button>
             </div>
-            <div className="space-y-1 text-slate-300 text-[11px]">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Detection Type:</span>
-                <span className="uppercase font-bold text-emerald-400">{selectedHotspot.change_type}</span>
-              </div>
+            <div className="space-y-1.5 text-[11px]">
               <div className="flex justify-between">
                 <span className="text-slate-400">Severity:</span>
-                <span className="uppercase font-bold text-rose-400">{selectedHotspot.severity}</span>
+                <span
+                  className={`font-bold uppercase ${
+                    selectedHotspot.severity === 'critical'
+                      ? 'text-rose-400'
+                      : selectedHotspot.severity === 'high'
+                      ? 'text-amber-400'
+                      : 'text-emerald-400'
+                  }`}
+                >
+                  {selectedHotspot.severity}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Priority Score:</span>
-                <span className="text-amber-400 font-bold">
+                <span
+                  className="text-amber-400 font-bold"
+                >
                   {selectedHotspot.priority_score !== null ? `${selectedHotspot.priority_score}/100` : 'Pending'}
                 </span>
               </div>
@@ -1213,13 +1495,19 @@ export default function TemporalCompareSlider({
         )}
       </div>
 
+
       {/* ----------------- BOTTOM 3-COLUMN ANALYTICS DASHBOARD (Exact Match of Reference Image) ----------------- */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 p-4 bg-[#070c17] border-t border-slate-800/80">
         {/* Column 1: Change Analysis (2018 – 2024) (cols-5) */}
         <div className="lg:col-span-5 bg-[#0a1222] border border-slate-800/90 rounded-xl p-3.5 flex flex-col justify-between shadow-xl">
-          <h4 className="text-xs font-semibold text-slate-200 tracking-wide mb-3 flex items-center gap-1.5">
-            <span>Change Analysis</span>
-            <span className="text-slate-400 font-mono">({baselineYear} – {observedYear})</span>
+          <h4 className="text-xs font-semibold text-slate-200 tracking-wide mb-3 flex items-center justify-between flex-wrap gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <span>Change Analysis</span>
+              <span className="text-emerald-400 font-mono font-bold">({baselineDateFormatted} ➔ {observedDateFormatted})</span>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-500/40">
+              Interval: {timeIntervalDetails.fullLabel}
+            </span>
           </h4>
 
           <div className="grid grid-cols-3 gap-2.5">

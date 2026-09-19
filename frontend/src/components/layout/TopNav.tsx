@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, Bell, User as UserIcon, ChevronDown, ShieldCheck } from 'lucide-react';
+import { Search, Bell, User as UserIcon, ChevronDown, ShieldCheck, PhoneCall } from 'lucide-react';
 import api from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useApi } from '@/lib/use-api';
@@ -55,6 +55,25 @@ export const TopNav: React.FC = () => {
       </form>
 
       <div className="flex items-center gap-3">
+        {/* Quick-Dial Live Voice Call Button */}
+        <button
+          onClick={() => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('open-voice-call'));
+            }
+          }}
+          aria-label="Call Habitat AI Ranger"
+          title="Call Habitat AI Ranger (Live Hands-Free Audio)"
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900/90 text-emerald-300 hover:text-white border border-emerald-500/40 text-xs font-semibold shadow-sm transition-all hover:scale-105 active:scale-95"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+          </span>
+          <PhoneCall className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="hidden sm:inline">Call AI Ranger</span>
+        </button>
+
         <div className="relative">
           <button
             onClick={() => setShowNotifications(!showNotifications)}

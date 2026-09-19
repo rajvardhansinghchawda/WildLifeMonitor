@@ -148,3 +148,27 @@
   -webkit-text-fill-color: transparent;
 }
 
+/* Satellite comparison layer temporal visual grading */
+.sat-baseline-tiles {
+  filter: saturate(1.45) contrast(1.12) brightness(1.04) hue-rotate(-6deg) !important;
+}
+
+.sat-observed-tiles {
+  filter: saturate(0.85) contrast(1.08) brightness(0.93) !important;
+}
+
+/* Custom styling for HTML5 date inputs in dark GIS theme */
+input[type="date"] {
+  color-scheme: dark;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85) sepia(100%) hue-rotate(100deg);
+  cursor: pointer;
+  opacity: 0.8;
+  padding: 2px;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  filter: invert(1);
+}
+

@@ -33,4 +33,4 @@ secrets/
 volumes/
 data/
 scratch_git.ps1
-
+*.mp4

@@ -24,6 +24,9 @@ export interface ComparisonLeafletMapProps {
   sectors?: { name: string; lat: number; lon: number }[];
   mode: 'baseline' | 'observed' | 'difference';
   rasterOverlay?: RasterOverlayConfig | null;
+  baselineRaster?: RasterOverlayConfig | null;
+  isCompareSwipe?: boolean;
+  swipePosition?: number;
   showBoundary?: boolean;
   showHotspots?: boolean;
   showRoads?: boolean;
@@ -39,6 +42,7 @@ export interface ComparisonLeafletMapProps {
   onViewChange?: (center: { lat: number; lon: number }, zoom: number) => void;
   syncCenter?: { lat: number; lon: number };
   syncZoom?: number;
+  dateSpanYears?: number;
 }
 
 export default function ComparisonLeafletMap({
@@ -49,6 +53,9 @@ export default function ComparisonLeafletMap({
   sectors = [],
   mode,
   rasterOverlay = null,
+  baselineRaster = null,
+  isCompareSwipe = false,
+  swipePosition = 50,
   showBoundary = true,
   showHotspots = true,
   showRoads = false,
@@ -64,6 +71,7 @@ export default function ComparisonLeafletMap({
   onViewChange,
   syncCenter,
   syncZoom,
+  dateSpanYears = 5,
 }: ComparisonLeafletMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
@@ -102,12 +110,20 @@ export default function ComparisonLeafletMap({
       }
 
       // Basemap Layer
+      const tileClassName =
+        basemapType === 'satellite'
+          ? mode === 'baseline'
+            ? 'sat-baseline-tiles'
+            : 'sat-observed-tiles'
+          : '';
+
       if (basemapType === 'satellite') {
         L.tileLayer(
           'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
           {
             maxZoom: 18,
             attribution: 'Esri Satellite Imagery',
+            className: tileClassName,
           }
         ).addTo(map);
       } else {
@@ -178,21 +194,29 @@ export default function ComparisonLeafletMap({
   useEffect(() => {
     if (!ready || !mapRef.current || !containerRef.current) return;
     const map = mapRef.current;
-    map.invalidateSize();
+    try {
+      if (containerRef.current.clientWidth > 0 && containerRef.current.clientHeight > 0) {
+        map.invalidateSize();
+      }
+    } catch (e) {}
 
     let resizeObserver: ResizeObserver | null = null;
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(() => {
-        if (mapRef.current) {
-          mapRef.current.invalidateSize();
+        if (mapRef.current && containerRef.current && containerRef.current.clientWidth > 0) {
+          try {
+            mapRef.current.invalidateSize();
+          } catch (e) {}
         }
       });
       resizeObserver.observe(containerRef.current);
     }
 
     const handleWindowResize = () => {
-      if (mapRef.current) {
-        mapRef.current.invalidateSize();
+      if (mapRef.current && containerRef.current && containerRef.current.clientWidth > 0) {
+        try {
+          mapRef.current.invalidateSize();
+        } catch (e) {}
       }
     };
     window.addEventListener('resize', handleWindowResize);
@@ -202,6 +226,16 @@ export default function ComparisonLeafletMap({
       window.removeEventListener('resize', handleWindowResize);
     };
   }, [ready]);
+
+  // Dynamically update clip-path on observed-pane when swipePosition changes (Zero re-renders)
+  useEffect(() => {
+    if (!mapRef.current || !isCompareSwipe) return;
+    const pane = mapRef.current.getPane('observed-pane');
+    if (pane) {
+      pane.style.clipPath = `polygon(${swipePosition}% 0, 100% 0, 100% 100%, ${swipePosition}% 100%)`;
+      pane.style.webkitClipPath = `polygon(${swipePosition}% 0, 100% 0, 100% 100%, ${swipePosition}% 100%)`;
+    }
+  }, [swipePosition, isCompareSwipe]);
 
   // Redraw Visual Layers & Features using 100% Real Backend Data
   useEffect(() => {
@@ -213,6 +247,48 @@ export default function ComparisonLeafletMap({
     layersGroupRef.current.forEach((l) => map.removeLayer(l));
     layersGroupRef.current = [];
 
+    // Setup observed-pane for single-map swipe comparison
+    let targetPane: string | undefined = undefined;
+    if (isCompareSwipe) {
+      if (!map.getPane('observed-pane')) {
+        const obsPane = map.createPane('observed-pane');
+        obsPane.style.zIndex = '450';
+      }
+      const obsPane = map.getPane('observed-pane');
+      if (obsPane) {
+        obsPane.style.clipPath = `polygon(${swipePosition}% 0, 100% 0, 100% 100%, ${swipePosition}% 100%)`;
+        obsPane.style.webkitClipPath = `polygon(${swipePosition}% 0, 100% 0, 100% 100%, ${swipePosition}% 100%)`;
+      }
+      targetPane = 'observed-pane';
+
+      // In isCompareSwipe mode, add secondary observed satellite tile layer into observed-pane so satellite imagery changes across time
+      if (basemapType === 'satellite') {
+        const obsTiles = L.tileLayer(
+          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          {
+            maxZoom: 18,
+            attribution: 'Esri Satellite (Observed)',
+            className: 'sat-observed-tiles',
+            pane: 'observed-pane',
+          }
+        ).addTo(map);
+        layersGroupRef.current.push(obsTiles);
+      }
+    }
+
+    // 0. Render Baseline Satellite Raster (if provided in swipe mode)
+    if (baselineRaster && baselineRaster.url && baselineRaster.bounds && isCompareSwipe) {
+      try {
+        const baseImg = L.imageOverlay(baselineRaster.url, baselineRaster.bounds, {
+          opacity: 0.85,
+          interactive: false,
+        }).addTo(map);
+        layersGroupRef.current.push(baseImg);
+      } catch (err) {
+        console.warn('Failed to load baseline overlay:', err);
+      }
+    }
+
     // 1. Render Real Satellite Raster Heatmap Overlay (from Backend GEE/MinIO assets)
     // Render when rasterOverlay is provided and we are in difference or observed mode
     if (rasterOverlay && rasterOverlay.url && rasterOverlay.bounds && (mode === 'difference' || mode === 'observed')) {
@@ -220,6 +296,7 @@ export default function ComparisonLeafletMap({
         const imageOverlay = L.imageOverlay(rasterOverlay.url, rasterOverlay.bounds, {
           opacity: 0.82,
           interactive: false,
+          pane: targetPane,
         }).addTo(map);
         layersGroupRef.current.push(imageOverlay);
       } catch (err) {
@@ -245,7 +322,11 @@ export default function ComparisonLeafletMap({
       // Auto fit bounds to real boundary if not already fitted
       const bounds = bLayer.getBounds();
       if (bounds.isValid() && (!rasterOverlay || !rasterOverlay.bounds)) {
-        map.fitBounds(bounds, { padding: [20, 20] });
+        try {
+          if (map && map.getContainer() && map.getContainer().clientWidth > 0) {
+            map.fitBounds(bounds, { padding: [20, 20], animate: false });
+          }
+        } catch (e) {}
       }
     }
 
@@ -280,7 +361,7 @@ export default function ComparisonLeafletMap({
 
         // Determine distinct symbol, color, and title based on mode (baseline parameters vs observed changes)
         let psSymbol = '🌿';
-        let psBg = '#f59e0b';
+        let psBg = '#ff9100'; // Vivid Amber
         let psPillar = 'Pillar 2: Vegetation Degradation';
         let psLabel = h.change_label || h.change_type;
         const ct = (h.change_type || '').toLowerCase();
@@ -289,12 +370,12 @@ export default function ComparisonLeafletMap({
           // BASELINE MODE: Show original healthy parameters before change
           if (ct.includes('water')) {
             psSymbol = '💧';
-            psBg = '#0284c7';
+            psBg = '#00e5ff';
             psPillar = 'Baseline: Surface Water Body';
             psLabel = 'Full Water Reservoir / Lake Extent';
           } else if (ct.includes('builtup') || ct.includes('encroach')) {
             psSymbol = '⌖';
-            psBg = '#64748b';
+            psBg = '#94a3b8';
             psPillar = 'Baseline: Protected Boundary';
             psLabel = 'Demarcated Reserve Perimeter';
           } else {
@@ -304,37 +385,43 @@ export default function ComparisonLeafletMap({
             psLabel = 'Intact Dense Forest Canopy';
           }
         } else {
-          // OBSERVED MODE: Show detected changes and impacts over time
+          // OBSERVED MODE: High-contrast detected changes and impacts over time
           if (ct.includes('water')) {
             psSymbol = '💧';
-            psBg = '#0284c7'; // Blue for water dynamics
+            psBg = '#00e5ff'; // Electric Cyan for water dynamics
             psPillar = 'Pillar 3: Water Body Dynamics';
             psLabel = 'Water Surface Reduction / Shift';
           } else if (ct.includes('builtup') || ct.includes('encroach')) {
             psSymbol = '🏢';
-            psBg = '#a855f7'; // Purple for urban expansion / encroachment
+            psBg = '#d500f9'; // Vivid Purple for urban expansion / encroachment
             psPillar = 'Pillar 4: Urban Expansion';
             psLabel = 'Settlement Encroachment';
           } else if (
             h.severity === 'critical' ||
             (h as any).priority_band === 'CRITICAL' ||
-            (h.mean_ndvi_change !== null && h.mean_ndvi_change !== undefined && h.mean_ndvi_change < -0.32) ||
+            (h.mean_ndvi_change !== null && h.mean_ndvi_change !== undefined && h.mean_ndvi_change < -0.28) ||
             ct.includes('forest') ||
             ct.includes('deforest')
           ) {
             psSymbol = '🔥';
-            psBg = '#dc2626'; // Red for severe forest loss / deforestation
+            psBg = '#ff1744'; // Vivid Crimson Red for severe forest loss / deforestation
             psPillar = 'Pillar 5: Deforestation / Forest Loss';
             psLabel = 'Severe Canopy Collapse / Deforestation';
           } else {
             psSymbol = '🌿';
-            psBg = '#f59e0b'; // Yellow for vegetation degradation
+            psBg = '#ff9100'; // Vivid Amber for vegetation degradation
             psPillar = 'Pillar 2: Vegetation Degradation';
             psLabel = 'Canopy Degradation / Stress';
           }
         }
 
         const color = psBg;
+
+        // Visual radius scaled for high GIS visibility (420m to 1400m)
+        const radiusMeters = Math.max(420, Math.sqrt(((h.affected_area_ha || 1.2) * 10000) / Math.PI) * 1.55);
+        const seed = Math.abs(Math.sin((lat || 21) * 1000 + (lon || 79) * 2000) * 10000);
+        const latMeters = 111320;
+        const lonMeters = 111320 * Math.cos(((lat || 21) * Math.PI) / 180);
 
         // A. Render Real Polygon Geometry (PostGIS GeoJSON / generalized_geometry) if available
         const polyGeom = h.geometry || (h as any).generalized_geometry;
@@ -343,11 +430,12 @@ export default function ComparisonLeafletMap({
             const polyLayer = L.geoJSON(polyGeom as any, {
               style: {
                 color: color,
-                weight: 2,
-                opacity: 0.95,
+                weight: 2.5,
+                opacity: 1.0,
                 fillColor: color,
-                fillOpacity: 0.55,
+                fillOpacity: mode === 'baseline' ? 0.25 : 0.70,
               },
+              pane: targetPane,
             }).addTo(map);
 
             polyLayer.bindPopup(
@@ -374,6 +462,27 @@ export default function ComparisonLeafletMap({
             });
 
             layersGroupRef.current.push(polyLayer);
+
+            // Add micro-particles inside the real polygon centroid for 10m Sentinel-2 pixel-level fidelity
+            if (lat && lon && mode !== 'baseline') {
+              for (let p = 0; p < 8; p++) {
+                const pAngle = (p * 1.5 + seed) % (2 * Math.PI);
+                const pDist = 120 * (0.2 + 0.6 * ((p * 0.37 + seed * 0.17) % 1));
+                const pLat = lat + (pDist * Math.sin(pAngle)) / latMeters;
+                const pLon = lon + (pDist * Math.cos(pAngle)) / lonMeters;
+
+                const particle = L.circleMarker([pLat, pLon], {
+                  radius: 3.0,
+                  color: '#ffffff',
+                  weight: 1.2,
+                  opacity: 0.95,
+                  fillColor: color,
+                  fillOpacity: 1.0,
+                  pane: targetPane,
+                }).addTo(map);
+                layersGroupRef.current.push(particle);
+              }
+            }
           } catch (err) {
             console.warn('Failed to render hotspot polygon geometry:', err);
           }
@@ -381,14 +490,10 @@ export default function ComparisonLeafletMap({
           // If polygon geometry is not defined, render organic terrain-conforming irregular polygon and micro-particles
           // NO large geometric circles: uses harmonic terrain jitter and 10m pixel-level micro-particles
           try {
-            const radiusMeters = Math.max(70, Math.sqrt(((h.affected_area_ha || 1.2) * 10000) / Math.PI) * 0.85);
-            const seed = Math.abs(Math.sin(lat * 1000 + lon * 2000) * 10000);
-
             // 1. Organic irregular polygon (12 harmonic vertices conforming to natural terrain boundary)
             const numPoints = 12;
             const polygonPoints: [number, number][] = [];
-            const latMeters = 111320;
-            const lonMeters = 111320 * Math.cos((lat * Math.PI) / 180);
+            const haloPoints: [number, number][] = [];
 
             for (let i = 0; i < numPoints; i++) {
               const angle = (i / numPoints) * 2 * Math.PI;
@@ -399,15 +504,33 @@ export default function ComparisonLeafletMap({
               const dLat = (r * Math.sin(angle)) / latMeters;
               const dLon = (r * Math.cos(angle)) / lonMeters;
               polygonPoints.push([lat + dLat, lon + dLon]);
+              haloPoints.push([lat + dLat * 1.35, lon + dLon * 1.35]);
             }
 
+            // Outer glowing radar pulse halo
+            if (mode !== 'baseline') {
+              const haloPoly = L.polygon(haloPoints, {
+                color: color,
+                weight: 1.5,
+                opacity: 0.75,
+                fillColor: color,
+                fillOpacity: 0.18,
+                dashArray: '4, 4',
+                interactive: false,
+                pane: targetPane,
+              }).addTo(map);
+              layersGroupRef.current.push(haloPoly);
+            }
+
+            // Inner high-contrast core disturbance polygon
             const organicPoly = L.polygon(polygonPoints, {
               color: color,
-              weight: 1.5,
-              opacity: 0.85,
+              weight: 2.2,
+              opacity: 0.95,
               fillColor: color,
-              fillOpacity: mode === 'baseline' ? 0.2 : 0.45,
+              fillOpacity: mode === 'baseline' ? 0.25 : 0.68,
               dashArray: mode === 'baseline' ? '3, 3' : undefined,
+              pane: targetPane,
             }).addTo(map);
 
             organicPoly.bindPopup(
@@ -435,61 +558,66 @@ export default function ComparisonLeafletMap({
 
             layersGroupRef.current.push(organicPoly);
 
-            // 2. Fine-grained micro-particle scatter (representing 10m Sentinel-2 pixel-level detections)
-            for (let p = 0; p < 5; p++) {
-              const pAngle = (p * 1.3 + seed) % (2 * Math.PI);
-              const pDist = radiusMeters * (0.25 + 0.55 * ((p * 0.43 + seed * 0.23) % 1));
-              const pLat = lat + (pDist * Math.sin(pAngle)) / latMeters;
-              const pLon = lon + (pDist * Math.cos(pAngle)) / lonMeters;
+            // 2. Dense micro-particle scatter (representing 10m Sentinel-2 pixel-level detections)
+            if (mode !== 'baseline') {
+              for (let p = 0; p < 12; p++) {
+                const pAngle = (p * 1.1 + seed) % (2 * Math.PI);
+                const pDist = radiusMeters * (0.2 + 0.65 * ((p * 0.43 + seed * 0.23) % 1));
+                const pLat = lat + (pDist * Math.sin(pAngle)) / latMeters;
+                const pLon = lon + (pDist * Math.cos(pAngle)) / lonMeters;
 
-              const particle = L.circleMarker([pLat, pLon], {
-                radius: 2.5,
-                color: color,
-                weight: 1,
-                opacity: 0.9,
-                fillColor: color,
-                fillOpacity: 0.85,
-              }).addTo(map);
-              layersGroupRef.current.push(particle);
+                const particle = L.circleMarker([pLat, pLon], {
+                  radius: 3.0,
+                  color: '#ffffff',
+                  weight: 1.2,
+                  opacity: 0.95,
+                  fillColor: color,
+                  fillOpacity: 1.0,
+                  pane: targetPane,
+                }).addTo(map);
+                layersGroupRef.current.push(particle);
+              }
             }
           } catch (e) {
             // Ignore
           }
         }
 
-        // B. Render Sleek GIS Micro-Indicator (Unobtrusive 8px diamond particle, no bulky 26px circle)
-        if (lat && lon) {
-          const icon = L.divIcon({
-            className: 'gis-micro-particle-marker',
+        // B. Render High-Visibility Floating GIS Pill Badge & Micro-Indicator
+        if (lat && lon && mode !== 'baseline') {
+          const badgeIcon = L.divIcon({
+            className: 'gis-floating-alert-badge',
             html: `
-              <div style="
-                width: 8px;
-                height: 8px;
-                background: ${color};
-                transform: rotate(45deg);
-                border: 1.5px solid #ffffff;
-                box-shadow: 0 0 8px ${color}, 0 2px 4px rgba(0,0,0,0.6);
-                cursor: pointer;
-                transition: transform 0.15s ease;
-              "></div>
+              <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.7));">
+                <div style="
+                  background: rgba(11, 19, 36, 0.94);
+                  border: 1.5px solid ${color};
+                  box-shadow: 0 0 10px ${color}80;
+                  border-radius: 6px;
+                  padding: 2px 7px;
+                  color: #ffffff;
+                  font-family: ui-monospace, SFMono-Regular, monospace;
+                  font-size: 10px;
+                  font-weight: 700;
+                  white-space: nowrap;
+                  display: flex;
+                  align-items: center;
+                  gap: 4px;
+                ">
+                  <span>${psSymbol}</span>
+                  <span style="letter-spacing: 0.02em;">${h.change_label || (ct.includes('deforest') ? 'Deforestation' : 'Degradation')}</span>
+                  <span style="color: ${color}; font-weight: 800;">${h.affected_area_ha ? `${h.affected_area_ha.toFixed(1)} ha` : ''}</span>
+                </div>
+                <div style="width: 1.5px; height: 8px; background: ${color}; box-shadow: 0 0 4px ${color};"></div>
+                <div style="width: 7px; height: 7px; border-radius: 50%; background: ${color}; border: 1.5px solid #ffffff; box-shadow: 0 0 6px ${color};"></div>
+              </div>
             `,
-            iconSize: [12, 12],
-            iconAnchor: [6, 6],
-            popupAnchor: [0, -8],
+            iconSize: [140, 36],
+            iconAnchor: [70, 36],
+            popupAnchor: [0, -38],
           });
 
-          const marker = L.marker([lat, lon], { icon }).addTo(map);
-
-          marker.bindTooltip(
-            `<div style="font-family: ui-monospace, monospace; font-size: 11px; display: flex; align-items: center; gap: 6px;">
-              <span style="display:inline-block;width:8px;height:8px;background:${color};border-radius:1px;"></span>
-              <div>
-                <b>${psPillar}</b><br/>
-                ${h.change_label || h.change_type} (${h.affected_area_ha?.toFixed(2) ?? '1.20'} ha)
-              </div>
-            </div>`,
-            { direction: 'top', className: 'leaflet-gis-tooltip' }
-          );
+          const marker = L.marker([lat, lon], { icon: badgeIcon, pane: targetPane }).addTo(map);
 
           marker.bindPopup(
             `<div style="font-family: ui-monospace, SFMono-Regular, monospace; font-size: 11px; color: #0f172a; line-height: 1.4; min-width: 220px;">

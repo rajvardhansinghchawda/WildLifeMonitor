@@ -29,11 +29,16 @@ class AreaSummary(BaseModel):
     latest_analysis_id: Optional[str] = None
     hotspot_count: int = 0
     health_index: Optional[Dict[str, Any]] = None
+    distance_km: Optional[float] = None
+    is_nearby_suggestion: Optional[bool] = None
+    searched_place: Optional[str] = None
 
 
 class AreaListResponse(BaseModel):
     items: List[AreaSummary]
     total: int
+    is_nearby: Optional[bool] = None
+    nearby_location_name: Optional[str] = None
 
 
 class AreaDetail(AreaSummary):

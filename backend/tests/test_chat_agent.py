@@ -522,3 +522,15 @@ def test_validator_sees_ids_written_with_unicode_hyphens():
     assert not validate_answer(f"Event {fake} is large.", []).ok
     real = uuid.uuid4()
     assert validate_answer(f"Event {str(real).replace('-', chr(0x2011))} ok.", [str(real)]).ok
+
+
+@pytest.mark.asyncio
+async def test_voice_mode_instruction_reaches_the_model(
+    db_session: AsyncSession, test_workspace: uuid.UUID, analysis_id: uuid.UUID
+):
+    llm = ScriptedLLM([text("Hello ranger, monitoring is active.")])
+    agent = ChatAgent(llm, ChatToolbox(db_session, _scope(test_workspace), analysis_id))
+    await agent.run("What is happening in this reserve?", voice_mode=True)
+    system_text = " ".join(m["content"] for m in llm.calls[0] if m["role"] == "system")
+    assert "VOICE CALL MODE ACTIVE" in system_text
+
