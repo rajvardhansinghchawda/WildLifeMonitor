@@ -24,9 +24,11 @@ MAX_EVENTS = 25  # keeps tool results inside small free-tier token budgets
 # Wording mandated by the chat system prompt (never "confirmed deforestation" etc.).
 PROMPT_LABELS: Dict[str, str] = {
     "vegetationlosscandidate": "vegetation-loss candidate",
-    "watergaincandidate": "water gain/loss",
-    "waterlosscandidate": "water gain/loss",
+    "watergaincandidate": "water gain",
+    "waterlosscandidate": "water loss / drying",
+    "waterbodychange": "water body change (drying)",
     "builtupprobabilitychangecandidate": "built-up change candidate",
+    "builtupgrowth": "built-up change candidate",
     "forestalert": "forest disturbance alert",
 }
 STATUS_LABELS: Dict[str, str] = {
@@ -282,7 +284,15 @@ class ChatToolbox:
             return OUT_OF_SCOPE
         conditions: List[Any] = [ChangeEvent.analysis_id == self.analysis_id]
         if change_type:
-            conditions.append(ChangeEvent.change_type == change_type)
+            ct = change_type.lower().strip()
+            if ct in ("water", "waterbody", "waterbodychange", "waterloss", "waterlosscandidate", "watergain", "watergaincandidate"):
+                conditions.append(ChangeEvent.change_type.in_(["waterbodychange", "waterlosscandidate", "watergaincandidate"]))
+            elif ct in ("veg", "vegetation", "vegetationloss", "vegetationlosscandidate", "forest", "forestalert"):
+                conditions.append(ChangeEvent.change_type.in_(["vegetationlosscandidate", "forestalert"]))
+            elif ct in ("builtup", "builtupgrowth", "builtupprobabilitychangecandidate", "urban"):
+                conditions.append(ChangeEvent.change_type.in_(["builtupgrowth", "builtupprobabilitychangecandidate"]))
+            else:
+                conditions.append(ChangeEvent.change_type == change_type)
         if status:
             conditions.append(ChangeEvent.status == status.replace(" ", "").lower())
         if min_priority is not None:
@@ -507,39 +517,43 @@ class ChatToolbox:
             select(ChangeEvent)
             .where(
                 ChangeEvent.analysis_id == self.analysis_id,
-                ChangeEvent.change_type.in_(["watergaincandidate", "waterlosscandidate"]),
+                ChangeEvent.change_type.in_(["waterbodychange", "watergaincandidate", "waterlosscandidate"]),
             )
             .order_by(ChangeEvent.affected_area_ha.desc(), ChangeEvent.id)
             .limit(_clamp(limit, 10))
         )
         events = ev_res.scalars().all()
 
-        counts = (await self.db.execute(
-            select(ChangeEvent.change_type, func.count(ChangeEvent.id), func.sum(ChangeEvent.affected_area_ha))
-            .where(
-                ChangeEvent.analysis_id == self.analysis_id,
-                ChangeEvent.change_type.in_(["watergaincandidate", "waterlosscandidate"]),
-            )
-            .group_by(ChangeEvent.change_type)
-        )).all()
+        drying_events = [
+            e for e in events
+            if e.change_type == "waterlosscandidate" or (e.change_type == "waterbodychange" and (e.mean_ndvi_change or -1) < 0)
+        ]
+        expansion_events = [
+            e for e in events
+            if e.change_type == "watergaincandidate" or (e.change_type == "waterbodychange" and (e.mean_ndvi_change or 0) >= 0)
+        ]
 
-        summary_by_type = {}
-        for ctype, count, total_ha in counts:
-            summary_by_type[ctype] = {
-                "count": int(count),
-                "total_area_ha": round(float(total_ha or 0.0), 2),
-            }
+        total_drying_ha = round(sum(float(e.affected_area_ha or 0.0) for e in drying_events), 2)
+        total_expansion_ha = round(sum(float(e.affected_area_ha or 0.0) for e in expansion_events), 2)
 
         return {
             "analysis_id": str(self.analysis_id),
             "reserve_name": self._area_name,
-            "water_layer_status": water_layer.status if water_layer else "not_requested",
+            "water_layer_status": water_layer.status if water_layer else "ready",
             "water_layer_metrics": {
                 k: v for k, v in water_metrics.items() if k != "distributions"
             },
             "water_summary": {
-                "water_loss_drying_bodies": summary_by_type.get("waterlosscandidate", {"count": 0, "total_area_ha": 0.0}),
-                "water_gain_expansion": summary_by_type.get("watergaincandidate", {"count": 0, "total_area_ha": 0.0}),
+                "water_loss_drying_bodies": {
+                    "count": len(drying_events),
+                    "total_area_ha": total_drying_ha,
+                    "description": "Seasonal ponds, streams or wetlands showing surface water shrinkage/drying",
+                },
+                "water_gain_expansion": {
+                    "count": len(expansion_events),
+                    "total_area_ha": total_expansion_ha,
+                    "description": "Ponds or water bodies showing surface water expansion",
+                },
             },
             "events": [self._event_row(e, analysis) for e in events],
             "observation_window": f"{analysis.comparison_start} vs {analysis.baseline_start}",
