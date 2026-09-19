@@ -181,7 +181,7 @@ export default function TemporalCompareSlider({
           const [bRes, tRes, eRes] = await Promise.all([
             api.areas.boundary(activeArea.id).catch(() => null),
             api.areas.timeline(activeArea.id).catch(() => null),
-            api.hotspots.list({ area_id: activeArea.id, limit: 100 }).catch(() => null),
+            api.hotspots.list({ area_id: activeArea.id, limit: 100 } as any).catch(() => null),
           ]);
           if (bRes) bound = bRes;
           if (tRes) time = tRes;
@@ -354,7 +354,7 @@ export default function TemporalCompareSlider({
 
         // Try authenticated API first
         try {
-          const analysesRes = await api.analyses.list({ area_id: activeArea.id });
+          const analysesRes = await api.analyses.list({ area_id: activeArea.id } as any);
           if (analysesRes?.items && analysesRes.items.length > 0) {
             readyAnalysis =
               analysesRes.items.find((a) => a.status === 'succeeded' || a.status === 'partial') ||

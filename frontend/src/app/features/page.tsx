@@ -109,14 +109,19 @@ export default function FeaturesPage() {
       <header className="sticky top-0 z-50 h-20 bg-[#f7f8f5]/90 backdrop-blur-md border-b border-slate-200/80 px-6 lg:px-12 flex items-center justify-between transition-all">
         {/* Brand Logo & Tagline */}
         <Link href="/" className="flex items-center gap-3.5 group">
-          <div className="w-10 h-10 rounded-full bg-[#0d472a] border-2 border-emerald-500/80 flex items-center justify-center text-emerald-300 shadow-md group-hover:scale-105 transition-transform">
-            <TreePine className="w-5 h-5" />
-          </div>
+          <Image
+            src="/primary logo 1.png"
+            alt="VANYORA Logo"
+            width={36}
+            height={44}
+            className="h-10 w-auto object-contain group-hover:scale-105 transition-transform"
+            priority
+          />
           <div className="flex flex-col">
-            <span className="font-bold text-lg tracking-tight text-slate-900 leading-tight">
-              Wildlife Watch
+            <span className="font-outfit font-black text-xl tracking-[0.14em] text-slate-900 uppercase leading-none">
+              VANYORA
             </span>
-            <span className="text-[11px] text-slate-500 font-medium tracking-wider">
+            <span className="text-[10px] text-emerald-800 font-bold tracking-[0.2em] uppercase mt-1">
               Monitor • Protect • Conserve
             </span>
           </div>
@@ -245,7 +250,7 @@ export default function FeaturesPage() {
             {/* Main Headline */}
             <h1 className="text-5xl sm:text-6xl lg:text-[76px] font-black tracking-tight leading-[0.98] text-slate-950 font-sans">
               What<br />
-              Wildlife Watch <span className="text-[#0d472a]">Can Do?</span>
+              VANYORA <span className="text-[#0d472a]">Can Do?</span>
             </h1>
 
             {/* Subtitle */}
@@ -371,7 +376,7 @@ export default function FeaturesPage() {
           <div className="w-7 h-7 rounded-full bg-[#0d472a] flex items-center justify-center text-emerald-300">
             <TreePine className="w-4 h-4" />
           </div>
-          <span>Wildlife Watch • Habitat Telemetry & Detection Features</span>
+          <span>VANYORA • Habitat Telemetry & Detection Features</span>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-slate-600">
           <Link href="/" className="hover:text-slate-900 transition-colors">

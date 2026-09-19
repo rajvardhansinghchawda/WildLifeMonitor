@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
@@ -9,22 +10,17 @@ import {
   Map as MapIcon,
   Layers,
   Flame,
-  ShieldAlert,
   Compass,
   TrendingUp,
   FileText,
   Bell,
-  User,
   Settings,
   ChevronLeft,
   ChevronRight,
-  Radio,
-  Shield,
-  Users,
-  Sliders,
   ArrowUpDown,
+  Heart,
+  Users,
 } from 'lucide-react';
-
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -46,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
       href: '/compare',
       icon: ArrowUpDown,
       badge: 'LIVE',
-      badgeColor: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+      badgeColor: 'bg-[#e6f4ea] text-[#137333] border-emerald-500/30',
     },
     {
       name: 'Explore Map',
@@ -88,13 +84,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
       name: 'Alerts',
       href: '/alerts',
       icon: Bell,
-      badge: null,
-      badgeColor: 'bg-red-500/20 text-red-400 border-red-500/30',
+      badge: '3',
+      badgeColor: 'bg-[#ea4335] text-white border-transparent',
     },
     {
-      name: 'Profile',
-      href: '/profile',
-      icon: User,
+      name: 'Saved Areas',
+      href: '/areas?saved=true',
+      icon: Heart,
+      badge: null,
+    },
+    {
+      name: 'Community',
+      href: '/blogs',
+      icon: Users,
       badge: null,
     },
     {
@@ -103,47 +105,39 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
       icon: Settings,
       badge: null,
     },
-    {
-      name: 'Admin Console',
-      href: '/admin',
-      icon: Shield,
-      badge: 'ADMIN',
-      badgeColor: 'bg-red-500/20 text-red-400 border-red-500/30',
-    },
-    {
-      name: 'Members & RBAC',
-      href: '/admin/members',
-      icon: Users,
-      badge: null,
-    },
-    {
-      name: 'Scientific Tuning',
-      href: '/admin/settings',
-      icon: Sliders,
-      badge: null,
-    },
   ];
-
 
   return (
     <aside
       className={cn(
-        'relative flex flex-col border-r border-slate-800/80 bg-gis-surface/95 transition-all duration-300 z-30 select-none backdrop-blur-md',
+        'relative flex flex-col border-r border-[#e8eee5] bg-white transition-all duration-300 z-30 select-none shadow-[2px_0_12px_rgba(0,0,0,0.02)] overflow-hidden',
         isCollapsed ? 'w-20' : 'w-64'
       )}
+      style={{
+        backgroundImage: isCollapsed ? undefined : "url('/sidebar-bg.png')",
+        backgroundPosition: 'left bottom',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: '100% auto',
+      }}
     >
       {/* Brand Header */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800/80">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-[#e8eee5] bg-white/95 backdrop-blur-xs relative z-10">
         <Link href="/dashboard" className="flex items-center gap-3 overflow-hidden group">
-          <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-emerald-950/80 border border-emerald-500/50 flex items-center justify-center text-emerald-400 group-hover:border-emerald-400 transition-colors">
-            <Radio className="w-5 h-5 text-emerald-400 animate-pulse" />
+          <div className="flex-shrink-0 flex items-center justify-center">
+            <Image
+              src="/primary logo 1.png"
+              alt="VANYORA Logo"
+              width={32}
+              height={38}
+              className="h-9 w-auto object-contain group-hover:scale-105 transition-transform"
+            />
           </div>
           {!isCollapsed && (
             <div className="flex flex-col">
-              <span className="text-sm font-bold tracking-wider text-white uppercase font-mono">
-                WILDLIFE WATCH
+              <span className="text-base font-black tracking-[0.14em] text-slate-900 uppercase font-outfit leading-tight">
+                VANYORA
               </span>
-              <span className="text-[10px] text-emerald-400 font-medium tracking-tight">
+              <span className="text-[9px] text-[#137333] font-bold tracking-[0.16em] uppercase">
                 HABITAT GIS INTELLIGENCE
               </span>
             </div>
@@ -152,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
       </div>
 
       {/* Navigation List */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+      <nav className="flex-1 overflow-y-auto py-2 px-3 space-y-0.5 scrollbar-thin relative z-10">
         {navigationItems.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -164,17 +158,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
               key={item.name}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all group relative',
+                'flex items-center gap-3 px-3 py-1.5 rounded-lg text-xs font-medium transition-all group relative',
                 isActive
-                  ? 'bg-emerald-950/40 text-emerald-300 border border-emerald-500/40 font-semibold shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 border border-transparent'
+                  ? 'bg-[#e6f4ea] text-[#137333] font-semibold shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-[#f3f7f2]/80 border border-transparent'
               )}
               title={isCollapsed ? item.name : undefined}
             >
               <Icon
                 className={cn(
                   'w-4 h-4 flex-shrink-0 transition-colors',
-                  isActive ? 'text-emerald-400' : 'text-slate-400 group-hover:text-slate-200'
+                  isActive ? 'text-[#137333]' : 'text-slate-500 group-hover:text-slate-800'
                 )}
               />
 
@@ -185,8 +179,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
               {!isCollapsed && item.badge && (
                 <span
                   className={cn(
-                    'text-[10px] font-mono px-1.5 py-0.5 rounded border leading-none',
-                    item.badgeColor || 'bg-emerald-950/60 text-emerald-300 border-emerald-500/30'
+                    'text-[9px] font-bold px-1.5 py-0.5 rounded-full border leading-none',
+                    item.badgeColor || 'bg-[#e6f4ea] text-[#137333] border-emerald-500/30'
                   )}
                 >
                   {item.badge}
@@ -195,38 +189,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setIsCollapsed })
 
               {/* Active Indicator Bar */}
               {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-emerald-500 rounded-r" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-[#137333] rounded-r" />
               )}
             </Link>
           );
         })}
       </nav>
 
-      {/* Monitored Status Pill */}
-      {!isCollapsed && (
-        <div className="p-3 mx-3 mb-3 rounded-lg bg-slate-900/80 border border-slate-800/90 text-xs">
-          <div className="flex items-center justify-between text-slate-400 mb-1">
-            <span className="text-[11px] font-mono">SYSTEM STATUS</span>
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-          </div>
-          <div className="text-white font-mono text-[11px]">Sentinel-2 Telemetry: OK</div>
-          <div className="text-[10px] text-slate-400 mt-1">FIRMS Feed: Synced 24m ago</div>
-        </div>
-      )}
-
       {/* Collapse Toggle Footer */}
-      <div className="p-3 border-t border-slate-800/80 flex items-center justify-between">
+      <div className="p-2 flex items-center justify-between relative z-10">
         {!isCollapsed && (
-          <div className="text-[11px] text-slate-400 font-mono">v1.0.4-PROD</div>
+          <div className="text-[10px] text-slate-400 font-mono pl-1">v1.0.4</div>
         )}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/70 transition-colors ml-auto"
+          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-white/90 transition-colors ml-auto border border-[#e2e8e0] bg-white/70 shadow-xs"
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
         </button>
       </div>
     </aside>
   );
 };
+

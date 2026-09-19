@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Radio, Lock, Mail, User, Building, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
@@ -42,15 +43,22 @@ export default function SignupPage() {
       <div className="w-full max-w-md">
         {/* Header Branding */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-400 mb-4 shadow-lg shadow-emerald-950/50">
-            <Radio className="w-6 h-6 animate-pulse" />
-          </div>
-          <h1 className="text-xl font-bold tracking-wider text-white uppercase font-mono">
-            WILDLIFE WATCH
-          </h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Agency Registration & Practitioner Onboarding
-          </p>
+          <Link href="/" className="inline-flex flex-col items-center group">
+            <Image
+              src="/primary logo 1.png"
+              alt="VANYORA Logo"
+              width={48}
+              height={58}
+              className="h-14 w-auto object-contain mb-3 group-hover:scale-105 transition-transform"
+              priority
+            />
+            <h1 className="text-2xl font-black tracking-[0.16em] text-white uppercase font-outfit">
+              VANYORA
+            </h1>
+            <p className="text-xs text-slate-400 mt-1 font-medium tracking-wide">
+              Agency Registration & Practitioner Onboarding
+            </p>
+          </Link>
         </div>
 
         {/* Signup Card */}

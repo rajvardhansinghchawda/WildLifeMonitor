@@ -16,6 +16,12 @@ const config: Config = {
       },
     },
     extend: {
+      fontFamily: {
+        brand: ["Cinzel", "serif"],
+        outfit: ["Outfit", "sans-serif"],
+        syne: ["Syne", "sans-serif"],
+        sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

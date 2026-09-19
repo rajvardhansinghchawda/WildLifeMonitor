@@ -378,7 +378,7 @@ async function request<T>(
       body,
     });
   } catch {
-    throw new ApiError(0, 'NETWORK', 'Cannot reach the Wildlife Watch API. Is the backend running?');
+    throw new ApiError(0, 'NETWORK', 'Cannot reach the VANYORA API. Is the backend running?');
   }
 
   if (res.status === 401 && init.auth !== false && !retried && (await refreshTokens())) {

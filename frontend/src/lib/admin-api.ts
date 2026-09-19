@@ -1,5 +1,5 @@
 /**
- * Wildlife Watch — Admin & Telemetry API Client
+ * VANYORA — Admin & Telemetry API Client
  *
  * Provides strongly-typed client access to cluster telemetry, RBAC membership management,
  * workspace scientific parameters, and security audit logs.
