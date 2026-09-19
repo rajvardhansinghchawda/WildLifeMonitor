@@ -123,6 +123,9 @@ def detect_language(message: str, requested_lang: Optional[str] = None) -> str:
     if req == "hi":
         return "hi"
 
+    if requested_lang and requested_lang not in SUPPORTED_LANGUAGES:
+        return "unknown"
+
     return "en"
 
 
@@ -138,6 +141,8 @@ def language_instruction(message: str, requested_lang: Optional[str] = None) -> 
             "DO NOT write in Devanagari Hindi script. DO NOT write in pure English. "
             "Use conversational Indian phrasing with English technical terms (NDVI, canopy, satellite, hectares, water bodies)."
         )
+    if lang == "unknown":
+        return "Reply in the same language the user wrote in. Numbers, units and event IDs stay unchanged."
     name = SUPPORTED_LANGUAGES.get(lang, "English")
     return (
         f"Reply in {name}. Numbers, units and event IDs stay unchanged."

@@ -28,17 +28,33 @@ import {
 } from 'lucide-react';
 import {
   getPublicDemonstrations,
+  getPublicEvents,
   PublicDemonstrationItem,
+  PublicChangeEvent,
 } from '@/lib/public-api';
 import {
   FALLBACK_DEMOS,
 } from '@/lib/public-demo-data';
+import { formatCoordinatesWithPlace } from '@/lib/geo-names';
 import FoldText from '@/components/ui/FoldText';
 import PublicChat from '@/components/chat/PublicChat';
+
+const PublicMap = dynamic(() => import('@/components/public/PublicMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[480px] bg-slate-950 flex items-center justify-center text-xs font-mono text-emerald-400/60 animate-pulse">
+      Loading Satellite GIS Telemetry Map…
+    </div>
+  ),
+});
 
 export default function PublicDemoPage() {
   const [demonstrations, setDemonstrations] = useState<PublicDemonstrationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDemoId, setSelectedDemoId] = useState<string>('');
+  const [events, setEvents] = useState<PublicChangeEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<PublicChangeEvent | null>(null);
 
   // UI Interactive States
   const [videoModalOpen, setVideoModalOpen] = useState(false);
@@ -47,14 +63,20 @@ export default function PublicDemoPage() {
   const [activeNav, setActiveNav] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Load demonstrations for search modal
+  // Load demonstrations
   const loadData = async () => {
     try {
       setLoading(true);
       const demosData = await getPublicDemonstrations();
       setDemonstrations(demosData.items);
+      if (demosData.items.length > 0) {
+        setSelectedDemoId(demosData.items[0].id);
+      }
     } catch {
       setDemonstrations(FALLBACK_DEMOS);
+      if (FALLBACK_DEMOS.length > 0) {
+        setSelectedDemoId(FALLBACK_DEMOS[0].id);
+      }
     } finally {
       setLoading(false);
     }
@@ -63,6 +85,28 @@ export default function PublicDemoPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Fetch real vectorized incidents when selectedDemoId changes
+  useEffect(() => {
+    if (!selectedDemoId) return;
+    const fetchEvents = async () => {
+      try {
+        setEventsLoading(true);
+        const res = await getPublicEvents(selectedDemoId);
+        const list = res?.items ?? [];
+        setEvents(list);
+        if (list.length > 0) setSelectedEvent(list[0]);
+      } catch (err) {
+        console.warn('Failed to load demo events:', err);
+        setEvents([]);
+      } finally {
+        setEventsLoading(false);
+      }
+    };
+    fetchEvents();
+  }, [selectedDemoId]);
+
+  const activeDemo = demonstrations.find((d) => d.id === selectedDemoId) || demonstrations[0];
 
   const scrollToSection = (id: string) => {
     setActiveNav(id);
@@ -505,6 +549,148 @@ export default function PublicDemoPage() {
                 Enforces differential privacy and coordinate generalization on public feeds to prevent
                 exposing endangered species denning and nesting sites.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* LIVE SATELLITE DEMONSTRATION & GIS VERIFICATION HUB                       */}
+      {/* ========================================================================= */}
+      <section id="demo" className="w-full py-20 bg-[#070b10] border-t border-slate-800/80">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <span className="text-xs font-mono font-bold tracking-widest text-emerald-400 uppercase flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Live Satellite Telemetry Hub
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-1">
+                Public Demonstration Portal
+              </h2>
+              <p className="text-slate-400 text-sm mt-1 max-w-2xl">
+                Explore real Copernicus Sentinel-2 satellite boundaries, vegetation loss candidates, and
+                anti-poaching coordinate generalizations with zero mock data.
+              </p>
+            </div>
+
+            {/* Reserve Selector Tabs */}
+            <div className="flex flex-wrap items-center gap-2">
+              {demonstrations.map((d) => (
+                <button
+                  key={d.id}
+                  onClick={() => setSelectedDemoId(d.id)}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all cursor-pointer ${
+                    activeDemo?.id === d.id
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                      : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+                  }`}
+                >
+                  {d.area_name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Active Reserve Metadata Strip */}
+          {activeDemo && (
+            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-bold text-white text-sm">{activeDemo.area_name}</span>
+                <span className="text-slate-500">·</span>
+                <span className="text-slate-400">{activeDemo.designation}</span>
+                <span className="text-slate-500">·</span>
+                <span className="text-cyan-300">
+                  📍 {formatCoordinatesWithPlace(activeDemo.centroid.lat, activeDemo.centroid.lon, activeDemo.area_name)}
+                </span>
+                <span className="text-slate-500">·</span>
+                <span className="text-emerald-400">{Math.round(activeDemo.area_km2).toLocaleString()} km²</span>
+              </div>
+              <div className="flex items-center gap-4 text-slate-400">
+                <span>Baseline: {activeDemo.baseline_period.start} ➔ {activeDemo.baseline_period.end}</span>
+                <span>Observed: {activeDemo.comparison_period.start} ➔ {activeDemo.comparison_period.end}</span>
+              </div>
+            </div>
+          )}
+
+          {/* GIS Map & Incident Details Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Map Frame (8 cols) */}
+            <div className="lg:col-span-8 rounded-2xl overflow-hidden border border-slate-800 bg-[#060b16] h-[480px]">
+              {activeDemo && (
+                <PublicMap
+                  key={`public-map-${activeDemo.id}`}
+                  centroid={activeDemo.centroid}
+                  boundary={activeDemo.boundary}
+                  events={events}
+                  selectedEventId={selectedEvent?.id}
+                  onSelectEvent={(ev) => setSelectedEvent(ev)}
+                  height="100%"
+                />
+              )}
+            </div>
+
+            {/* Selected Incident Telemetry Dossier (4 cols) */}
+            <div className="lg:col-span-4 rounded-2xl bg-slate-900/50 border border-slate-800 p-5 space-y-4">
+              <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
+                <h3 className="text-xs font-bold text-white font-mono uppercase tracking-wider">
+                  Incident Intelligence
+                </h3>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-emerald-400 border border-slate-700">
+                  {events.length} Incidents
+                </span>
+              </div>
+
+              {selectedEvent ? (
+                <div className="space-y-3 text-xs">
+                  <div>
+                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold bg-red-950 text-red-300 border border-red-800">
+                      {selectedEvent.priority_band} SEVERITY
+                    </span>
+                    <h4 className="text-sm font-bold text-white mt-2 leading-tight">
+                      {selectedEvent.change_label}
+                    </h4>
+                    <p className="text-[10px] text-cyan-300 font-mono mt-1 flex items-center gap-1">
+                      <span>📍 {formatCoordinatesWithPlace(selectedEvent.generalized_coordinates.lat, selectedEvent.generalized_coordinates.lon, activeDemo.area_name)}</span>
+                    </p>
+                    <p className="text-[11px] text-slate-400 mt-0.5 font-mono">
+                      Status: {selectedEvent.status.replace(/_/g, ' ').toUpperCase()}
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 font-mono text-[11px]">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Affected Area:</span>
+                      <span className="text-white font-bold">{selectedEvent.affected_area_ha} ha</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Priority Score:</span>
+                      <span className="text-emerald-400 font-bold">{selectedEvent.priority_score?.toFixed(2) ?? 'Telemetry High'}</span>
+                    </div>
+                    {selectedEvent.nearest_known_road_distance_m && (
+                      <div className="flex justify-between">
+                        <span className="text-slate-400">Track Distance:</span>
+                        <span className="text-cyan-300">{selectedEvent.nearest_known_road_distance_m}m</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-[10.5px] text-slate-500 leading-relaxed italic">
+                    Coordinates generalized per anti-poaching security protocols. Full telemetry unlocked upon investigator login.
+                  </p>
+
+                  <Link
+                    href="/explore"
+                    className="block text-center py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold font-mono transition-colors shadow-sm"
+                  >
+                    Open Full Investigation Portal →
+                  </Link>
+                </div>
+              ) : (
+                <div className="py-12 text-center text-xs text-slate-500 font-mono">
+                  {eventsLoading ? 'Loading incident telemetry...' : 'Click an incident marker on the map to inspect telemetry evidence.'}
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -19,10 +19,9 @@ FORBIDDEN_PHRASES = re.compile(
     r"confirmed deforestation|habitat (?:was |is |has been )?destroyed|destroyed the habitat)\b",
     re.IGNORECASE,
 )
-# Causal over-certainty or definitive destruction in supported Indian languages / Hinglish
 FORBIDDEN_NON_ENGLISH = re.compile(
-    r"(जंगल (?:पूरी तरह )?नष्ट|आवास (?:पूरी तरह )?नष्ट|confirmed deforestation|"
-    r"jungle (?:puri tarah )?nasht|habitat destroy ho gaya|"
+    r"(के कारण|की वजह से|वजह से|जंगल (?:पूरी तरह )?नष्ट|आवास (?:पूरी तरह )?नष्ट|confirmed deforestation|"
+    r"ki wajah se|ke karan|jungle (?:puri tarah )?nasht|habitat destroy ho gaya|"
     r"(?:के कारण|की वजह से)(?:\s+हुआ|\s+हुई|\s+हुए)?|"
     r"(?:ki wajah se|ke karan)(?:\s+hua)?)",
     re.IGNORECASE,
