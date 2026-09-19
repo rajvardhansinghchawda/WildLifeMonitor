@@ -37,6 +37,7 @@ import {
 } from '@/lib/public-demo-data';
 import { formatCoordinatesWithPlace } from '@/lib/geo-names';
 import FoldText from '@/components/ui/FoldText';
+import PublicChat from '@/components/chat/PublicChat';
 
 const PublicMap = dynamic(() => import('@/components/public/PublicMap'), {
   ssr: false,
@@ -1034,6 +1035,9 @@ export default function PublicDemoPage() {
           </div>
         </div>
       )}
+
+      {/* Floating Grounded Habitat AI Assistant */}
+      <PublicChat />
     </div>
   );
 }

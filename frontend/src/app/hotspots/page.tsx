@@ -55,6 +55,58 @@ function HotspotsInner() {
     [selectedId]
   );
 
+  // Sync selectedId with URL parameter whenever search params change
+  const paramId = params.get('id');
+  useEffect(() => {
+    if (paramId) setSelectedId(paramId);
+  }, [paramId]);
+
+  // Listen to global selection events from the chat widget
+  useEffect(() => {
+    const handleSelect = (e: any) => {
+      const id = e.detail?.id;
+      if (id) {
+        setSelectedId(id);
+      }
+    };
+    window.addEventListener('vanyora:select-hotspot', handleSelect);
+    return () => window.removeEventListener('vanyora:select-hotspot', handleSelect);
+  }, []);
+
+  // Resolve short prefix (e.g. b4adf8ac) to full hotspot object when items are loaded
+  useEffect(() => {
+    if (selectedId && items.length) {
+      const clean = selectedId.replace(/^#/, '').toLowerCase();
+      const match = items.find((i) => i.id.toLowerCase().startsWith(clean));
+      if (match && match.id !== selectedId) {
+        setSelectedId(match.id);
+      }
+    }
+  }, [selectedId, items]);
+
+  // If selected hotspot is from an area not covered by current filter, clear filter
+  useEffect(() => {
+    if (detail.data?.area_name && areaSlug) {
+      const currentArea = areas.data?.items.find((a) => a.slug === areaSlug);
+      if (currentArea && currentArea.name !== detail.data.area_name) {
+        setAreaSlug('');
+      }
+    }
+  }, [detail.data, areas.data, areaSlug]);
+
+  // Scroll matching table row into view
+  useEffect(() => {
+    if (selectedId) {
+      const clean = selectedId.replace(/^#/, '').toLowerCase();
+      const match = items.find((i) => i.id.toLowerCase().startsWith(clean));
+      const targetId = match?.id ?? selectedId;
+      const el = document.getElementById(`hotspot-row-${targetId}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [selectedId, items]);
+
   useEffect(() => {
     if (!selectedId && items.length) setSelectedId(items[0].id);
   }, [items, selectedId]);
@@ -155,31 +207,39 @@ function HotspotsInner() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/60">
-                      {items.map((h) => (
-                        <tr
-                          key={h.id}
-                          onClick={() => setSelectedId(h.id)}
-                          className={`cursor-pointer hover:bg-slate-800/40 transition-colors ${
-                            selectedId === h.id ? 'bg-emerald-950/40 border-l-2 border-emerald-500' : ''
-                          }`}
-                        >
-                          <td className="p-2 text-slate-200">
-                            <div className="font-medium">{h.change_label}</div>
-                            <div className="text-[10px] text-cyan-400 font-mono mt-0.5">
-                              📍 {formatCoordinatesWithPlace(h.coordinates.lat, h.coordinates.lon, h.area_name)}
-                            </div>
-                          </td>
-                          <td className="p-2 text-slate-400">{h.area_name ?? 'Custom AOI'}</td>
-                          <td className="p-2 text-right font-mono">{fmtHa(h.affected_area_ha)}</td>
-                          <td className="p-2 text-right font-mono">
-                            {h.priority_score !== null ? h.priority_score.toFixed(0) : '—'}
-                          </td>
-                          <td className="p-2">
-                            <SeverityBadge severity={h.severity} />
-                          </td>
-                          <td className="p-2 text-slate-400">{h.status}</td>
-                        </tr>
-                      ))}
+                      {items.map((h) => {
+                        const isRowSelected =
+                          selectedId === h.id ||
+                          selectedId?.toLowerCase()?.startsWith(h.id.slice(0, 8).toLowerCase());
+                        return (
+                          <tr
+                            key={h.id}
+                            id={`hotspot-row-${h.id}`}
+                            onClick={() => setSelectedId(h.id)}
+                            className={`cursor-pointer transition-all ${
+                              isRowSelected
+                                ? 'bg-emerald-950/70 border-l-4 border-emerald-500 shadow-sm'
+                                : 'hover:bg-slate-800/40'
+                            }`}
+                          >
+                            <td className="p-2 text-slate-200">
+                              <div className="font-medium">{h.change_label}</div>
+                              <div className="text-[10px] text-cyan-400 font-mono mt-0.5">
+                                📍 {formatCoordinatesWithPlace(h.coordinates.lat, h.coordinates.lon, h.area_name)}
+                              </div>
+                            </td>
+                            <td className="p-2 text-slate-400">{h.area_name ?? 'Custom AOI'}</td>
+                            <td className="p-2 text-right font-mono">{fmtHa(h.affected_area_ha)}</td>
+                            <td className="p-2 text-right font-mono">
+                              {h.priority_score !== null ? h.priority_score.toFixed(0) : '—'}
+                            </td>
+                            <td className="p-2">
+                              <SeverityBadge severity={h.severity} />
+                            </td>
+                            <td className="p-2 text-slate-400">{h.status}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

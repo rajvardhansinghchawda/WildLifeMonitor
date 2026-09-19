@@ -1,7 +1,26 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { MessageCircle, Mic, MicOff, PhoneCall, Send, Trash2, Volume2, X } from 'lucide-react';
+import {
+  MessageCircle,
+  Mic,
+  MicOff,
+  PhoneCall,
+  Send,
+  Trash2,
+  Volume2,
+  X,
+  Maximize2,
+  Minimize2,
+  Copy,
+  Check,
+  Sparkles,
+  TreePine,
+  Droplets,
+  Activity,
+  MapPin,
+  ChevronDown,
+} from 'lucide-react';
 import ChatMarkdown from '@/components/chat/ChatMarkdown';
 import VoiceCallModal from '@/components/chat/VoiceCallModal';
 
@@ -55,22 +74,38 @@ const LANGUAGES: Array<{ code: string; label: string; speech: string }> = [
   { code: 'pa', label: 'ਪੰਜਾਬੀ (Punjabi)', speech: 'pa-IN' },
 ];
 
+const QUICK_TOPICS = [
+  { label: '🌲 Forest Loss', query: 'Is reserve me ped kitne kate hain aur forest loss kahan hua hai? Hectares aur coordinates batao.' },
+  { label: '💧 Water Bodies', query: 'Paani ke talaabo aur water bodies me kya badlav aaya hai? Drying ya expansion batao.' },
+  { label: '📊 Health Score', query: 'Overall reserve ka health profile, health index (0-100) aur precomputed statistics batao.' },
+  { label: '📍 High-Risk GPS', query: 'Top urgent high-priority hotspots aur unke GPS coordinates batao field patrol ke liye.' },
+  { label: '🇮🇳 Hinglish Mode', query: 'Is reserve ka summary saral Hinglish me samjhao.' },
+];
+
 const SUGGESTIONS: Record<string, string[]> = {
-  en: ['Summarise this analysis.', 'What are the top 3 events by priority?', 'What does the water layer show?'],
-  hinglish: [
-    'Is analysis ka summary batao.',
-    'Top priority ke 3 events kaunse hain?',
-    'Forest cover aur water me kya badlav aaya?',
-    'Aap meri kya madad kar sakte ho?',
+  en: [
+    'Summarise forest cover & canopy loss in this reserve.',
+    'What are the top 3 high-priority disturbance events?',
+    'What does the water bodies dynamics layer show?',
   ],
-  hi: ['इस विश्लेषण का सारांश दो।', 'प्राथमिकता के अनुसार शीर्ष 3 घटनाएँ बताओ।', 'जल परत क्या दिखाती है?'],
-  mr: ['या विश्लेषणाचा सारांश सांगा.', 'प्राधान्यानुसार पहिल्या 3 घटना सांगा.'],
-  bn: ['এই বিশ্লেষণের সারসংক্ষেপ দাও।', 'অগ্রাধিকার অনুযায়ী শীর্ষ ৩টি ঘটনা বলো।'],
-  ta: ['இந்த பகுப்பாய்வின் சுருக்கம் தரவும்.', 'முன்னுரிமைப்படி முதல் 3 நிகழ்வுகள்?'],
-  te: ['ఈ విశ్లేషణ సారాంశం చెప్పండి.', 'ప్రాధాన్యత ప్రకారం టాప్ 3 సంఘటనలు?'],
-  gu: ['આ વિશ્લેષણનો સારાંશ આપો.', 'પ્રાથમિકતા મુજબ ટોચની 3 ઘટનાઓ?'],
-  kn: ['ಈ ವಿಶ್ಲೇಷಣೆಯ ಸಾರಾಂಶ ನೀಡಿ.', 'ಆದ್ಯತೆಯ ಪ್ರಕಾರ ಮೊದಲ 3 ಘಟನೆಗಳು?'],
-  pa: ['ਇਸ ਵਿਸ਼ਲੇਸ਼ਣ ਦਾ ਸਾਰ ਦੱਸੋ।', 'ਤਰਜੀਹ ਅਨੁਸਾਰ ਚੋਟੀ ਦੇ 3 ਇਵੈਂਟ?'],
+  hinglish: [
+    'Is reserve me ped kitne kate hain aur canopy kahan kam hui?',
+    'Paani ke talaabo aur water bodies me kya badlaav aaya hai?',
+    'Top priority ke urgent hotspots kaunse hain?',
+    'Reserve ka overall habitat health score kaisa hai?',
+  ],
+  hi: [
+    'इस संरक्षित क्षेत्र में वन आवरण और वृक्ष कटाई का सारांश दो।',
+    'जल स्रोतों और तालाबों में क्या बदलाव हुआ है?',
+    'प्राथमिकता के अनुसार शीर्ष 3 संवेदनशील स्थान बताओ।',
+  ],
+  mr: ['या अभयारण्याचा सारांश आणि झाडे तोडण्याचे प्रमाण सांगा.', 'प्राधान्यानुसार पहिल्या ३ घटना सांगा.'],
+  bn: ['এই বনাঞ্চলের ক্যানোপি ক্ষয় এবং জলের উৎসের সারসংক্ষেপ দাও।', 'শীর্ষ ৩টি ঘটনা বলো।'],
+  ta: ['இந்த காப்பகத்தின் மரங்கள் இழப்பு மற்றும் நீர்நிலைகள் சுருக்கம் தருக.', 'முக்கிய 3 நிகழ்வுகள்?'],
+  te: ['ఈ అభయారణ్యంలో చెట్ల నష్టం మరియు నీటి వనరుల మార్పుల సారాంశం చెప్పండి.'],
+  gu: ['આ અભયારણ્યમાં વનસ્પતિ નુકસાન અને જળ સ્ત્રોતોનો સારાંશ આપો.'],
+  kn: ['ಈ ಅರಣ್ಯ ಪ್ರದೇಶದ ಸಸ್ಯವರ್ಗದ ನಷ್ಟ ಮತ್ತು ಜಲಮೂಲಗಳ ಬದಲಾವಣೆಗಳ ಸಾರಾಂಶ ನೀಡಿ.'],
+  pa: ['ਇਸ ਰਿਜ਼ਰਵ ਵਿੱਚ ਜੰਗਲੀ ਕਟਾਈ ਅਤੇ ਪਾਣੀ ਦੇ ਸਰੋਤਾਂ ਦਾ ਸਾਰ ਦੱਸੋ।'],
 };
 
 const LANG_KEY = 'ww_chat_lang';
@@ -81,6 +116,9 @@ function speechCtor(): any {
   return w.SpeechRecognition || w.webkitSpeechRecognition || null;
 }
 
+// Feature flag: Temporarily hide Voice Calling Agent UI across the frontend
+const SHOW_VOICE_CALLING_AGENT = false;
+
 export default function ChatWidget({
   loadAnalyses,
   send,
@@ -89,6 +127,7 @@ export default function ChatWidget({
   eventHref,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isCallOpen, setIsCallOpen] = useState(false);
   const [options, setOptions] = useState<ChatAnalysisOption[]>([]);
   const [analysisId, setAnalysisId] = useState('');
@@ -100,8 +139,10 @@ export default function ChatWidget({
   const [listening, setListening] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
   const [micSupported, setMicSupported] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
   const recRef = useRef<any>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     setMicSupported(!!speechCtor());
@@ -113,6 +154,7 @@ export default function ChatWidget({
     }
 
     const handleVoiceCallTrigger = () => {
+      if (!SHOW_VOICE_CALLING_AGENT) return;
       setOpen(false);
       setIsCallOpen(true);
     };
@@ -143,6 +185,9 @@ export default function ChatWidget({
       const history = turns.map(({ role, content }) => ({ role, content }));
       setTurns((t) => [...t, { role: 'user', content: message }]);
       setInput('');
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+      }
       setBusy(true);
       try {
         const reply = await send(analysisId, message, history, language);
@@ -214,7 +259,7 @@ export default function ChatWidget({
     rec.onend = () => {
       setListening(false);
       const spoken = finalText.trim();
-      if (spoken) void ask(spoken); // transcript is sent as text
+      if (spoken) void ask(spoken);
     };
     recRef.current = rec;
     setListening(true);
@@ -230,183 +275,348 @@ export default function ChatWidget({
     window.speechSynthesis.speak(u);
   };
 
+  const copyText = (idx: number, text: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(null), 2000);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (listening) stopListening();
+      void ask(input);
+    }
+  };
+
+  const handleTextareaInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+    e.target.style.height = 'auto';
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+  };
+
+  const selectedOption = options.find((o) => o.id === analysisId);
+  const reserveLabel = selectedOption?.label?.split('·')[0]?.trim() || 'Select Reserve';
+  const observationPeriod = selectedOption?.label?.split('·')[1]?.trim() || '';
   const suggestions = SUGGESTIONS[language] ?? SUGGESTIONS.en;
 
   return (
     <>
       {!open && (
         <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9990] flex items-center gap-2">
-          {/* Real-time Voice Call Button */}
-          <button
-            onClick={() => setIsCallOpen(true)}
-            aria-label="Call Habitat AI Ranger"
-            className="group relative flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white text-xs font-semibold shadow-xl shadow-emerald-950/70 transition-all hover:scale-105 active:scale-95 border border-emerald-400/40"
-          >
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
-            </span>
-            <PhoneCall className="w-4 h-4 text-white group-hover:rotate-12 transition-transform" />
-            <span className="tracking-wide">Call AI Ranger</span>
-          </button>
+          {/* Real-time Voice Call Button (Feature flag guarded) */}
+          {SHOW_VOICE_CALLING_AGENT && (
+            <button
+              onClick={() => setIsCallOpen(true)}
+              aria-label="Call Habitat AI Ranger"
+              className="group relative flex items-center gap-2 px-4 py-3 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white text-xs font-semibold shadow-xl shadow-emerald-950/70 transition-all hover:scale-105 active:scale-95 border border-emerald-400/40"
+            >
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+              </span>
+              <PhoneCall className="w-4 h-4 text-white group-hover:rotate-12 transition-transform" />
+              <span className="tracking-wide">Call AI Ranger</span>
+            </button>
+          )}
 
-          {/* Text Chat Button */}
+          {/* Text Chat Button with subtle glowing pulse */}
           <button
             onClick={() => setOpen(true)}
-            aria-label="Open chat assistant"
-            className="flex items-center gap-2 px-4 py-3 rounded-full bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-semibold shadow-xl shadow-slate-950/60 transition-all hover:scale-105 active:scale-95 border border-slate-700 backdrop-blur-sm"
+            aria-label="Open Habitat AI Assistant"
+            className="group flex items-center gap-2.5 px-4 py-3 rounded-full bg-slate-900/95 hover:bg-slate-800 text-slate-100 hover:text-white text-xs font-semibold shadow-2xl shadow-emerald-950/40 transition-all hover:scale-105 active:scale-95 border border-emerald-500/30 backdrop-blur-md"
           >
-            <MessageCircle className="w-4 h-4 text-emerald-400" />
-            {title}
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <MessageCircle className="w-4 h-4 text-emerald-400 group-hover:rotate-6 transition-transform" />
+            <span className="font-medium tracking-wide">{title}</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-emerald-900/60 border border-emerald-600/40 text-[9px] font-mono text-emerald-300">
+              AI
+            </span>
           </button>
         </div>
       )}
 
       {open && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9990] w-[420px] max-w-[calc(100vw-1.5rem)] h-[580px] max-h-[calc(100vh-3.5rem)] flex flex-col rounded-xl border border-slate-700 bg-slate-950 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-          <div className="flex items-center justify-between px-3 py-2.5 border-b border-slate-800">
-            <div>
-              <p className="text-xs font-semibold text-white font-mono uppercase">{title}</p>
-              <p className="text-[10px] text-slate-500">
-                Answers come only from this analysis&apos;s data. Candidates, not proof of cause.
-              </p>
+        <div
+          className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9990] flex flex-col rounded-2xl border border-slate-700/80 bg-slate-950/95 shadow-2xl backdrop-blur-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 transition-all ${
+            isExpanded
+              ? 'w-[780px] max-w-[calc(100vw-2rem)] h-[84vh] max-h-[850px]'
+              : 'w-[440px] max-w-[calc(100vw-1.5rem)] h-[620px] max-h-[calc(100vh-3.5rem)]'
+          }`}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-3.5 py-2.5 border-b border-slate-800/80 bg-slate-900/50">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
+                <TreePine className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-xs font-semibold text-white tracking-wide">{title}</h3>
+                  <span className="px-1.5 py-0.2 rounded-full bg-emerald-950 border border-emerald-700/60 text-[9px] text-emerald-400 font-mono">
+                    Grounded AI
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 truncate max-w-[200px] sm:max-w-[260px]">
+                  Real satellite telemetry · Zero hallucinations
+                </p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+
+            <div className="flex items-center gap-1.5">
+              {SHOW_VOICE_CALLING_AGENT && (
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    setIsCallOpen(true);
+                  }}
+                  aria-label="Switch to Voice Call"
+                  title="Switch to Voice Call with AI Ranger"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-[10px] font-medium transition-colors"
+                >
+                  <PhoneCall className="w-3 h-3 animate-pulse text-emerald-400" />
+                  <span>Call</span>
+                </button>
+              )}
+
+              {/* Expand / Minimize Toggle */}
               <button
-                onClick={() => {
-                  setOpen(false);
-                  setIsCallOpen(true);
-                }}
-                aria-label="Switch to Voice Call"
-                title="Switch to Voice Call with AI Ranger"
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-600/20 hover:bg-emerald-600 text-emerald-300 hover:text-white border border-emerald-500/40 text-[10px] font-medium transition-colors"
+                onClick={() => setIsExpanded(!isExpanded)}
+                aria-label={isExpanded ? 'Collapse drawer' : 'Expand drawer'}
+                title={isExpanded ? 'Collapse drawer' : 'Expand full view'}
+                className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
               >
-                <PhoneCall className="w-3 h-3 animate-pulse text-emerald-400" />
-                <span>Call Ranger</span>
+                {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
               </button>
+
               {turns.length > 0 && (
                 <button
                   onClick={() => setTurns([])}
                   aria-label="Clear conversation"
                   title="Clear conversation"
-                  className="text-slate-500 hover:text-white"
+                  className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               )}
-              <button onClick={() => setOpen(false)} aria-label="Close chat" className="text-slate-400 hover:text-white">
+
+              <button
+                onClick={() => setOpen(false)}
+                aria-label="Close chat"
+                className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          <div className="px-3 py-2 border-b border-slate-800 space-y-1.5">
-            <select
-              id="chat-analysis-selector"
-              name="chat_analysis_selector"
-              aria-label="Select target analysis for chat context"
-              value={analysisId}
-              onChange={(e) => {
-                setAnalysisId(e.target.value);
-                setTurns([]);
-              }}
-              className="w-full h-8 px-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-200 focus:outline-none focus:border-emerald-500"
-            >
-              {options.length === 0 && <option value="">No completed analyses available</option>}
-              {options.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <select
-              id="chat-language-selector"
-              name="chat_language_selector"
-              value={language}
-              onChange={(e) => changeLanguage(e.target.value)}
-              aria-label="Language selection"
-              className="w-full h-8 px-2 rounded-lg bg-slate-900 border border-slate-800 text-[11px] text-slate-200 focus:outline-none focus:border-emerald-500"
-            >
-              {LANGUAGES.map((l) => (
-                <option key={l.code} value={l.code}>
-                  🌐 {l.label}
-                </option>
-              ))}
-            </select>
-            {notice && <p className="text-[10px] text-amber-400/80">{notice}</p>}
-            {loadError && <p className="text-[10px] text-red-400">{loadError}</p>}
+          {/* Reserve Context & Language Selector Banner */}
+          <div className="px-3 py-2 border-b border-slate-800/80 bg-slate-900/30 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">
+                <label htmlFor="chat-analysis-selector" className="sr-only">
+                  Select monitored reserve
+                </label>
+                <select
+                  id="chat-analysis-selector"
+                  name="chat_analysis_selector"
+                  aria-label="Select monitored reserve for chat context"
+                  value={analysisId}
+                  onChange={(e) => {
+                    setAnalysisId(e.target.value);
+                    setTurns([]);
+                  }}
+                  className="w-full h-7 px-2 rounded-md bg-slate-900 border border-slate-700/60 text-[11px] font-medium text-slate-200 focus:outline-none focus:border-emerald-500 truncate"
+                >
+                  {options.length === 0 && <option value="">No completed analyses available</option>}
+                  {options.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      🌿 {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="w-36 shrink-0">
+                <label htmlFor="chat-language-selector" className="sr-only">
+                  Language selection
+                </label>
+                <select
+                  id="chat-language-selector"
+                  name="chat_language_selector"
+                  value={language}
+                  onChange={(e) => changeLanguage(e.target.value)}
+                  aria-label="Language selection"
+                  className="w-full h-7 px-2 rounded-md bg-slate-900 border border-slate-700/60 text-[11px] text-slate-300 focus:outline-none focus:border-emerald-500 truncate"
+                >
+                  {LANGUAGES.map((l) => (
+                    <option key={l.code} value={l.code}>
+                      🌐 {l.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Active Reserve Status Pill */}
+            {selectedOption && (
+              <div className="flex items-center justify-between text-[10px] text-slate-400 px-1 pt-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span className="font-medium text-slate-300">{reserveLabel}</span>
+                  {observationPeriod && <span>· {observationPeriod}</span>}
+                </div>
+                <span className="font-mono text-emerald-400 text-[9px]">Live Grounding Active</span>
+              </div>
+            )}
+
+            {notice && <p className="text-[10px] text-amber-400/80 px-1">{notice}</p>}
+            {loadError && <p className="text-[10px] text-red-400 px-1">{loadError}</p>}
           </div>
 
-          <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+          {/* Message Turns Scroll Area */}
+          <div className="flex-1 overflow-y-auto px-3.5 py-3 space-y-3.5 scroll-smooth">
             {options.length === 0 && !busy && (
-              <div className="p-3 bg-amber-950/30 border border-amber-800/50 rounded-lg text-[11px] text-amber-300 space-y-1">
+              <div className="p-3.5 bg-amber-950/20 border border-amber-800/40 rounded-xl text-xs text-amber-300 space-y-1.5">
                 <p className="font-semibold flex items-center gap-1.5">
-                  <span>ℹ️</span> No analysis selected
+                  <span>ℹ️</span> No monitored reserve selected
                 </p>
-                <p className="text-[10px] text-amber-400/80">
-                  Please select a reserve with existing satellite telemetry (e.g. Tadoba, Pench, Sundarbans) or click &quot;Run Analysis&quot; on the dashboard to compute satellite metrics.
+                <p className="text-[11px] text-amber-400/80 leading-relaxed">
+                  Please select a reserve with satellite data (e.g. Jim Corbett, Pench, Sundarbans) or click &quot;Run Analysis&quot; on the dashboard to compute satellite metrics.
                 </p>
               </div>
             )}
 
             {turns.length === 0 && options.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-[11px] text-slate-400">
-                  Type or tap the mic 🎤 — ask in your language.
-                </p>
-                {suggestions.map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => ask(s)}
-                    disabled={!analysisId}
-                    className="block w-full text-left text-[11px] px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-300 hover:border-emerald-600 disabled:opacity-40 transition-colors"
-                  >
-                    {s}
-                  </button>
-                ))}
+              <div className="space-y-3 my-2">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-slate-900/90 to-slate-950/90 border border-slate-800 text-xs text-slate-300 space-y-1.5">
+                  <div className="flex items-center gap-1.5 text-emerald-400 font-semibold text-xs">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Welcome to Habitat AI</span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    Ask any question in **Hinglish, Hindi, or English**. I provide 100% grounded answers directly from Sentinel-2 and Earth Engine satellite telemetry for **{reserveLabel}**.
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <p className="text-[10px] uppercase font-mono tracking-wider text-slate-400 px-1">
+                    Suggested Questions:
+                  </p>
+                  {suggestions.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => ask(s)}
+                      disabled={!analysisId}
+                      className="block w-full text-left text-xs px-3 py-2 rounded-lg border border-slate-800/80 bg-slate-900/40 text-slate-300 hover:border-emerald-600/60 hover:bg-slate-800/60 hover:text-white disabled:opacity-40 transition-all"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
+
             {turns.map((t, i) => (
-              <div key={i} className={t.role === 'user' ? 'text-right' : ''}>
+              <div key={i} className={`flex flex-col ${t.role === 'user' ? 'items-end' : 'items-start'}`}>
                 <div
-                  className={`inline-block max-w-[94%] text-left rounded-lg px-3 py-2 text-xs ${
+                  className={`max-w-[94%] rounded-xl px-3.5 py-2.5 text-xs ${
                     t.role === 'user'
-                      ? 'bg-emerald-700/40 text-emerald-50 whitespace-pre-wrap'
-                      : 'bg-slate-900 border border-slate-800 text-slate-200'
+                      ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md'
+                      : 'bg-slate-900/90 border border-slate-800/80 text-slate-200 shadow-sm'
                   }`}
                 >
-                  {t.role === 'user' ? t.content : <ChatMarkdown text={t.content} eventHref={eventHref} />}
+                  {t.role === 'user' ? (
+                    <p className="whitespace-pre-wrap leading-relaxed">{t.content}</p>
+                  ) : (
+                    <ChatMarkdown text={t.content} eventHref={eventHref} />
+                  )}
                 </div>
-                {t.meta && (
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[9px] text-slate-600 font-mono">
-                      {t.meta.grounded ? '✓ grounded in analysis data' : 'not grounded'}
-                      {t.meta.tools.length ? ` · ${Array.from(new Set(t.meta.tools)).join(', ')}` : ''}
-                    </span>
-                    <button
-                      onClick={() => speak(t.content)}
-                      aria-label="Read aloud"
-                      title="Read aloud"
-                      className="text-slate-500 hover:text-emerald-400"
-                    >
-                      <Volume2 className="w-3 h-3" />
-                    </button>
+
+                {/* Assistant Metadata & Action Toolbar */}
+                {t.role === 'assistant' && (
+                  <div className="flex items-center gap-2 mt-1 px-1">
+                    {t.meta && (
+                      <span className="text-[9px] text-slate-500 font-mono flex items-center gap-1.5">
+                        <span className={t.meta.grounded ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                          {t.meta.grounded ? '✓' : 'ℹ'}
+                        </span>
+                        <span className={t.meta.grounded ? 'text-emerald-400/90' : 'text-slate-400'}>
+                          {t.meta.grounded ? 'grounded in telemetry' : 'general LLM context (not in database)'}
+                        </span>
+                        {t.meta.tools.length > 0 && (
+                          <span className="text-slate-400">
+                            · {Array.from(new Set(t.meta.tools)).map(tn => tn.replace('get_', '')).join(', ')}
+                          </span>
+                        )}
+                      </span>
+                    )}
+
+                    <div className="flex items-center gap-1 ml-auto">
+                      {/* Copy message button */}
+                      <button
+                        onClick={() => copyText(i, t.content)}
+                        aria-label="Copy response"
+                        title="Copy response"
+                        className="p-1 rounded text-slate-500 hover:text-emerald-400 transition-colors"
+                      >
+                        {copiedIdx === i ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      </button>
+
+                      {/* Read aloud button */}
+                      <button
+                        onClick={() => speak(t.content)}
+                        aria-label="Read aloud"
+                        title="Read aloud"
+                        className="p-1 rounded text-slate-500 hover:text-emerald-400 transition-colors"
+                      >
+                        <Volume2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
             ))}
-            {busy && <p className="text-[11px] text-slate-500 font-mono animate-pulse">Looking up data…</p>}
+
+            {/* Dynamic Telemetry Loading Indicator */}
+            {busy && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-950/30 border border-emerald-800/30 text-emerald-300 text-xs animate-pulse">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span className="font-mono text-[11px]">Scanning Sentinel-2 telemetry & water dynamics…</span>
+              </div>
+            )}
             <div ref={endRef} />
           </div>
 
-          {micError && <p className="px-3 pb-1 text-[10px] text-red-400">{micError}</p>}
+          {/* Quick-Action Topic Chips Bar (Persistent above input) */}
+          <div className="px-3 py-1.5 border-t border-slate-800/80 bg-slate-900/40 overflow-x-auto flex items-center gap-1.5 no-scrollbar">
+            {QUICK_TOPICS.map((topic) => (
+              <button
+                key={topic.label}
+                onClick={() => ask(topic.query)}
+                disabled={busy || !analysisId}
+                className="shrink-0 px-2.5 py-1 rounded-full bg-slate-800/80 hover:bg-emerald-600/20 border border-slate-700/60 hover:border-emerald-500/50 text-slate-300 hover:text-emerald-300 text-[10px] font-medium transition-all disabled:opacity-40"
+              >
+                {topic.label}
+              </button>
+            ))}
+          </div>
+
+          {micError && <p className="px-3.5 pb-1 text-[10px] text-red-400">{micError}</p>}
+
+          {/* Input Form with Auto-resizing Textarea */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               if (listening) stopListening();
               void ask(input);
             }}
-            className="flex gap-2 p-3 border-t border-slate-800"
+            className="flex items-end gap-2 p-3 border-t border-slate-800/80 bg-slate-950"
           >
             {micSupported && (
               <button
@@ -415,30 +625,39 @@ export default function ChatWidget({
                 disabled={busy || !analysisId}
                 aria-label={listening ? 'Stop listening' : 'Speak your question'}
                 title={`Voice input (${speechTag})`}
-                className={`h-9 w-9 shrink-0 flex items-center justify-center rounded-lg border text-white disabled:opacity-40 ${
-                  listening ? 'bg-red-600 border-red-500 animate-pulse' : 'bg-slate-900 border-slate-700 hover:border-emerald-600'
+                className={`h-9 w-9 shrink-0 flex items-center justify-center rounded-xl border text-white disabled:opacity-40 transition-all ${
+                  listening
+                    ? 'bg-red-600 border-red-500 animate-pulse shadow-md shadow-red-950'
+                    : 'bg-slate-900 border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-white'
                 }`}
               >
                 {listening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               </button>
             )}
-            <label htmlFor="chat-user-message-input" className="sr-only">
-              Ask about this analysis
-            </label>
-            <input
-              id="chat-user-message-input"
-              name="chat_message"
-              aria-label={listening ? 'Listening to voice input' : 'Ask about this analysis'}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              maxLength={2000}
-              placeholder={listening ? 'Listening…' : 'Ask about this analysis…'}
-              className="flex-1 min-w-0 h-9 px-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
-            />
+
+            <div className="flex-1 relative min-w-0">
+              <label htmlFor="chat-user-message-textarea" className="sr-only">
+                Ask about this reserve or analysis
+              </label>
+              <textarea
+                id="chat-user-message-textarea"
+                ref={textareaRef}
+                rows={1}
+                name="chat_message"
+                aria-label={listening ? 'Listening to voice input' : 'Ask about this analysis'}
+                value={input}
+                onChange={handleTextareaInput}
+                onKeyDown={handleKeyDown}
+                maxLength={2000}
+                placeholder={listening ? 'Listening to speech…' : 'Ask anything in Hinglish, Hindi, or English… (Shift+Enter for newline)'}
+                className="w-full resize-none min-h-[38px] max-h-[120px] py-2 px-3 rounded-xl bg-slate-900 border border-slate-700/80 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 leading-relaxed"
+              />
+            </div>
+
             <button
               type="submit"
               disabled={busy || !input.trim() || !analysisId}
-              className="h-9 w-9 shrink-0 flex items-center justify-center rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 transition-colors"
+              className="h-9 w-9 shrink-0 flex items-center justify-center rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-40 transition-all shadow-md shadow-emerald-950 hover:scale-105 active:scale-95"
               aria-label="Send message"
             >
               <Send className="w-4 h-4" />
@@ -447,18 +666,19 @@ export default function ChatWidget({
         </div>
       )}
 
-      {/* Real-time Voice Call Modal */}
-      <VoiceCallModal
-        isOpen={isCallOpen}
-        onClose={() => setIsCallOpen(false)}
-        options={options}
-        activeAnalysisId={analysisId}
-        onSelectAnalysis={setAnalysisId}
-        language={language}
-        onLanguageChange={changeLanguage}
-        send={send}
-      />
+      {/* Real-time Voice Call Modal (Feature flag guarded) */}
+      {SHOW_VOICE_CALLING_AGENT && (
+        <VoiceCallModal
+          isOpen={isCallOpen}
+          onClose={() => setIsCallOpen(false)}
+          options={options}
+          activeAnalysisId={analysisId}
+          onSelectAnalysis={setAnalysisId}
+          language={language}
+          onLanguageChange={changeLanguage}
+          send={send}
+        />
+      )}
     </>
   );
 }
-

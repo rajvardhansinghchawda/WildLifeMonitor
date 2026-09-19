@@ -150,17 +150,46 @@ async def get_hotspot(
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Any]:
     """One hotspot with geometry, verification history and layer provenance."""
+    clean_id = hotspot_id.lstrip("#").strip().lower()
+    eid: Optional[uuid.UUID] = None
     try:
-        eid = uuid.UUID(hotspot_id)
+        eid = uuid.UUID(clean_id)
     except ValueError:
-        raise NotFoundException(message="Invalid hotspot identifier.")
-    event = (
-        await db.execute(
-            select(ChangeEvent)
-            .options(selectinload(ChangeEvent.verifications))
-            .where(ChangeEvent.id == eid, ChangeEvent.workspace_id.in_(scope.workspace_ids))
-        )
-    ).scalar_one_or_none()
+        eid = None
+
+    event: Optional[ChangeEvent] = None
+    if eid is not None:
+        event = (
+            await db.execute(
+                select(ChangeEvent)
+                .options(selectinload(ChangeEvent.verifications))
+                .where(ChangeEvent.id == eid, ChangeEvent.workspace_id.in_(scope.workspace_ids))
+            )
+        ).scalar_one_or_none()
+
+        # Graceful fallback: if an analysis_id was passed, resolve its top hotspot
+        if event is None:
+            event = (
+                await db.execute(
+                    select(ChangeEvent)
+                    .options(selectinload(ChangeEvent.verifications))
+                    .where(ChangeEvent.analysis_id == eid, ChangeEvent.workspace_id.in_(scope.workspace_ids))
+                    .order_by(ChangeEvent.priority_score.desc().nulls_last(), ChangeEvent.affected_area_ha.desc())
+                )
+            ).scalars().first()
+    elif len(clean_id) >= 6:
+        from sqlalchemy import String, cast
+        event = (
+            await db.execute(
+                select(ChangeEvent)
+                .options(selectinload(ChangeEvent.verifications))
+                .where(
+                    cast(ChangeEvent.id, String).startswith(clean_id),
+                    ChangeEvent.workspace_id.in_(scope.workspace_ids),
+                )
+            )
+        ).scalars().first()
+
     if event is None:
         raise NotFoundException(message="Hotspot not found.")
     analysis = (

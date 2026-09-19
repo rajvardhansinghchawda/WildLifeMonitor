@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: postgrespassword
       POSTGRES_DB: wildlife
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -30,7 +30,7 @@ services:
       retries: 5
 
   object-storage:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:latest
     container_name: codeniti-object-storage
     command: server /data --console-address ":9001"
     environment:
@@ -68,9 +68,9 @@ services:
       GEE_PROJECT_ID: macro-shore-471006-c3
       GOOGLE_APPLICATION_CREDENTIALS: /app/credentials/macro-shore-471006-c3-822bdbdaa0b9.json
       OBJECT_STORAGE_PUBLIC_ENDPOINT: http://localhost:9000
-      FIRMS_MAP_KEY: ${FIRMS_MAP_KEY:-}
-      GROQAPIKEY: ${GROQAPIKEY:-}
-      GROQMODEL: ${GROQMODEL:-openai/gpt-oss-120b,qwen/qwen3.8-27b,openai/gpt-oss-20b}
+      FIRMS_MAP_KEY: ${FIRMS_MAP_KEY:-66a86eb1bccf10d464a978f78af683fe}
+      GROQAPIKEY: ${GROQAPIKEY:-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,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}
+      GROQMODEL: ${GROQMODEL:-llama-3.3-70b-versatile,llama-3.1-8b-instant,openai/gpt-oss-20b,qwen/qwen3.8-27b}
       ALLOWED_ORIGINS: '["http://localhost:3000","http://localhost:5173"]'
       LOG_LEVEL: INFO
     ports:
