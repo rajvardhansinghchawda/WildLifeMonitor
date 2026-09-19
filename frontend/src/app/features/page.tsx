@@ -20,11 +20,10 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 
+import { SiteNavbar } from '@/components/layout/SiteNavbar';
+
 export default function FeaturesPage() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const features = [
     {
@@ -106,134 +105,7 @@ export default function FeaturesPage() {
       {/* ========================================================================= */}
       {/* 1. LIGHT HEADER / NAVBAR                                                  */}
       {/* ========================================================================= */}
-      <header className="sticky top-0 z-50 h-20 bg-[#f7f8f5]/90 backdrop-blur-md border-b border-slate-200/80 px-6 lg:px-12 flex items-center justify-between transition-all">
-        {/* Brand Logo & Tagline */}
-        <Link href="/" className="flex items-center gap-3.5 group">
-          <Image
-            src="/primary logo 1.png"
-            alt="VANYORA Logo"
-            width={36}
-            height={44}
-            className="h-10 w-auto object-contain group-hover:scale-105 transition-transform"
-            priority
-          />
-          <div className="flex flex-col">
-            <span className="font-outfit font-black text-xl tracking-[0.14em] text-slate-900 uppercase leading-none">
-              VANYORA
-            </span>
-            <span className="text-[10px] text-emerald-800 font-bold tracking-[0.2em] uppercase mt-1">
-              Monitor • Protect • Conserve
-            </span>
-          </div>
-        </Link>
-
-        {/* Center Navigation Links */}
-        <nav className="hidden md:flex items-center gap-8">
-          {[
-            { id: 'home', label: 'Home', href: '/' },
-            { id: 'about', label: 'About', href: '/about' },
-            { id: 'features', label: 'Features', href: '/features' },
-            { id: 'impact', label: 'Impact', href: '/#impact' },
-            { id: 'blogs', label: 'Blogs', href: '/blogs' },
-            { id: 'contact', label: 'Contact', href: '/#contact' },
-          ].map((item) => {
-            const isActive = item.id === 'features';
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                className={`relative py-1 text-sm font-medium transition-colors ${
-                  isActive ? 'text-slate-950 font-bold' : 'text-slate-600 hover:text-slate-950'
-                }`}
-              >
-                {item.label}
-                {isActive && (
-                  <span className="absolute bottom-0 inset-x-0 h-0.5 bg-[#0d472a] rounded-full" />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Right Action Icons & Buttons */}
-        <div className="hidden sm:flex items-center gap-4">
-          <button
-            onClick={() => setSearchModalOpen(true)}
-            aria-label="Search"
-            className="w-9 h-9 rounded-full bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors shadow-sm"
-          >
-            <Search className="w-4 h-4" />
-          </button>
-
-          <Link
-            href="/login"
-            className="px-5 py-2 rounded-full bg-white hover:bg-slate-50 border border-slate-300 text-xs sm:text-sm font-medium text-slate-800 transition-all shadow-sm"
-          >
-            Login
-          </Link>
-
-          <Link
-            href="/explore"
-            className="px-5 py-2 rounded-full bg-[#48e596] hover:bg-[#3cd084] text-slate-950 text-xs sm:text-sm font-bold tracking-tight shadow-md shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95"
-          >
-            Get Started
-          </Link>
-        </div>
-
-        {/* Mobile Hamburger Toggle */}
-        <div className="flex sm:hidden items-center gap-2">
-          <button
-            onClick={() => setSearchModalOpen(true)}
-            className="p-2 text-slate-600 hover:text-slate-900"
-          >
-            <Search className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-slate-600 hover:text-slate-900"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-      </header>
-
-      {/* Mobile Menu Dropdown */}
-      {mobileMenuOpen && (
-        <div className="fixed top-20 inset-x-0 z-40 bg-[#f7f8f5] border-b border-slate-200 p-6 space-y-4 shadow-xl md:hidden">
-          <div className="flex flex-col gap-3">
-            {[
-              { label: 'Home', href: '/' },
-              { label: 'About', href: '/about' },
-              { label: 'Features', href: '/features' },
-              { label: 'Impact', href: '/#impact' },
-              { label: 'Blogs', href: '/blogs' },
-              { label: 'Contact', href: '/#contact' },
-            ].map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="py-2 text-sm font-semibold text-slate-800 hover:text-[#0d472a]"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-          <div className="pt-4 border-t border-slate-200 flex gap-3">
-            <Link
-              href="/login"
-              className="flex-1 py-2 rounded-full text-center bg-white border border-slate-300 text-slate-800 text-sm font-medium"
-            >
-              Login
-            </Link>
-            <Link
-              href="/explore"
-              className="flex-1 py-2 rounded-full text-center bg-[#48e596] text-slate-950 text-sm font-bold"
-            >
-              Get Started
-            </Link>
-          </div>
-        </div>
-      )}
+      <SiteNavbar activePage="features" />
 
       {/* ========================================================================= */}
       {/* 2. HERO SECTION WITH SOARING EAGLE                                        */}
@@ -399,59 +271,6 @@ export default function FeaturesPage() {
         </div>
       </footer>
 
-      {/* ========================================================================= */}
-      {/* 6. SEARCH MODAL                                                           */}
-      {/* ========================================================================= */}
-      {searchModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-slate-950/70 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="p-4 border-b border-slate-100 flex items-center gap-3">
-              <Search className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search features, tools, or protected areas..."
-                autoFocus
-                className="w-full bg-transparent border-none text-slate-900 text-sm focus:outline-none placeholder:text-slate-400"
-              />
-              <button
-                onClick={() => setSearchModalOpen(false)}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-4 text-xs text-slate-500 space-y-2">
-              <div className="font-semibold text-slate-700">Quick Links:</div>
-              <div className="flex flex-wrap gap-2">
-                <Link
-                  href="/explore"
-                  onClick={() => setSearchModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium"
-                >
-                  Interactive Map
-                </Link>
-                <Link
-                  href="/change-analysis"
-                  onClick={() => setSearchModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium"
-                >
-                  Change Analysis
-                </Link>
-                <Link
-                  href="/hotspots"
-                  onClick={() => setSearchModalOpen(false)}
-                  className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium"
-                >
-                  Hotspots Detection
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

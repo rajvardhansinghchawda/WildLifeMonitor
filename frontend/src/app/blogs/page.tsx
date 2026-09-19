@@ -19,8 +19,8 @@ import {
   ExternalLink,
   ChevronRight,
   Leaf,
-  Filter,
 } from 'lucide-react';
+import { SiteNavbar } from '@/components/layout/SiteNavbar';
 
 interface Article {
   id: string;
@@ -53,8 +53,6 @@ export default function BlogsPage() {
   const [activeArticle, setActiveArticle] = useState<Article | null>(null);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
 
   const categories = [
     { id: 'all', label: 'All Articles' },
@@ -286,134 +284,7 @@ export default function BlogsPage() {
       {/* ========================================================================= */}
       {/* 1. HEADER / NAVBAR                                                        */}
       {/* ========================================================================= */}
-      <header className="sticky top-0 z-50 h-20 bg-[#16231c]/95 backdrop-blur-md border-b border-emerald-900/40 px-6 lg:px-12 flex items-center justify-between transition-all text-white">
-        {/* Brand Logo & Tagline */}
-        <Link href="/" className="flex items-center gap-3.5 group">
-          <Image
-            src="/primary logo 1.png"
-            alt="VANYORA Logo"
-            width={36}
-            height={44}
-            className="h-10 w-auto object-contain group-hover:scale-105 transition-transform"
-            priority
-          />
-          <div className="flex flex-col">
-            <span className="font-outfit font-black text-xl tracking-[0.14em] text-white uppercase leading-none drop-shadow-sm">
-              VANYORA
-            </span>
-            <span className="text-[10px] text-emerald-400 font-bold tracking-[0.2em] uppercase mt-1">
-              Monitor • Protect • Conserve
-            </span>
-          </div>
-        </Link>
-
-        {/* Center Navigation Links */}
-        <nav className="hidden md:flex items-center gap-8">
-          {[
-            { id: 'home', label: 'Home', href: '/' },
-            { id: 'about', label: 'About', href: '/about' },
-            { id: 'features', label: 'Features', href: '/features' },
-            { id: 'impact', label: 'Impact', href: '/#impact' },
-            { id: 'blogs', label: 'Blogs', href: '/blogs' },
-            { id: 'contact', label: 'Contact', href: '/#contact' },
-          ].map((item) => {
-            const isActive = item.id === 'blogs';
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                className={`relative py-1 text-sm font-medium transition-colors ${
-                  isActive ? 'text-white font-bold' : 'text-slate-300 hover:text-white'
-                }`}
-              >
-                {item.label}
-                {isActive && (
-                  <span className="absolute bottom-0 inset-x-0 h-0.5 bg-[#48e596] rounded-full shadow-sm shadow-emerald-400" />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Right Action Buttons */}
-        <div className="hidden sm:flex items-center gap-4">
-          <button
-            onClick={() => setSearchModalOpen(true)}
-            aria-label="Search"
-            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-slate-200 hover:text-white transition-colors"
-          >
-            <Search className="w-4 h-4" />
-          </button>
-
-          <Link
-            href="/login"
-            className="px-5 py-2 rounded-full bg-white/95 hover:bg-white border border-white/20 text-xs sm:text-sm font-semibold text-slate-900 transition-all shadow-sm"
-          >
-            Login
-          </Link>
-
-          <Link
-            href="/explore"
-            className="px-5 py-2 rounded-full bg-[#0d472a] hover:bg-[#093620] border border-emerald-500/40 text-white text-xs sm:text-sm font-bold tracking-tight shadow-md transition-all hover:scale-105 active:scale-95"
-          >
-            Get Started
-          </Link>
-        </div>
-
-        {/* Mobile Hamburger Toggle */}
-        <div className="flex sm:hidden items-center gap-2">
-          <button
-            onClick={() => setSearchModalOpen(true)}
-            className="p-2 text-slate-300 hover:text-white"
-          >
-            <Search className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-slate-300 hover:text-white"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-      </header>
-
-      {/* Mobile Menu Dropdown */}
-      {mobileMenuOpen && (
-        <div className="fixed top-20 inset-x-0 z-40 bg-[#16231c]/98 border-b border-emerald-900/60 p-6 space-y-4 shadow-2xl md:hidden text-white">
-          <div className="flex flex-col gap-3">
-            {[
-              { label: 'Home', href: '/' },
-              { label: 'About', href: '/about' },
-              { label: 'Features', href: '/features' },
-              { label: 'Impact', href: '/#impact' },
-              { label: 'Blogs', href: '/blogs' },
-              { label: 'Contact', href: '/#contact' },
-            ].map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="py-2 text-sm font-semibold text-slate-200 hover:text-[#48e596]"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-          <div className="pt-4 border-t border-emerald-900/40 flex gap-3">
-            <Link
-              href="/login"
-              className="flex-1 py-2 rounded-full text-center bg-white text-slate-900 text-sm font-semibold"
-            >
-              Login
-            </Link>
-            <Link
-              href="/explore"
-              className="flex-1 py-2 rounded-full text-center bg-[#0d472a] text-white text-sm font-bold"
-            >
-              Get Started
-            </Link>
-          </div>
-        </div>
-      )}
+      <SiteNavbar activePage="blogs" />
 
       {/* ========================================================================= */}
       {/* 2. CINEMATIC HERO SECTION WITH MOUNTAIN VALLEY & BACKPACKER               */}
@@ -827,53 +698,6 @@ export default function BlogsPage() {
                 >
                   Close Article
                 </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 8. SEARCH QUICK MODAL                                                     */}
-      {/* ========================================================================= */}
-      {searchModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-slate-950/70 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-xl bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="p-4 border-b border-slate-100 flex items-center gap-3">
-              <Search className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search articles, topics or species..."
-                autoFocus
-                className="w-full bg-transparent border-none text-slate-900 text-sm focus:outline-none placeholder:text-slate-400"
-              />
-              <button
-                onClick={() => setSearchModalOpen(false)}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="p-4 text-xs text-slate-500 space-y-2">
-              <div className="font-semibold text-slate-700">Quick Topics:</div>
-              <div className="flex flex-wrap gap-2">
-                {['Satellite Monitoring', 'Elephant Corridors', 'Ocean Giants', 'Deforestation'].map(
-                  (topic) => (
-                    <button
-                      key={topic}
-                      onClick={() => {
-                        setSearchQuery(topic);
-                        setSearchModalOpen(false);
-                      }}
-                      className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium"
-                    >
-                      {topic}
-                    </button>
-                  )
-                )}
               </div>
             </div>
           </div>

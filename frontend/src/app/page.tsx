@@ -34,6 +34,7 @@ import {
   FALLBACK_DEMOS,
 } from '@/lib/public-demo-data';
 import FoldText from '@/components/ui/FoldText';
+import { SiteNavbar } from '@/components/layout/SiteNavbar';
 
 export default function PublicDemoPage() {
   const [demonstrations, setDemonstrations] = useState<PublicDemonstrationItem[]>([]);
@@ -41,10 +42,6 @@ export default function PublicDemoPage() {
 
   // UI Interactive States
   const [videoModalOpen, setVideoModalOpen] = useState(false);
-  const [searchModalOpen, setSearchModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeNav, setActiveNav] = useState('home');
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Load demonstrations for search modal
   const loadData = async () => {
@@ -63,202 +60,19 @@ export default function PublicDemoPage() {
     loadData();
   }, []);
 
-  const scrollToSection = (id: string) => {
-    setActiveNav(id);
-    setMobileMenuOpen(false);
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  // Filtered demonstrations for search modal
-  const filteredDemos = demonstrations.filter(
-    (d) =>
-      d.area_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      d.designation.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
   return (
     <div className="min-h-screen bg-[#0b0f14] text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950">
       {/* ========================================================================= */}
       {/* 1. TOP NAVIGATION BAR                                                     */}
       {/* ========================================================================= */}
-      <header className="fixed top-0 inset-x-0 z-50 h-16 bg-black/35 backdrop-blur-md border-b border-white/10 px-6 lg:px-12 flex items-center justify-between transition-all">
-        {/* Brand Logo & Tagline */}
-        <Link href="/" className="flex items-center gap-3.5 group">
-          <Image
-            src="/primary logo 1.png"
-            alt="VANYORA Logo"
-            width={36}
-            height={44}
-            className="h-10 w-auto object-contain group-hover:scale-105 transition-transform"
-            priority
-          />
-          <div className="flex flex-col">
-            <span className="font-outfit font-black text-xl tracking-[0.14em] text-white uppercase leading-none drop-shadow-sm">
-              VANYORA
-            </span>
-            <span className="text-[10px] text-emerald-400 font-bold tracking-[0.2em] uppercase mt-1">
-              Monitor • Protect • Conserve
-            </span>
-          </div>
-        </Link>
-
-        {/* Center Navigation Links (Desktop) */}
-        <nav className="hidden md:flex items-center gap-1">
-          {[
-            { id: 'home', label: 'Home', href: '/' },
-            { id: 'about', label: 'About Us', href: '/about' },
-            { id: 'features', label: 'Features', href: '/features' },
-            { id: 'impact', label: 'Impact', href: '/#impact' },
-            { id: 'blogs', label: 'Blogs', href: '/blogs' },
-            { id: 'contact', label: 'Contact', href: '/#contact' },
-          ].map((item) => {
-            const isActive = activeNav === item.id;
-            if (item.href.startsWith('/#')) {
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => scrollToSection(item.href.replace('/#', ''))}
-                  className="relative px-4 py-2 text-sm font-semibold tracking-wide transition-all text-white/80 hover:text-white"
-                >
-                  {item.label}
-                </button>
-              );
-            }
-            if (item.href === '/') {
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => scrollToSection('home')}
-                  className={`relative px-4 py-2 text-sm font-semibold tracking-wide transition-all ${
-                    isActive ? 'text-white bg-[#2ecc71] rounded-sm' : 'text-white/80 hover:text-white'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              );
-            }
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                className="relative px-4 py-2 text-sm font-semibold transition-colors text-white/80 hover:text-white tracking-wide"
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Right Action Icons & Buttons */}
-        <div className="hidden sm:flex items-center gap-3">
-          {/* Quick Search Button */}
-          <button
-            onClick={() => setSearchModalOpen(true)}
-            aria-label="Search reserves and incidents"
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
-          >
-            <Search className="w-4 h-4" />
-          </button>
-
-          {/* Login Button */}
-          <Link
-            href="/login"
-            className="px-4 py-1.5 rounded-sm bg-white/10 hover:bg-white/20 border border-white/20 text-sm font-semibold text-white transition-all"
-          >
-            Login
-          </Link>
-
-          {/* Get Started Button */}
-          <Link
-            href="/explore"
-            className="px-4 py-1.5 rounded-sm bg-[#2ecc71] hover:bg-[#27b360] text-slate-950 text-sm font-bold tracking-tight shadow-lg shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95"
-          >
-            Get Started
-          </Link>
-        </div>
-
-        {/* Mobile Hamburger Toggle */}
-        <div className="flex sm:hidden items-center gap-2">
-          <button
-            onClick={() => setSearchModalOpen(true)}
-            className="p-2 text-white"
-          >
-            <Search className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 text-white"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-      </header>
-
-      {/* Mobile Menu Dropdown */}
-      {mobileMenuOpen && (
-        <div className="fixed top-16 inset-x-0 z-40 bg-black/95 border-b border-white/10 p-6 space-y-4 backdrop-blur-2xl md:hidden">
-          <div className="flex flex-col gap-3">
-            {[
-              { id: 'home', label: 'Home', href: '/' },
-              { id: 'about', label: 'About Us', href: '/about' },
-              { id: 'features', label: 'Features', href: '/features' },
-              { id: 'impact', label: 'Impact', href: '/#impact' },
-              { id: 'blogs', label: 'Blogs', href: '/blogs' },
-              { id: 'contact', label: 'Contact', href: '/#contact' },
-            ].map((item) => {
-              if (item.href.startsWith('/#')) {
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      scrollToSection(item.href.replace('/#', ''));
-                    }}
-                    className="text-left py-2 text-sm font-semibold text-white/80 hover:text-[#2ecc71] tracking-wide"
-                  >
-                    {item.label}
-                  </button>
-                );
-              }
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="text-left py-2 text-sm font-semibold text-white/80 hover:text-[#2ecc71] tracking-wide"
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-          <div className="pt-4 border-t border-white/10 flex gap-3">
-            <Link
-              href="/login"
-              className="flex-1 py-2 rounded-sm text-center bg-white/10 text-white text-sm font-semibold"
-            >
-              Login
-            </Link>
-            <Link
-              href="/explore"
-              className="flex-1 py-2 rounded-sm text-center bg-[#2ecc71] text-slate-950 text-sm font-bold"
-            >
-              Get Started
-            </Link>
-          </div>
-        </div>
-      )}
+      <SiteNavbar activePage="home" />
 
       {/* ========================================================================= */}
       {/* 2. CINEMATIC HERO SECTION (MATCHING MOCKUP)                               */}
       {/* ========================================================================= */}
       <section
         id="home"
-        className="relative min-h-screen w-full flex flex-col justify-between pt-16 overflow-hidden"
+        className="relative min-h-screen w-full flex flex-col justify-between pt-6 sm:pt-10 overflow-hidden"
       >
         {/* Deer Landscape Background */}
         <div className="absolute inset-0 z-0">
@@ -794,56 +608,6 @@ export default function PublicDemoPage() {
               >
                 Close Video
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* 11. QUICK SEARCH MODAL                                                    */}
-      {/* ========================================================================= */}
-      {searchModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-slate-950/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="p-4 border-b border-slate-800 flex items-center gap-3">
-              <Search className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search reserves, countries, or designations (e.g. Kanha, Tiger Reserve)..."
-                autoFocus
-                className="w-full bg-transparent border-none text-white text-sm focus:outline-none placeholder:text-slate-500"
-              />
-              <button
-                onClick={() => setSearchModalOpen(false)}
-                className="p-1 rounded-md text-slate-400 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="max-h-80 overflow-y-auto p-2 space-y-1">
-              {filteredDemos.length === 0 ? (
-                <div className="p-4 text-center text-xs text-slate-500 font-mono">
-                  No matching reserves found for &ldquo;{searchQuery}&rdquo;.
-                </div>
-              ) : (
-                filteredDemos.map((demo) => (
-                  <Link
-                    key={demo.id}
-                    href="/explore"
-                    onClick={() => setSearchModalOpen(false)}
-                    className="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-colors"
-                  >
-                    <div>
-                      <div className="text-sm font-semibold text-white">{demo.area_name}</div>
-                      <div className="text-xs text-slate-400">{demo.designation} • {demo.country}</div>
-                    </div>
-                    <span className="text-xs font-mono text-emerald-400">{demo.area_km2.toLocaleString()} km²</span>
-                  </Link>
-                ))
-              )}
             </div>
           </div>
         </div>
