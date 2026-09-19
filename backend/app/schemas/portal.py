@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 class Coordinates(BaseModel):
     lat: float
     lon: float
+    place_name: Optional[str] = None
 
 
 # ---------------------------------------------------------------- areas

@@ -38,6 +38,7 @@ import {
 } from 'recharts';
 import api, { AreaSummary, Hotspot, Timeline } from '@/lib/api';
 import { fmtHa, fmtDate, fmtNum } from '@/lib/format';
+import { formatCoordinatesWithPlace } from '@/lib/geo-names';
 import type { RasterOverlayConfig } from '@/components/map/ComparisonLeafletMap';
 import { getPublicDemonstrations, getPublicEvents } from '@/lib/public-api';
 
@@ -902,10 +903,10 @@ export default function TemporalCompareSlider({
                           <div className={`text-xs font-medium truncate ${activeArea?.id === a.id ? 'text-emerald-300' : 'text-white'}`}>
                             {a.name}
                           </div>
-                          <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1">
-                            <MapPin className="w-2.5 h-2.5 inline flex-shrink-0" />
+                          <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1 truncate">
+                            <MapPin className="w-2.5 h-2.5 inline flex-shrink-0 text-cyan-400" />
                             <span className="truncate">
-                              {[a.state, a.country].filter(Boolean).join(' • ')}
+                              {a.coordinates ? formatCoordinatesWithPlace(a.coordinates.lat, a.coordinates.lon, a.name) : [a.state, a.country].filter(Boolean).join(' • ')}
                               {a.area_km2 ? ` · ${Math.round(a.area_km2).toLocaleString()} km²` : ''}
                             </span>
                           </div>
@@ -1527,6 +1528,16 @@ export default function TemporalCompareSlider({
               <div className="flex justify-between">
                 <span className="text-slate-400">Affected Area:</span>
                 <span>{selectedHotspot.affected_area_ha ? `${selectedHotspot.affected_area_ha.toFixed(2)} ha` : 'N/A'}</span>
+              </div>
+              <div className="flex justify-between items-start gap-2 pt-1.5 border-t border-slate-800/80">
+                <span className="text-slate-400 shrink-0">Location:</span>
+                <span className="text-cyan-300 text-right text-[10px] font-mono">
+                  {formatCoordinatesWithPlace(
+                    selectedHotspot.coordinates?.lat || (selectedHotspot as any).centroid_lat,
+                    selectedHotspot.coordinates?.lon || (selectedHotspot as any).centroid_lon,
+                    (selectedHotspot as any).area_name || activeArea?.name || initialArea?.name
+                  )}
+                </span>
               </div>
             </div>
           </div>

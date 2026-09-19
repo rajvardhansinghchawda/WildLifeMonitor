@@ -9,6 +9,7 @@ import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/common/ApiSta
 import api, { ApiError, HotspotDetail } from '@/lib/api';
 import { useApi } from '@/lib/use-api';
 import { fmtDate, fmtHa, fmtNum } from '@/lib/format';
+import { formatCoordinatesWithPlace } from '@/lib/geo-names';
 
 const GeoMap = dynamic(() => import('@/components/map/GeoMap'), { ssr: false });
 
@@ -152,7 +153,12 @@ function HotspotsInner() {
                           selectedId === h.id ? 'bg-emerald-950/30' : ''
                         }`}
                       >
-                        <td className="p-2 text-slate-200">{h.change_label}</td>
+                        <td className="p-2 text-slate-200">
+                          <div className="font-medium">{h.change_label}</div>
+                          <div className="text-[10px] text-cyan-400 font-mono mt-0.5">
+                            📍 {formatCoordinatesWithPlace(h.coordinates.lat, h.coordinates.lon, h.area_name)}
+                          </div>
+                        </td>
                         <td className="p-2 text-slate-400">{h.area_name ?? 'Custom AOI'}</td>
                         <td className="p-2 text-right font-mono">{fmtHa(h.affected_area_ha)}</td>
                         <td className="p-2 text-right font-mono">
@@ -259,7 +265,7 @@ function DetailPanel({ h, onChanged }: { h: HotspotDetail; onChanged: () => void
 
       <div>
         <Row k="Affected area" v={fmtHa(h.affected_area_ha)} />
-        <Row k="Location" v={`${h.coordinates.lat.toFixed(4)}, ${h.coordinates.lon.toFixed(4)}`} />
+        <Row k="Location" v={formatCoordinatesWithPlace(h.coordinates.lat, h.coordinates.lon, h.area_name)} />
         <Row
           k={h.value_name ?? 'Indicator'}
           v={`${fmtNum(h.baseline_value, 3)} → ${fmtNum(h.comparison_value, 3)}`}

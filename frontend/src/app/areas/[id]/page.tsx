@@ -12,6 +12,7 @@ import { LandCoverBars } from '@/components/analytics/LandCoverBars';
 import api from '@/lib/api';
 import { useApi } from '@/lib/use-api';
 import { fmtDate, fmtHa, fmtNum, healthColor } from '@/lib/format';
+import { formatCoordinatesWithPlace } from '@/lib/geo-names';
 
 const GeoMap = dynamic(() => import('@/components/map/GeoMap'), { ssr: false });
 
@@ -49,6 +50,11 @@ export default function AreaDetailPage() {
                   .join(' · ')}{' '}
                 · {a.area_km2.toLocaleString(undefined, { maximumFractionDigits: 0 })} km²
               </p>
+              {a.coordinates && (
+                <p className="text-xs text-cyan-300 font-mono mt-1.5 flex items-center gap-1.5">
+                  <span>📍 {formatCoordinatesWithPlace(a.coordinates.lat, a.coordinates.lon, a.name)}</span>
+                </p>
+              )}
               {a.analysis_aoi_note && (
                 <p className="text-[11px] text-amber-400/80 mt-1">Analysis extent: {a.analysis_aoi_note}</p>
               )}

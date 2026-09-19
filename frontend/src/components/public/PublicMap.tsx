@@ -3,6 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 import { PublicChangeEvent } from '@/lib/public-api';
+import { formatCoordinatesWithPlace } from '@/lib/geo-names';
 
 interface PublicMapProps {
   centroid: { lat: number; lon: number };
@@ -132,6 +133,9 @@ export default function PublicMap({
             </div>
             <div style="margin-bottom: 2px;">
               <strong>Area:</strong> ${ev.affected_area_ha} ha
+            </div>
+            <div style="margin-bottom: 2px; color: #0284c7;">
+              <strong>Location:</strong> ${formatCoordinatesWithPlace(lat, lon)}
             </div>
             ${
               ev.nearest_known_road_distance_m

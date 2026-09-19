@@ -19,6 +19,7 @@ export type VerificationStatus = string;
 export interface Coordinates {
   lat: number;
   lon: number;
+  place_name?: string;
 }
 
 export interface HealthIndex {

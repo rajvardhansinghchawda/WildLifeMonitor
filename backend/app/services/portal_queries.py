@@ -99,7 +99,11 @@ def build_area_summary(
         state=area.state,  # type: ignore[arg-type]
         biome=area.biome,  # type: ignore[arg-type]
         area_km2=float(area.area_km2),  # type: ignore[arg-type]
-        coordinates=Coordinates(lat=float(area.centroid_lat), lon=float(area.centroid_lon)),  # type: ignore[arg-type]
+        coordinates=Coordinates(
+            lat=float(area.centroid_lat),
+            lon=float(area.centroid_lon),
+            place_name=", ".join(filter(None, [str(area.name), str(area.state or ""), str(area.country or "")])),
+        ),  # type: ignore[arg-type]
         source=str(area.source),
         statistics_computed_at=area.statistics_computed_at.isoformat()
         if area.statistics_computed_at
@@ -152,7 +156,11 @@ def build_hotspot(
         record_version=int(event.record_version),  # type: ignore[arg-type]
         method_version=str(event.method_version),
         sensor=props.get("sensor") or CHANGE_TYPE_SENSOR.get(str(layer_type)),
-        coordinates=Coordinates(lat=float(centroid.y), lon=float(centroid.x)),
+        coordinates=Coordinates(
+            lat=float(centroid.y),
+            lon=float(centroid.x),
+            place_name=f"{area_name or 'Protected Habitat'} Sector",
+        ),
         geometry=dict(mapping(shp)) if include_geometry else None,
         baseline_value=props.get("baseline_value"),
         comparison_value=props.get("comparison_value"),

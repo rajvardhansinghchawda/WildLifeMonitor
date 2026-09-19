@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
 import type { Hotspot } from '@/lib/api';
+import { formatCoordinatesWithPlace } from '@/lib/geo-names';
 
 export interface RasterOverlayConfig {
   url: string;
@@ -508,6 +509,7 @@ export default function ComparisonLeafletMap({
                   </span>
                 </div>
                 <div style="font-weight: 700; color: #1e293b; margin-bottom: 4px;">${h.change_label || h.change_type}</div>
+                <div style="color: #0284c7; font-size: 10px; margin-bottom: 4px;"><b>📍 Location:</b> ${formatCoordinatesWithPlace(lat, lon, (h as any).area_name)}</div>
                 <div><b>Severity:</b> <span style="text-transform:uppercase;font-weight:700;color:${color};">${h.severity || (h as any).priority_band || 'HIGH'}</span></div>
                 <div><b>Priority Score:</b> ${h.priority_score !== null && h.priority_score !== undefined ? `${h.priority_score}/100` : 'Telemetry High'}</div>
                 <div><b>Affected Area:</b> ${h.affected_area_ha ? `${h.affected_area_ha.toFixed(2)} ha` : '1.45 ha'}</div>
@@ -687,6 +689,7 @@ export default function ComparisonLeafletMap({
                 </span>
               </div>
               <div style="font-weight: 700; color: #1e293b; margin-bottom: 4px;">${h.change_label || h.change_type}</div>
+              <div style="color: #0284c7; font-size: 10px; margin-bottom: 4px;"><b>📍 Location:</b> ${formatCoordinatesWithPlace(lat, lon, (h as any).area_name)}</div>
               <div><b>Severity:</b> <span style="text-transform:uppercase;font-weight:700;color:${color};">${h.severity || (h as any).priority_band || 'HIGH'}</span></div>
               <div><b>Priority Score:</b> ${h.priority_score !== null && h.priority_score !== undefined ? `${h.priority_score}/100` : 'Telemetry High'}</div>
               <div><b>Affected Area:</b> ${h.affected_area_ha ? `${h.affected_area_ha.toFixed(2)} ha` : '1.45 ha'}</div>
