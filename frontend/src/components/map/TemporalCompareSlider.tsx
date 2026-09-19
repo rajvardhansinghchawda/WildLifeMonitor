@@ -751,46 +751,45 @@ export default function TemporalCompareSlider({
       }, 400);
     }, 350);
   };
-
-  return (
+  return (
     <div
-      className={`w-full flex flex-col bg-[#070c17] text-slate-100 rounded-2xl border border-slate-800/90 overflow-hidden shadow-2xl relative select-none ${
+      className={`w-full flex flex-col bg-white text-slate-800 rounded-2xl border border-[#e5ebe4] overflow-hidden shadow-xs relative select-none ${
         isFullscreen ? 'h-screen' : ''
       }`}
       style={!isFullscreen ? { minHeight: height } : undefined}
     >
       {/* ----------------- TOP SATELLITE COMPARISON HEADER & CONTROL RIBBON ----------------- */}
-      <div className="p-4 bg-[#0a1122]/95 border-b border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+      <div className="p-4 bg-[#f8faf7] border-b border-[#e5ebe4] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         {/* Left: Title & Subtitle */}
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+            <h2 className="text-lg sm:text-xl font-black text-slate-900 font-outfit tracking-tight">
               Satellite Comparison
             </h2>
-            <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">
+            <span className="text-[10px] font-mono bg-[#e6f4ea] text-[#137333] border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">
               LIVE
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-0.5">
+          <p className="text-xs text-slate-500 mt-0.5 font-medium">
             Compare satellite data over time to detect forest loss, water changes, and more.
           </p>
         </div>
 
-        {/* Right: Glassmorphism Control Ribbon */}
+        {/* Right: Control Ribbon */}
         <div className="flex flex-wrap items-center gap-2">
           {/* 1. Global Habitat Search Combobox */}
           <div className="relative" ref={searchRef}>
             <div
-              className="flex items-center gap-1.5 bg-[#0e172e] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 cursor-pointer min-w-[180px]"
+              className="flex items-center gap-2 bg-white border border-[#dde4dc] hover:border-emerald-600 rounded-xl px-3 py-1.5 text-xs text-slate-800 cursor-pointer min-w-[180px] shadow-xs transition-all"
               onClick={() => {
                 setSearchOpen(true);
                 setSearchResults(areaList);
                 setTimeout(() => searchInputRef.current?.focus(), 50);
               }}
             >
-              <Globe className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+              <Globe className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
               <div className="flex flex-col flex-1 min-w-0">
-                <span className="text-[9px] text-slate-400 uppercase font-mono leading-none">Habitat Search</span>
+                <span className="text-[9px] text-slate-500 uppercase font-bold leading-none">Habitat Search</span>
                 {searchOpen ? (
                   <div className="flex items-center gap-1">
                     <Search className="w-3 h-3 text-slate-400 flex-shrink-0" />
@@ -805,13 +804,13 @@ export default function TemporalCompareSlider({
                       }}
                       onFocus={() => setSearchOpen(true)}
                       placeholder="Search any habitat worldwide..."
-                      className="bg-transparent text-xs text-white font-medium focus:outline-none w-40 placeholder:text-slate-500"
+                      className="bg-transparent text-xs text-slate-900 font-medium focus:outline-none w-40 placeholder:text-slate-400"
                       onClick={(e) => e.stopPropagation()}
                     />
-                    {isSearching && <Loader2 className="w-3 h-3 text-emerald-400 animate-spin flex-shrink-0" />}
+                    {isSearching && <Loader2 className="w-3 h-3 text-emerald-600 animate-spin flex-shrink-0" />}
                   </div>
                 ) : (
-                  <span className="text-xs text-white font-medium truncate max-w-[148px]">
+                  <span className="text-xs text-slate-900 font-bold truncate max-w-[148px]">
                     {activeArea?.name || 'Select habitat...'}
                   </span>
                 )}
@@ -821,25 +820,25 @@ export default function TemporalCompareSlider({
 
             {/* Dropdown results */}
             {searchOpen && (
-              <div className="absolute top-full left-0 mt-1 w-72 bg-[#0b1324] border border-slate-700/80 rounded-xl shadow-2xl z-[9999] overflow-hidden">
+              <div className="absolute top-full left-0 mt-1 w-72 bg-white border border-[#e5ebe4] rounded-2xl shadow-xl z-[9999] overflow-hidden text-slate-800">
                 {/* Header */}
-                <div className="px-3 py-2 border-b border-slate-800 flex items-center justify-between">
-                  <span className="text-[10px] text-emerald-400 font-mono font-semibold uppercase">
+                <div className="px-3 py-2 border-b border-[#e5ebe4] bg-[#f8faf7] flex items-center justify-between">
+                  <span className="text-[10px] text-emerald-700 font-mono font-bold uppercase">
                     🌍 Global Wildlife Habitat Search
                   </span>
                   <button
                     onClick={() => setSearchOpen(false)}
-                    className="text-slate-500 hover:text-slate-300 transition-colors"
+                    className="text-slate-400 hover:text-slate-700 transition-colors"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 </div>
 
                 {/* Search input */}
-                <div className="px-3 py-2 border-b border-slate-800">
-                  <div className="flex items-center gap-2 bg-slate-900/80 rounded-lg px-2 py-1.5">
+                <div className="px-3 py-2 border-b border-[#e5ebe4]">
+                  <div className="flex items-center gap-2 bg-[#f8faf7] rounded-xl px-2.5 py-1.5 border border-[#dde4dc]">
                     {isSearching ? (
-                      <Loader2 className="w-3.5 h-3.5 text-emerald-400 animate-spin flex-shrink-0" />
+                      <Loader2 className="w-3.5 h-3.5 text-emerald-600 animate-spin flex-shrink-0" />
                     ) : (
                       <Search className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                     )}
@@ -848,7 +847,7 @@ export default function TemporalCompareSlider({
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       placeholder="Yellowstone, Serengeti, Kaziranga..."
-                      className="bg-transparent text-xs text-white flex-1 focus:outline-none placeholder:text-slate-600"
+                      className="bg-transparent text-xs text-slate-900 flex-1 focus:outline-none placeholder:text-slate-400"
                       autoFocus
                     />
                     {searchQuery && (
@@ -865,8 +864,8 @@ export default function TemporalCompareSlider({
                 {/* Results list */}
                 <div className="max-h-64 overflow-y-auto">
                   {isSearching && (
-                    <div className="px-3 py-3 flex items-center gap-2 text-xs text-slate-400">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                    <div className="px-3 py-3 flex items-center gap-2 text-xs text-slate-500">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-600" />
                       <span>Searching OpenStreetMap globally...</span>
                     </div>
                   )}
@@ -875,7 +874,7 @@ export default function TemporalCompareSlider({
                     <div className="px-3 py-4 text-center text-xs text-slate-500">
                       <div className="text-lg mb-1">🔍</div>
                       <div>No habitat found for &ldquo;{searchQuery}&rdquo;</div>
-                      <div className="text-slate-600 mt-1">Try a different spelling or more specific name.</div>
+                      <div className="text-slate-400 mt-1">Try a different spelling or more specific name.</div>
                     </div>
                   )}
 
@@ -883,8 +882,8 @@ export default function TemporalCompareSlider({
                     <button
                       key={a.id}
                       onClick={() => handleAreaSelectDirect(a)}
-                      className={`w-full text-left px-3 py-2.5 hover:bg-slate-800/70 transition-colors border-b border-slate-800/40 last:border-0 ${
-                        activeArea?.id === a.id ? 'bg-emerald-500/10 border-l-2 border-l-emerald-400' : ''
+                      className={`w-full text-left px-3 py-2.5 hover:bg-[#f3f7f2] transition-colors border-b border-[#f0f3ee] last:border-0 ${
+                        activeArea?.id === a.id ? 'bg-[#e6f4ea] border-l-2 border-l-emerald-600' : ''
                       }`}
                     >
                       <div className="flex items-start gap-2">
@@ -901,11 +900,11 @@ export default function TemporalCompareSlider({
                            '🌿'}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <div className={`text-xs font-medium truncate ${activeArea?.id === a.id ? 'text-emerald-300' : 'text-white'}`}>
+                          <div className={`text-xs font-semibold truncate ${activeArea?.id === a.id ? 'text-emerald-800' : 'text-slate-800'}`}>
                             {a.name}
                           </div>
-                          <div className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1 truncate">
-                            <MapPin className="w-2.5 h-2.5 inline flex-shrink-0 text-cyan-400" />
+                          <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1 truncate">
+                            <MapPin className="w-2.5 h-2.5 inline flex-shrink-0 text-emerald-600" />
                             <span className="truncate">
                               {a.coordinates ? formatCoordinatesWithPlace(a.coordinates.lat, a.coordinates.lon, a.name) : [a.state, a.country].filter(Boolean).join(' • ')}
                               {a.area_km2 ? ` · ${Math.round(a.area_km2).toLocaleString()} km²` : ''}
@@ -913,7 +912,7 @@ export default function TemporalCompareSlider({
                           </div>
                         </div>
                         {activeArea?.id === a.id && (
-                          <span className="text-emerald-400 text-xs flex-shrink-0">✓</span>
+                          <span className="text-emerald-600 text-xs font-bold flex-shrink-0">✓</span>
                         )}
                       </div>
                     </button>
@@ -938,7 +937,7 @@ export default function TemporalCompareSlider({
                           }
                         } catch { setNoResults(true); } finally { setIsSearching(false); }
                       }}
-                      className="w-full px-3 py-2.5 flex items-center gap-2 text-xs text-emerald-400 hover:bg-emerald-500/10 border-t border-slate-800 transition-colors"
+                      className="w-full px-3 py-2.5 flex items-center gap-2 text-xs text-emerald-700 hover:bg-emerald-50 border-t border-[#e5ebe4] transition-colors"
                     >
                       <Globe className="w-3.5 h-3.5 flex-shrink-0" />
                       <span>Search worldwide for &ldquo;<strong>{searchQuery}</strong>&rdquo; via OpenStreetMap</span>
@@ -947,8 +946,8 @@ export default function TemporalCompareSlider({
                 </div>
 
                 {/* Footer */}
-                <div className="px-3 py-1.5 border-t border-slate-800 bg-slate-950/50">
-                  <span className="text-[9px] text-slate-600 font-mono">
+                <div className="px-3 py-1.5 border-t border-[#e5ebe4] bg-[#f8faf7]">
+                  <span className="text-[9px] text-slate-500 font-mono">
                     © OpenStreetMap contributors · ODbL · {areaList.length} habitats in catalog
                   </span>
                 </div>
@@ -958,29 +957,29 @@ export default function TemporalCompareSlider({
 
 
           {/* 2. Data Source Selector */}
-          <div className="flex items-center gap-1.5 bg-[#0e172e] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
-            <Satellite className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+          <div className="flex items-center gap-1.5 bg-white border border-[#dde4dc] hover:border-emerald-600 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 shadow-xs transition-colors">
+            <Satellite className="w-3.5 h-3.5 text-sky-600 flex-shrink-0" />
             <div className="flex flex-col">
-              <span className="text-[9px] text-slate-400 uppercase font-mono leading-none">Data Source</span>
+              <span className="text-[9px] text-slate-500 uppercase font-semibold font-mono leading-none">Data Source</span>
               <select
                 id="satellite-source-select"
                 value={dataSource}
                 onChange={(e) => setDataSource(e.target.value)}
-                className="bg-transparent text-xs text-white font-medium focus:outline-none cursor-pointer pr-1"
+                className="bg-transparent text-xs text-slate-800 font-semibold focus:outline-none cursor-pointer pr-1"
               >
-                <option value="Sentinel-2" className="bg-[#0b1324] text-white">Sentinel-2</option>
-                <option value="Landsat-8" className="bg-[#0b1324] text-white">Landsat-8</option>
-                <option value="PlanetScope" className="bg-[#0b1324] text-white">PlanetScope</option>
+                <option value="Sentinel-2" className="bg-white text-slate-800">Sentinel-2</option>
+                <option value="Landsat-8" className="bg-white text-slate-800">Landsat-8</option>
+                <option value="PlanetScope" className="bg-white text-slate-800">PlanetScope</option>
               </select>
             </div>
             <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none -ml-1" />
           </div>
 
           {/* 3. View Mode Selector */}
-          <div className="flex items-center gap-1.5 bg-[#0e172e] border border-slate-700/80 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
-            <Eye className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+          <div className="flex items-center gap-1.5 bg-white border border-[#dde4dc] hover:border-emerald-600 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 shadow-xs transition-colors">
+            <Eye className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
             <div className="flex flex-col">
-              <span className="text-[9px] text-slate-400 uppercase font-mono leading-none">View</span>
+              <span className="text-[9px] text-slate-500 uppercase font-semibold font-mono leading-none">View</span>
               <select
                 id="satellite-view-select"
                 value={viewMode}
@@ -992,13 +991,13 @@ export default function TemporalCompareSlider({
                   else if (val.includes('Urban')) setDetectionType('urban');
                   else setDetectionType('vegetation');
                 }}
-                className="bg-transparent text-xs text-white font-medium focus:outline-none cursor-pointer pr-1"
+                className="bg-transparent text-xs text-slate-800 font-semibold focus:outline-none cursor-pointer pr-1"
               >
-                <option value="Natural Color" className="bg-[#0b1324] text-white">Natural Color</option>
-                <option value="NDVI False Color" className="bg-[#0b1324] text-white">NDVI False Color</option>
-                <option value="NDWI Water Bodies" className="bg-[#0b1324] text-white">NDWI Water Bodies</option>
-                <option value="Urban Encroachment" className="bg-[#0b1324] text-white">Urban Encroachment</option>
-                <option value="NASA FIRMS Active Fires" className="bg-[#0b1324] text-rose-400 font-semibold">🔥 NASA FIRMS Active Fires</option>
+                <option value="Natural Color" className="bg-white text-slate-800">Natural Color</option>
+                <option value="NDVI False Color" className="bg-white text-slate-800">NDVI False Color</option>
+                <option value="NDWI Water Bodies" className="bg-white text-slate-800">NDWI Water Bodies</option>
+                <option value="Urban Encroachment" className="bg-white text-slate-800">Urban Encroachment</option>
+                <option value="NASA FIRMS Active Fires" className="bg-white text-rose-600 font-semibold">🔥 NASA FIRMS Active Fires</option>
               </select>
             </div>
             <ChevronDown className="w-3 h-3 text-slate-400 pointer-events-none -ml-1" />
@@ -1006,14 +1005,14 @@ export default function TemporalCompareSlider({
 
           {/* 4. Interactive Custom Dates Range & Time Interval Selector */}
           <div className="relative">
-            <div className="flex items-center gap-2 bg-[#0e172e] border border-slate-700/80 hover:border-emerald-500/50 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 transition-all shadow-md">
-              <Calendar className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 bg-white border border-[#dde4dc] hover:border-emerald-600 rounded-xl px-2.5 py-1.5 text-xs text-slate-800 transition-all shadow-xs">
+              <Calendar className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
               <div className="flex flex-col">
                 <div className="flex items-center justify-between gap-1.5">
-                  <span className="text-[9px] text-slate-400 uppercase font-mono leading-none">
+                  <span className="text-[9px] text-slate-500 uppercase font-semibold font-mono leading-none">
                     Interval
                   </span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 font-mono border border-emerald-500/40">
+                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-800 font-mono font-semibold border border-emerald-200">
                     {timeIntervalDetails.label}
                   </span>
                 </div>
@@ -1031,7 +1030,7 @@ export default function TemporalCompareSlider({
                       setDatePreset('custom');
                     }}
                     title="Baseline Start Date (Before)"
-                    className="bg-slate-900/90 border border-slate-700/90 rounded px-1.5 py-0.5 text-xs text-emerald-300 font-mono focus:outline-none focus:border-emerald-400 cursor-pointer"
+                    className="bg-[#f8faf7] border border-[#dde4dc] rounded px-1.5 py-0.5 text-xs text-emerald-700 font-mono font-semibold focus:outline-none focus:border-emerald-500 cursor-pointer"
                   />
                   <span className="text-slate-400 text-[10px] font-bold">➔</span>
                   {/* End Date Picker (Observed) */}
@@ -1047,7 +1046,7 @@ export default function TemporalCompareSlider({
                       setDatePreset('custom');
                     }}
                     title="Observed End Date (After)"
-                    className="bg-slate-900/90 border border-slate-700/90 rounded px-1.5 py-0.5 text-xs text-rose-300 font-mono focus:outline-none focus:border-rose-400 cursor-pointer"
+                    className="bg-[#f8faf7] border border-[#dde4dc] rounded px-1.5 py-0.5 text-xs text-rose-700 font-mono font-semibold focus:outline-none focus:border-rose-500 cursor-pointer"
                   />
 
                   {/* Popover toggle for quick presets */}
@@ -1056,9 +1055,9 @@ export default function TemporalCompareSlider({
                     type="button"
                     onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
                     title="Quick Interval Presets (1-Yr, 3-Yr, 5-Yr, Full)"
-                    className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-emerald-300 transition-colors flex items-center gap-0.5"
+                    className="p-1 rounded hover:bg-slate-100 text-slate-500 hover:text-emerald-700 transition-colors flex items-center gap-0.5"
                   >
-                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isDatePickerOpen ? 'rotate-180 text-emerald-400' : ''}`} />
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isDatePickerOpen ? 'rotate-180 text-emerald-600' : ''}`} />
                   </button>
                 </div>
               </div>
@@ -1066,17 +1065,17 @@ export default function TemporalCompareSlider({
 
             {/* Presets & Interval Info Dropdown Popover */}
             {isDatePickerOpen && (
-              <div className="absolute top-full left-0 mt-1.5 w-80 bg-[#0a1222]/95 border border-slate-700/90 rounded-xl shadow-2xl p-3 z-[9999] backdrop-blur-xl space-y-2.5">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+              <div className="absolute top-full left-0 mt-1.5 w-80 bg-white border border-[#e5ebe4] rounded-2xl shadow-xl p-3.5 z-[9999] backdrop-blur-xl space-y-2.5">
+                <div className="flex items-center justify-between border-b border-[#e5ebe4] pb-2">
                   <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-xs font-semibold text-white font-mono">
+                    <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-xs font-bold text-slate-900 font-outfit">
                       Quick Interval Presets
                     </span>
                   </div>
                   <button
                     onClick={() => setIsDatePickerOpen(false)}
-                    className="text-slate-400 hover:text-white p-0.5"
+                    className="text-slate-400 hover:text-slate-700 p-0.5"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -1090,17 +1089,17 @@ export default function TemporalCompareSlider({
                       handleApplyPreset('5yr');
                       setIsDatePickerOpen(false);
                     }}
-                    className={`px-2.5 py-2 rounded-lg text-left text-xs border transition-all ${
+                    className={`px-2.5 py-2 rounded-xl text-left text-xs border transition-all ${
                       datePreset === '5yr'
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]'
-                        : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold shadow-xs'
+                        : 'bg-[#f8faf7] text-slate-700 border-[#e5ebe4] hover:border-emerald-300 hover:bg-white'
                     }`}
                   >
-                    <div className="font-semibold text-emerald-400 flex items-center justify-between">
+                    <div className="font-semibold text-emerald-700 flex items-center justify-between">
                       <span>5-Year Window</span>
                       <span className="text-[9px] font-mono opacity-75">Active</span>
                     </div>
-                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">2021-06-18 ➔ 2026-06-12</div>
+                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">2021-06-18 ➔ 2026-06-12</div>
                   </button>
 
                   <button
@@ -1109,17 +1108,17 @@ export default function TemporalCompareSlider({
                       handleApplyPreset('3yr');
                       setIsDatePickerOpen(false);
                     }}
-                    className={`px-2.5 py-2 rounded-lg text-left text-xs border transition-all ${
+                    className={`px-2.5 py-2 rounded-xl text-left text-xs border transition-all ${
                       datePreset === '3yr'
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]'
-                        : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold shadow-xs'
+                        : 'bg-[#f8faf7] text-slate-700 border-[#e5ebe4] hover:border-emerald-300 hover:bg-white'
                     }`}
                   >
-                    <div className="font-semibold text-amber-400 flex items-center justify-between">
+                    <div className="font-semibold text-amber-700 flex items-center justify-between">
                       <span>3-Year Loss</span>
                       <span className="text-[9px] font-mono opacity-75">Recent</span>
                     </div>
-                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">2023-06-20 ➔ 2026-06-12</div>
+                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">2023-06-20 ➔ 2026-06-12</div>
                   </button>
 
                   <button
@@ -1128,17 +1127,17 @@ export default function TemporalCompareSlider({
                       handleApplyPreset('1yr');
                       setIsDatePickerOpen(false);
                     }}
-                    className={`px-2.5 py-2 rounded-lg text-left text-xs border transition-all ${
+                    className={`px-2.5 py-2 rounded-xl text-left text-xs border transition-all ${
                       datePreset === '1yr'
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]'
-                        : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold shadow-xs'
+                        : 'bg-[#f8faf7] text-slate-700 border-[#e5ebe4] hover:border-emerald-300 hover:bg-white'
                     }`}
                   >
-                    <div className="font-semibold text-cyan-400 flex items-center justify-between">
+                    <div className="font-semibold text-cyan-700 flex items-center justify-between">
                       <span>1-Year Cycle</span>
                       <span className="text-[9px] font-mono opacity-75">Annual</span>
                     </div>
-                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">2025-06-15 ➔ 2026-06-12</div>
+                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">2025-06-15 ➔ 2026-06-12</div>
                   </button>
 
                   <button
@@ -1147,24 +1146,24 @@ export default function TemporalCompareSlider({
                       handleApplyPreset('full');
                       setIsDatePickerOpen(false);
                     }}
-                    className={`px-2.5 py-2 rounded-lg text-left text-xs border transition-all ${
+                    className={`px-2.5 py-2 rounded-xl text-left text-xs border transition-all ${
                       datePreset === 'full'
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 font-bold shadow-[0_0_10px_rgba(16,185,129,0.2)]'
-                        : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:border-slate-700 hover:text-white'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold shadow-xs'
+                        : 'bg-[#f8faf7] text-slate-700 border-[#e5ebe4] hover:border-emerald-300 hover:bg-white'
                     }`}
                   >
-                    <div className="font-semibold text-purple-400 flex items-center justify-between">
+                    <div className="font-semibold text-purple-700 flex items-center justify-between">
                       <span>Full Horizon</span>
                       <span className="text-[9px] font-mono opacity-75">8 Years</span>
                     </div>
-                    <div className="text-[10px] text-slate-400 font-mono mt-0.5">2018-06-12 ➔ 2026-06-12</div>
+                    <div className="text-[10px] text-slate-500 font-mono mt-0.5">2018-06-12 ➔ 2026-06-12</div>
                   </button>
                 </div>
 
                 {/* Direct Presets from Actual Backend Captured Passes */}
                 {timelinePoints.length > 0 && (
-                  <div className="pt-2 border-t border-slate-800/80">
-                    <span className="text-[10px] text-slate-400 uppercase font-mono block mb-1">
+                  <div className="pt-2 border-t border-[#e5ebe4]">
+                    <span className="text-[10px] text-slate-500 uppercase font-semibold font-mono block mb-1">
                       Sentinel-2 Cloud-Free Pass Dates:
                     </span>
                     <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
@@ -1177,7 +1176,7 @@ export default function TemporalCompareSlider({
                             else setCustomEndDate(pt.date);
                             setDatePreset('custom');
                           }}
-                          className="px-1.5 py-0.5 text-[9px] font-mono rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700"
+                          className="px-1.5 py-0.5 text-[9px] font-mono rounded-lg bg-[#f8faf7] hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 border border-[#dde4dc]"
                         >
                           {pt.date}
                         </button>
@@ -1187,9 +1186,9 @@ export default function TemporalCompareSlider({
                 )}
 
                 {/* Footer summary */}
-                <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between font-mono">
+                <div className="pt-2 border-t border-[#e5ebe4] text-[11px] text-slate-600 flex items-center justify-between font-mono">
                   <span>Selected Time Span:</span>
-                  <span className="text-emerald-400 font-semibold">
+                  <span className="text-emerald-700 font-bold">
                     {timeIntervalDetails.fullLabel}
                   </span>
                 </div>
@@ -1201,8 +1200,8 @@ export default function TemporalCompareSlider({
           <button
             id="satellite-compare-submit-btn"
             onClick={handleCompareClick}
-            className={`px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-950/40 ${
-              isComparing ? 'scale-95 bg-emerald-400 text-slate-950' : ''
+            className={`px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm shadow-emerald-700/20 ${
+              isComparing ? 'scale-95 bg-emerald-500' : ''
             }`}
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -1210,25 +1209,25 @@ export default function TemporalCompareSlider({
           </button>
 
           {/* Optional Action Controls: Basemap, Fullscreen, Close */}
-          <div className="flex items-center gap-1 pl-1 border-l border-slate-700/60 ml-1">
+          <div className="flex items-center gap-1 pl-1 border-l border-[#dde4dc] ml-1">
             <button
               onClick={() => setBasemapType(basemapType === 'satellite' ? 'dark' : 'satellite')}
               title="Toggle Satellite / Dark Basemap"
-              className="p-1.5 rounded-lg bg-[#0e172e] hover:bg-slate-800 text-slate-300 border border-slate-700/80 transition-colors"
+              className="p-1.5 rounded-xl bg-white hover:bg-[#f3f7f2] text-slate-600 border border-[#dde4dc] transition-colors"
             >
-              <Globe className="w-3.5 h-3.5 text-emerald-400" />
+              <Globe className="w-3.5 h-3.5 text-emerald-600" />
             </button>
 
             {onToggleFullscreen && (
               <button
                 onClick={onToggleFullscreen}
                 title={isFullscreen ? 'Exit Full Screen' : 'View Full Screen'}
-                className="p-1.5 rounded-lg bg-[#0e172e] hover:bg-slate-800 text-slate-300 border border-slate-700/80 transition-colors"
+                className="p-1.5 rounded-xl bg-white hover:bg-[#f3f7f2] text-slate-600 border border-[#dde4dc] transition-colors"
               >
                 {isFullscreen ? (
-                  <Minimize2 className="w-3.5 h-3.5 text-rose-400" />
+                  <Minimize2 className="w-3.5 h-3.5 text-rose-600" />
                 ) : (
-                  <Maximize2 className="w-3.5 h-3.5 text-amber-400" />
+                  <Maximize2 className="w-3.5 h-3.5 text-amber-600" />
                 )}
               </button>
             )}
@@ -1237,7 +1236,7 @@ export default function TemporalCompareSlider({
               <button
                 onClick={onClose}
                 title="Close Compare View"
-                className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-colors"
+                className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -1551,73 +1550,73 @@ export default function TemporalCompareSlider({
       </div>
 
 
-      {/* ----------------- BOTTOM 3-COLUMN ANALYTICS DASHBOARD (Exact Match of Reference Image) ----------------- */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 p-4 bg-[#070c17] border-t border-slate-800/80">
-        {/* Column 1: Change Analysis (2018 – 2024) (cols-5) */}
-        <div className="lg:col-span-5 bg-[#0a1222] border border-slate-800/90 rounded-xl p-3.5 flex flex-col justify-between shadow-xl">
-          <h4 className="text-xs font-semibold text-slate-200 tracking-wide mb-3 flex items-center justify-between flex-wrap gap-1.5">
+      {/* ----------------- BOTTOM 3-COLUMN ANALYTICS DASHBOARD ----------------- */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 p-4 bg-[#f8faf7] border-t border-[#e5ebe4]">
+        {/* Column 1: Change Analysis (cols-5) */}
+        <div className="lg:col-span-5 bg-white border border-[#e5ebe4] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
+          <h4 className="text-xs font-bold text-slate-900 font-outfit tracking-wide mb-3 flex items-center justify-between flex-wrap gap-1.5">
             <div className="flex items-center gap-1.5">
               <span>Change Analysis</span>
-              <span className="text-emerald-400 font-mono font-bold">({baselineDateFormatted} ➔ {observedDateFormatted})</span>
+              <span className="text-emerald-700 font-mono font-bold">({baselineDateFormatted} ➔ {observedDateFormatted})</span>
             </div>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/90 text-emerald-300 border border-emerald-500/40">
+            <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
               Interval: {timeIntervalDetails.fullLabel}
             </span>
           </h4>
 
           <div className="grid grid-cols-3 gap-2.5">
             {/* Forest Cover */}
-            <div className="bg-[#0e1930]/80 border border-slate-800/80 rounded-lg p-2.5 flex flex-col justify-between hover:border-emerald-500/30 transition-all">
+            <div className="bg-[#f8faf7] border border-[#e5ebe4] rounded-xl p-3 flex flex-col justify-between hover:border-emerald-400 transition-all">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-7 h-7 rounded-full bg-emerald-950/70 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <div className="w-7 h-7 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700">
                   <Trees className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-[11px] font-medium text-slate-300">Forest Cover</span>
+                <span className="text-[11px] font-semibold text-slate-700">Forest Cover</span>
               </div>
               <div>
-                <div className="text-base font-bold text-rose-400 font-mono flex items-center gap-1">
+                <div className="text-base font-black text-rose-600 font-mono flex items-center gap-1">
                   <span>{forestDeltaPct >= 0 ? '+' : ''}{forestDeltaPct.toFixed(1)}%</span>
                   <span className="text-xs">{forestDeltaPct < 0 ? '↓' : '↑'}</span>
                 </div>
-                <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                <div className="text-[10px] text-slate-500 font-mono mt-0.5">
                   From {baseForestKm2.toLocaleString()} km² to {obsForestKm2.toLocaleString()} km²
                 </div>
               </div>
             </div>
 
             {/* Water Bodies */}
-            <div className="bg-[#0e1930]/80 border border-slate-800/80 rounded-lg p-2.5 flex flex-col justify-between hover:border-cyan-500/30 transition-all">
+            <div className="bg-[#f8faf7] border border-[#e5ebe4] rounded-xl p-3 flex flex-col justify-between hover:border-sky-400 transition-all">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-7 h-7 rounded-full bg-cyan-950/70 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                <div className="w-7 h-7 rounded-full bg-sky-50 border border-sky-200 flex items-center justify-center text-sky-700">
                   <Droplets className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-[11px] font-medium text-slate-300">Water Bodies</span>
+                <span className="text-[11px] font-semibold text-slate-700">Water Bodies</span>
               </div>
               <div>
-                <div className="text-base font-bold text-rose-400 font-mono flex items-center gap-1">
+                <div className="text-base font-black text-rose-600 font-mono flex items-center gap-1">
                   <span>{waterDeltaPct >= 0 ? '+' : ''}{waterDeltaPct.toFixed(1)}%</span>
                   <span className="text-xs">{waterDeltaPct < 0 ? '↓' : '↑'}</span>
                 </div>
-                <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                <div className="text-[10px] text-slate-500 font-mono mt-0.5">
                   From {baseWaterKm2.toLocaleString()} km² to {obsWaterKm2.toLocaleString()} km²
                 </div>
               </div>
             </div>
 
             {/* Bare Land */}
-            <div className="bg-[#0e1930]/80 border border-slate-800/80 rounded-lg p-2.5 flex flex-col justify-between hover:border-amber-500/30 transition-all">
+            <div className="bg-[#f8faf7] border border-[#e5ebe4] rounded-xl p-3 flex flex-col justify-between hover:border-amber-400 transition-all">
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-7 h-7 rounded-full bg-amber-950/70 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <div className="w-7 h-7 rounded-full bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700">
                   <Building2 className="w-3.5 h-3.5" />
                 </div>
-                <span className="text-[11px] font-medium text-slate-300">Bare Land</span>
+                <span className="text-[11px] font-semibold text-slate-700">Bare Land</span>
               </div>
               <div>
-                <div className="text-base font-bold text-emerald-400 font-mono flex items-center gap-1">
+                <div className="text-base font-black text-emerald-700 font-mono flex items-center gap-1">
                   <span>{bareDeltaPct >= 0 ? '+' : ''}{bareDeltaPct.toFixed(1)}%</span>
                   <span className="text-xs">↑</span>
                 </div>
-                <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                <div className="text-[10px] text-slate-500 font-mono mt-0.5">
                   From {baseBareKm2.toLocaleString()} km² to {obsBareKm2.toLocaleString()} km²
                 </div>
               </div>
@@ -1626,12 +1625,12 @@ export default function TemporalCompareSlider({
         </div>
 
         {/* Column 2: Forest Cover Trend (cols-4) */}
-        <div className="lg:col-span-4 bg-[#0a1222] border border-slate-800/90 rounded-xl p-3.5 flex flex-col justify-between shadow-xl">
+        <div className="lg:col-span-4 bg-white border border-[#e5ebe4] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
           <div className="flex items-center justify-between mb-2">
-            <h4 className="text-xs font-semibold text-slate-200 tracking-wide">
+            <h4 className="text-xs font-bold text-slate-900 font-outfit tracking-wide">
               Forest Cover Trend
             </h4>
-            <div className="flex items-center gap-1 text-[10px] font-mono text-slate-400 bg-slate-900/80 border border-slate-800 px-2 py-0.5 rounded">
+            <div className="flex items-center gap-1 text-[10px] font-mono text-slate-600 bg-[#f8faf7] border border-[#dde4dc] px-2 py-0.5 rounded-lg">
               <span>Area (km²)</span>
               <ChevronDown className="w-3 h-3" />
             </div>
@@ -1640,17 +1639,17 @@ export default function TemporalCompareSlider({
           <div className="h-[95px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5ebe4" vertical={false} />
                 <XAxis
                   dataKey="year"
                   stroke="#64748b"
-                  tick={{ fontSize: 9, fill: '#94a3b8' }}
+                  tick={{ fontSize: 9, fill: '#64748b' }}
                   tickLine={false}
-                  axisLine={{ stroke: '#334155' }}
+                  axisLine={{ stroke: '#e5ebe4' }}
                 />
                 <YAxis
                   stroke="#64748b"
-                  tick={{ fontSize: 9, fill: '#94a3b8' }}
+                  tick={{ fontSize: 9, fill: '#64748b' }}
                   tickLine={false}
                   axisLine={false}
                   domain={['auto', 'auto']}
@@ -1660,10 +1659,10 @@ export default function TemporalCompareSlider({
                     if (active && payload && payload.length) {
                       const d = payload[0].payload;
                       return (
-                        <div className="bg-slate-900 border border-slate-700 p-2 rounded text-[10px] font-mono shadow-xl">
-                          <p className="text-emerald-400 font-bold">{d.year}</p>
-                          <p className="text-slate-200">Cover: {d.area.toLocaleString()} km²</p>
-                          <p className="text-slate-400">Mean NDVI: {d.ndvi.toFixed(2)}</p>
+                        <div className="bg-white border border-[#e5ebe4] p-2.5 rounded-xl text-[10px] font-mono shadow-md">
+                          <p className="text-emerald-700 font-bold">{d.year}</p>
+                          <p className="text-slate-800">Cover: {d.area.toLocaleString()} km²</p>
+                          <p className="text-slate-500">Mean NDVI: {d.ndvi.toFixed(2)}</p>
                         </div>
                       );
                     }
@@ -1673,10 +1672,10 @@ export default function TemporalCompareSlider({
                 <Line
                   type="monotone"
                   dataKey="area"
-                  stroke="#10b981"
+                  stroke="#059669"
                   strokeWidth={2}
-                  dot={{ r: 3, fill: '#10b981', stroke: '#064e3b', strokeWidth: 1.5 }}
-                  activeDot={{ r: 5, fill: '#34d399' }}
+                  dot={{ r: 3, fill: '#059669', stroke: '#ffffff', strokeWidth: 1.5 }}
+                  activeDot={{ r: 5, fill: '#10b981' }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -1684,42 +1683,42 @@ export default function TemporalCompareSlider({
         </div>
 
         {/* Column 3: Other Indices (cols-3) */}
-        <div className="lg:col-span-3 bg-[#0a1222] border border-slate-800/90 rounded-xl p-3.5 flex flex-col justify-between shadow-xl">
-          <h4 className="text-xs font-semibold text-slate-200 tracking-wide mb-2">
+        <div className="lg:col-span-3 bg-white border border-[#e5ebe4] rounded-2xl p-4 flex flex-col justify-between shadow-xs">
+          <h4 className="text-xs font-bold text-slate-900 font-outfit tracking-wide mb-2">
             Other Indices
           </h4>
 
           <div className="space-y-2">
             {/* NDVI Row */}
-            <div className="flex items-center justify-between py-1 border-b border-slate-800/60">
+            <div className="flex items-center justify-between py-1 border-b border-[#f0f3ee]">
               <div className="flex items-center gap-2">
-                <Trees className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-[11px] font-mono font-medium text-slate-300">NDVI</span>
+                <Trees className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-[11px] font-mono font-semibold text-slate-700">NDVI</span>
               </div>
               {/* Sparkline */}
               <div className="w-20 h-4">
                 <svg className="w-full h-full overflow-visible" viewBox="0 0 80 16">
-                  <path d="M0,12 Q20,4 40,8 T80,2" fill="none" stroke="#10b981" strokeWidth="1.8" />
+                  <path d="M0,12 Q20,4 40,8 T80,2" fill="none" stroke="#059669" strokeWidth="1.8" />
                 </svg>
               </div>
-              <div className={`text-[11px] font-mono font-bold ${ndviDelta < 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+              <div className={`text-[11px] font-mono font-bold ${ndviDelta < 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
                 {ndviDelta >= 0 ? '+' : ''}{ndviDelta.toFixed(2)}
               </div>
             </div>
 
             {/* NDWI Row */}
-            <div className="flex items-center justify-between py-1 border-b border-slate-800/60">
+            <div className="flex items-center justify-between py-1 border-b border-[#f0f3ee]">
               <div className="flex items-center gap-2">
-                <Droplets className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="text-[11px] font-mono font-medium text-slate-300">NDWI</span>
+                <Droplets className="w-3.5 h-3.5 text-sky-600" />
+                <span className="text-[11px] font-mono font-semibold text-slate-700">NDWI</span>
               </div>
               {/* Sparkline */}
               <div className="w-20 h-4">
                 <svg className="w-full h-full overflow-visible" viewBox="0 0 80 16">
-                  <path d="M0,8 Q20,2 40,10 T80,14" fill="none" stroke="#06b6d4" strokeWidth="1.8" />
+                  <path d="M0,8 Q20,2 40,10 T80,14" fill="none" stroke="#0284c7" strokeWidth="1.8" />
                 </svg>
               </div>
-              <div className={`text-[11px] font-mono font-bold ${ndwiDelta < 0 ? 'text-rose-400' : 'text-cyan-400'}`}>
+              <div className={`text-[11px] font-mono font-bold ${ndwiDelta < 0 ? 'text-rose-600' : 'text-sky-700'}`}>
                 {ndwiDelta >= 0 ? '+' : ''}{ndwiDelta.toFixed(2)}
               </div>
             </div>
@@ -1727,16 +1726,16 @@ export default function TemporalCompareSlider({
             {/* NDBI Row */}
             <div className="flex items-center justify-between py-1">
               <div className="flex items-center gap-2">
-                <Building2 className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-[11px] font-mono font-medium text-slate-300">NDBI</span>
+                <Building2 className="w-3.5 h-3.5 text-amber-600" />
+                <span className="text-[11px] font-mono font-semibold text-slate-700">NDBI</span>
               </div>
               {/* Sparkline */}
               <div className="w-20 h-4">
                 <svg className="w-full h-full overflow-visible" viewBox="0 0 80 16">
-                  <path d="M0,14 Q30,12 50,6 T80,3" fill="none" stroke="#f59e0b" strokeWidth="1.8" />
+                  <path d="M0,14 Q30,12 50,6 T80,3" fill="none" stroke="#d97706" strokeWidth="1.8" />
                 </svg>
               </div>
-              <div className={`text-[11px] font-mono font-bold ${ndbiDelta >= 0 ? 'text-amber-400' : 'text-slate-400'}`}>
+              <div className={`text-[11px] font-mono font-bold ${ndbiDelta >= 0 ? 'text-amber-700' : 'text-slate-500'}`}>
                 {ndbiDelta >= 0 ? '+' : ''}{ndbiDelta.toFixed(2)}
               </div>
             </div>
@@ -1744,10 +1743,10 @@ export default function TemporalCompareSlider({
         </div>
       </div>
 
-      {/* ----------------- FOOTER BAR (Matching Reference Image) ----------------- */}
-      <div className="px-4 py-2 bg-[#050912] border-t border-slate-900 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 font-sans">
+      {/* ----------------- FOOTER BAR ----------------- */}
+      <div className="px-4 py-2.5 bg-white border-t border-[#e5ebe4] flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 font-sans">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981]" />
+          <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-xs" />
           <span>Monitoring a healthier planet, one image at a time.</span>
         </div>
         <div>

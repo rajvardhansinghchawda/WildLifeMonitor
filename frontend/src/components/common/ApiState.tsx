@@ -4,23 +4,23 @@ import { ApiError } from '@/lib/api';
 
 export function LoadingBlock({ label = 'Loading real satellite-derived data…' }: { label?: string }) {
   return (
-    <div className="flex items-center gap-2 text-xs text-slate-400 font-mono p-6">
-      <Loader2 className="w-4 h-4 animate-spin text-emerald-400" />
-      {label}
+    <div className="flex items-center justify-center gap-2.5 text-xs text-slate-500 font-medium p-8 bg-white/70 rounded-2xl border border-[#e5ebe4] shadow-xs">
+      <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+      <span>{label}</span>
     </div>
   );
 }
 
 export function ErrorBlock({ error, onRetry }: { error: ApiError; onRetry?: () => void }) {
   return (
-    <div className="gis-glass-card rounded-xl border border-red-900/60 p-4 text-xs text-red-300 flex items-start gap-3">
-      <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+    <div className="bg-red-50/90 rounded-2xl border border-red-200 p-4 text-xs text-red-800 flex items-start gap-3 shadow-xs">
+      <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-red-600" />
       <div className="flex-1">
         <p className="font-semibold">{error.message}</p>
-        <p className="text-red-400/70 font-mono mt-0.5">{error.code}</p>
+        <p className="text-red-500/80 font-mono mt-0.5">{error.code}</p>
       </div>
       {onRetry && (
-        <button onClick={onRetry} className="px-2 py-1 rounded border border-red-800 hover:bg-red-950">
+        <button onClick={onRetry} className="px-3 py-1 rounded-lg border border-red-300 bg-white hover:bg-red-100 text-red-800 text-xs font-medium shadow-xs transition-colors">
           Retry
         </button>
       )}
@@ -30,8 +30,8 @@ export function ErrorBlock({ error, onRetry }: { error: ApiError; onRetry?: () =
 
 export function EmptyBlock({ title, hint }: { title: string; hint?: string }) {
   return (
-    <div className="gis-glass-card rounded-xl border border-slate-800 p-8 text-center">
-      <p className="text-sm font-semibold text-slate-200">{title}</p>
+    <div className="bg-white rounded-2xl border border-[#e5ebe4] p-8 text-center shadow-xs">
+      <p className="text-sm font-bold text-slate-800">{title}</p>
       {hint && <p className="text-xs text-slate-500 mt-1">{hint}</p>}
     </div>
   );

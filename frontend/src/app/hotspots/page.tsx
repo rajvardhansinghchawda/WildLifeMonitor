@@ -113,16 +113,16 @@ function HotspotsInner() {
 
   return (
     <AppLayout>
-      <div className="space-y-5 pb-12">
+      <div className="space-y-5 pb-12 font-sans">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-white font-mono">HOTSPOTS</h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 font-outfit">HOTSPOTS</h1>
+          <p className="text-xs text-slate-500 mt-0.5 font-medium">
             Satellite-derived change candidates from the newest completed analysis per area. Field
             verification is required before any conclusion.
           </p>
         </div>
 
-        <div className="gis-glass-card rounded-xl border border-slate-800 p-3 flex flex-wrap gap-3 items-end">
+        <div className="bg-white rounded-2xl border border-[#e5ebe4] p-3.5 flex flex-wrap gap-3 items-end shadow-xs">
           <Filter label="Area" value={areaSlug} onChange={setAreaSlug}>
             <option value="">All areas</option>
             {areas.data?.items.map((a) => (
@@ -160,7 +160,7 @@ function HotspotsInner() {
             <option value="area">Affected area</option>
             <option value="date">Detection date</option>
           </Filter>
-          <span className="ml-auto text-[11px] text-slate-500 font-mono">
+          <span className="ml-auto text-xs font-semibold text-slate-500 font-mono">
             {list.data ? `${list.data.total} events` : ''}
           </span>
         </div>
@@ -175,85 +175,75 @@ function HotspotsInner() {
         )}
 
         {items.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-            <div className="lg:col-span-7 space-y-4">
-              <GeoMap
-                center={area?.coordinates}
-                boundary={boundary.data}
-                hotspots={items}
-                selectedId={selectedId}
-                onSelect={(h) => setSelectedId(h.id)}
-                height="420px"
-              />
-              <div className="gis-glass-card rounded-xl border border-slate-800 overflow-hidden">
-                <div className="p-2.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-xs">
-                  <span className="font-mono text-slate-400 uppercase text-[10px] tracking-wider">
-                    Change Candidates Ledger
-                  </span>
-                  <span className="text-[11px] font-mono text-emerald-400">
-                    {items.length} detected incidents
-                  </span>
-                </div>
-                <div className="max-h-[460px] overflow-y-auto">
-                  <table className="w-full text-xs">
-                    <thead className="bg-slate-900/80 text-slate-400 font-mono uppercase text-[10px] sticky top-0 z-10">
-                      <tr>
-                        <th className="text-left p-2">Change</th>
-                        <th className="text-left p-2">Area</th>
-                        <th className="text-right p-2">Size</th>
-                        <th className="text-right p-2">Priority</th>
-                        <th className="text-left p-2">Severity</th>
-                        <th className="text-left p-2">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/60">
-                      {items.map((h) => {
-                        const isRowSelected =
-                          selectedId === h.id ||
-                          selectedId?.toLowerCase()?.startsWith(h.id.slice(0, 8).toLowerCase());
-                        return (
-                          <tr
-                            key={h.id}
-                            id={`hotspot-row-${h.id}`}
-                            onClick={() => setSelectedId(h.id)}
-                            className={`cursor-pointer transition-all ${
-                              isRowSelected
-                                ? 'bg-emerald-950/70 border-l-4 border-emerald-500 shadow-sm'
-                                : 'hover:bg-slate-800/40'
-                            }`}
-                          >
-                            <td className="p-2 text-slate-200">
-                              <div className="font-medium">{h.change_label}</div>
-                              <div className="text-[10px] text-cyan-400 font-mono mt-0.5">
-                                📍 {formatCoordinatesWithPlace(h.coordinates.lat, h.coordinates.lon, h.area_name)}
-                              </div>
-                            </td>
-                            <td className="p-2 text-slate-400">{h.area_name ?? 'Custom AOI'}</td>
-                            <td className="p-2 text-right font-mono">{fmtHa(h.affected_area_ha)}</td>
-                            <td className="p-2 text-right font-mono">
-                              {h.priority_score !== null ? h.priority_score.toFixed(0) : '—'}
-                            </td>
-                            <td className="p-2">
-                              <SeverityBadge severity={h.severity} />
-                            </td>
-                            <td className="p-2 text-slate-400">{h.status}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+            <div className="xl:col-span-3 space-y-4">
+              <div className="rounded-2xl border border-[#e5ebe4] overflow-hidden bg-white shadow-xs">
+                <GeoMap
+                  center={area?.coordinates}
+                  boundary={boundary.data}
+                  hotspots={items}
+                  selectedId={selectedId}
+                  onSelect={(h) => setSelectedId(h.id)}
+                  height="420px"
+                />
+              </div>
+              <div className="bg-white rounded-2xl border border-[#e5ebe4] overflow-hidden shadow-xs">
+                <table className="w-full text-xs">
+                  <thead className="bg-[#f8faf7] text-slate-600 font-bold uppercase text-[10.5px] border-b border-[#e5ebe4]">
+                    <tr>
+                      <th className="text-left p-3">Change</th>
+                      <th className="text-left p-3">Area</th>
+                      <th className="text-right p-3">Size</th>
+                      <th className="text-right p-3">Priority</th>
+                      <th className="text-left p-3">Severity</th>
+                      <th className="text-left p-3">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[#f0f3ee]">
+                    {items.map((h) => {
+                      const isRowSelected =
+                        selectedId === h.id ||
+                        selectedId?.toLowerCase()?.startsWith(h.id.slice(0, 8).toLowerCase());
+                      return (
+                        <tr
+                          key={h.id}
+                          id={`hotspot-row-${h.id}`}
+                          onClick={() => setSelectedId(h.id)}
+                          className={`cursor-pointer transition-colors hover:bg-[#f3f7f2] ${
+                            isRowSelected ? 'bg-[#e6f4ea]/70 font-semibold' : ''
+                          }`}
+                        >
+                          <td className="p-3 text-slate-900">
+                            <div className="font-bold">{h.change_label}</div>
+                            <div className="text-[11px] text-emerald-700 font-mono mt-0.5">
+                              📍 {formatCoordinatesWithPlace(h.coordinates.lat, h.coordinates.lon, h.area_name)}
+                            </div>
+                          </td>
+                          <td className="p-3 text-slate-600 font-medium">{h.area_name ?? 'Custom AOI'}</td>
+                          <td className="p-3 text-right font-mono font-semibold text-slate-800">{fmtHa(h.affected_area_ha)}</td>
+                          <td className="p-3 text-right font-mono font-bold text-slate-900">
+                            {h.priority_score !== null ? h.priority_score.toFixed(0) : '—'}
+                          </td>
+                          <td className="p-3">
+                            <SeverityBadge severity={h.severity} />
+                          </td>
+                          <td className="p-3 text-slate-500 capitalize">{h.status}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            <div className="lg:col-span-5 lg:sticky lg:top-4 space-y-4">
+            <div className="xl:col-span-2 xl:sticky xl:top-4 space-y-4">
               {detail.loading && <LoadingBlock label="Loading hotspot telemetry…" />}
               {detail.error && <ErrorBlock error={detail.error} />}
               {detail.data && <DetailPanel h={detail.data} onChanged={detail.reload} />}
               {!detail.loading && !detail.data && (
-                <div className="gis-glass-card rounded-xl border border-slate-800 p-8 text-center text-slate-400 text-xs">
+                <div className="rounded-2xl border border-[#e5ebe4] bg-white p-8 text-center text-slate-400 text-xs shadow-xs">
                   <span className="text-3xl mb-2 block">🌿</span>
-                  <p className="font-semibold text-slate-200 text-sm">Select a Change Hotspot</p>
+                  <p className="font-bold text-slate-800 text-sm">Select a Change Hotspot</p>
                   <p className="text-[11px] text-slate-500 mt-1 max-w-xs mx-auto">
                     Click any incident row in the ledger table or any marker on the map to review natural language AI intelligence and field telemetry.
                   </p>
@@ -280,13 +270,13 @@ function Filter({
 }) {
   return (
     <div>
-      <label className="block text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-1">
+      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
         {label}
       </label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-8 px-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+        className="h-9 px-2.5 rounded-xl bg-white border border-[#dde4dc] hover:border-emerald-600 text-xs font-semibold text-slate-800 shadow-xs focus:outline-none focus:border-emerald-600 transition-all"
       >
         {children}
       </select>
@@ -296,9 +286,9 @@ function Filter({
 
 function Row({ k, v }: { k: string; v: React.ReactNode }) {
   return (
-    <div className="flex justify-between gap-3 py-1 text-xs border-b border-slate-800/50">
-      <span className="text-slate-500">{k}</span>
-      <span className="text-slate-200 font-mono text-right">{v}</span>
+    <div className="flex justify-between gap-3 py-1.5 text-xs border-b border-[#f0f3ee]">
+      <span className="text-slate-500 font-medium">{k}</span>
+      <span className="text-slate-900 font-semibold font-mono text-right">{v}</span>
     </div>
   );
 }
@@ -334,12 +324,12 @@ function DetailPanel({ h, onChanged }: { h: HotspotDetail; onChanged: () => void
   };
 
   return (
-    <div className="gis-glass-card rounded-xl border border-slate-800 p-4 space-y-3">
+    <div className="bg-white rounded-2xl border border-[#e5ebe4] p-5 space-y-4 shadow-xs">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-white">{h.change_label}</h2>
+        <h2 className="text-base font-bold text-slate-900">{h.change_label}</h2>
         <SeverityBadge severity={h.severity} />
       </div>
-      <p className="text-[11px] text-slate-500">
+      <p className="text-xs text-slate-500 font-medium">
         {h.area_name ?? 'Custom AOI'} · detected {fmtDate(h.detected_at)}
       </p>
 
@@ -377,13 +367,13 @@ function DetailPanel({ h, onChanged }: { h: HotspotDetail; onChanged: () => void
         <Row k="Method" v={h.method_version} />
       </div>
 
-      <div className="rounded-lg bg-slate-900/70 border border-slate-800 p-3">
-        <p className="text-[10px] font-mono uppercase text-slate-400 mb-1">
+      <div className="rounded-xl bg-[#f8faf7] border border-[#e5ebe4] p-3.5">
+        <p className="text-[10px] font-bold uppercase text-slate-500 mb-1">
           Investigation priority {h.priority_method_version ? `(${h.priority_method_version})` : ''}
         </p>
-        <p className="text-2xl font-mono text-emerald-300">
+        <p className="text-2xl font-black font-mono text-[#137333]">
           {h.priority_score !== null ? h.priority_score.toFixed(0) : 'unscored'}
-          <span className="text-xs text-slate-500"> / 100</span>
+          <span className="text-xs text-slate-400 font-medium"> / 100</span>
         </p>
         {h.priority_components ? (
           <div className="mt-2 space-y-0.5">
@@ -392,32 +382,32 @@ function DetailPanel({ h, onChanged }: { h: HotspotDetail; onChanged: () => void
             ))}
           </div>
         ) : (
-          <p className="text-[11px] text-amber-400/80 mt-1">
+          <p className="text-xs text-amber-700 mt-1 font-medium">
             A required component is unavailable, so no score is shown (never defaulted to zero).
           </p>
         )}
       </div>
 
       {h.layer_warnings.length > 0 && (
-        <ul className="text-[11px] text-amber-400/90 list-disc pl-4">
+        <ul className="text-xs text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 list-disc pl-5">
           {h.layer_warnings.map((w) => (
             <li key={w}>{w}</li>
           ))}
         </ul>
       )}
 
-      <div className="border-t border-slate-800 pt-3">
-        <p className="text-[10px] font-mono uppercase text-slate-400 mb-1.5">Field verification</p>
+      <div className="border-t border-[#f0f3ee] pt-3">
+        <p className="text-[10.5px] font-bold uppercase text-slate-500 mb-2">Field verification</p>
         {h.read_only ? (
-          <p className="text-[11px] text-slate-500">
+          <p className="text-xs text-slate-500 font-medium">
             Curated analysis — read-only. Run your own analysis to record verification decisions.
           </p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full h-8 px-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200"
+              className="w-full h-9 px-3 rounded-xl bg-white border border-[#dde4dc] text-xs font-semibold text-slate-800 shadow-xs focus:border-emerald-600 focus:outline-none"
             >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -429,10 +419,10 @@ function DetailPanel({ h, onChanged }: { h: HotspotDetail; onChanged: () => void
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder={needsNotes ? 'Notes are required for this status' : 'Investigator notes'}
-              className="w-full rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 p-2 h-16"
+              className="w-full rounded-xl bg-white border border-[#dde4dc] text-xs text-slate-800 p-2.5 h-16 shadow-xs focus:border-emerald-600 focus:outline-none"
             />
             {err && (
-              <p className="text-[11px] text-red-400">
+              <p className="text-xs text-red-600 font-medium">
                 {err.code === 'VERSION_CONFLICT'
                   ? 'Someone else updated this event. Reload and retry.'
                   : err.message}
@@ -441,7 +431,7 @@ function DetailPanel({ h, onChanged }: { h: HotspotDetail; onChanged: () => void
             <button
               onClick={save}
               disabled={busy || status === h.status || (needsNotes && !notes.trim())}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold disabled:opacity-40"
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-40"
             >
               {busy ? 'Saving…' : 'Record decision'}
             </button>
@@ -450,9 +440,9 @@ function DetailPanel({ h, onChanged }: { h: HotspotDetail; onChanged: () => void
         {h.verifications.length > 0 && (
           <ul className="mt-3 space-y-1.5">
             {h.verifications.map((v) => (
-              <li key={v.id} className="text-[11px] text-slate-400">
-                <span className="font-mono text-slate-300">{fmtDate(v.created_at)}</span> {v.from_status} →{' '}
-                {v.to_status}
+              <li key={v.id} className="text-xs text-slate-600">
+                <span className="font-mono text-slate-500 font-semibold">{fmtDate(v.created_at)}</span> {v.from_status} →{' '}
+                <span className="font-semibold text-slate-800">{v.to_status}</span>
                 {v.notes ? ` — ${v.notes}` : ''}
               </li>
             ))}

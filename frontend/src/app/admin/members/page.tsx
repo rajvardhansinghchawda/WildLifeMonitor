@@ -91,24 +91,25 @@ export default function AdminMembersPage() {
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#e5ebe4] pb-5">
           <div>
             <div className="flex items-center gap-2">
               <Link
                 href="/admin"
-                className="text-slate-400 hover:text-white transition-colors p-1 rounded-md hover:bg-slate-800"
+                className="text-slate-500 hover:text-slate-900 transition-colors p-1.5 rounded-lg hover:bg-[#f3f7f2] border border-transparent hover:border-[#dde4dc]"
+                title="Back to Admin"
               >
                 <ChevronLeft className="w-4 h-4" />
               </Link>
-              <h1 className="text-xl font-bold tracking-tight text-white font-mono flex items-center gap-2">
-                <Users className="w-5 h-5 text-cyan-400" />
-                <span>WORKSPACE ACCESS CONTROL & RBAC ROSTER</span>
+              <h1 className="text-xl font-bold tracking-tight text-slate-900 font-outfit flex items-center gap-2">
+                <Users className="w-5 h-5 text-emerald-600" />
+                <span>Workspace Access Control & RBAC Roster</span>
               </h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/40">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
                 RBAC
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Manage member roles, clearance authorization, and active account status
             </p>
           </div>
@@ -116,32 +117,32 @@ export default function AdminMembersPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/admin/settings"
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono flex items-center gap-1.5 transition-colors border border-slate-700"
+              className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#f3f7f2] text-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors border border-[#dde4dc] shadow-xs"
             >
-              <Settings className="w-3.5 h-3.5 text-amber-400" />
+              <Settings className="w-3.5 h-3.5 text-amber-600" />
               <span>Scientific Tuning</span>
             </Link>
 
             <button
               onClick={fetchMembers}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700"
+              className="p-2 rounded-xl bg-white hover:bg-[#f3f7f2] text-slate-700 transition-colors border border-[#dde4dc] shadow-xs"
               title="Refresh Roster"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-4 h-4 text-slate-600 ${loading ? 'animate-spin text-emerald-600' : ''}`} />
             </button>
           </div>
         </div>
 
         {/* Feedback alerts */}
         {successMessage && (
-          <div className="p-3 rounded-lg bg-emerald-950/60 border border-emerald-500/50 text-emerald-300 text-xs font-mono flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono flex items-center gap-2 shadow-xs">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
             <span>{successMessage}</span>
           </div>
         )}
         {error && (
-          <div className="p-3 rounded-lg bg-red-950/60 border border-red-800 text-red-300 text-xs font-mono flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-400" />
+          <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-mono flex items-center gap-2 shadow-xs">
+            <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
             <span>{error}</span>
           </div>
         )}
@@ -149,12 +150,12 @@ export default function AdminMembersPage() {
         {/* Top Analytics: Role Breakdown Chart & Summary */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Role Composition Donut */}
-          <div className="p-5 rounded-xl bg-slate-900/70 border border-slate-800 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-              <span className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold">
+          <div className="p-5 rounded-2xl bg-white border border-[#e5ebe4] shadow-xs space-y-3">
+            <div className="flex items-center justify-between border-b border-[#e5ebe4] pb-2">
+              <span className="text-xs font-mono uppercase tracking-wider text-slate-700 font-bold">
                 RBAC Role Composition
               </span>
-              <span className="text-[10px] font-mono text-slate-400">Total: {data?.total || 0}</span>
+              <span className="text-[10px] font-mono text-slate-500">Total: {data?.total || 0}</span>
             </div>
 
             <div className="h-44 w-full relative">
@@ -174,20 +175,21 @@ export default function AdminMembersPage() {
                     </Pie>
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: '#090d16',
-                        borderColor: '#1e293b',
+                        backgroundColor: '#ffffff',
+                        borderColor: '#e5ebe4',
                         borderRadius: '8px',
                         fontSize: '11px',
                         fontFamily: 'monospace',
-                        color: '#f8fafc',
+                        color: '#0f172a',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                       }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               ) : null}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-lg font-bold font-mono text-white">{data?.total ?? 0}</span>
-                <span className="text-[9px] font-mono text-slate-400 uppercase">Users</span>
+                <span className="text-lg font-bold font-mono text-slate-900">{data?.total ?? 0}</span>
+                <span className="text-[9px] font-mono text-slate-500 uppercase">Users</span>
               </div>
             </div>
 
@@ -195,45 +197,45 @@ export default function AdminMembersPage() {
               {data?.role_distribution.map((r) => (
                 <div key={r.role} className="flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: r.color }} />
-                  <span className="text-slate-400">{r.role}:</span>
-                  <span className="text-white font-bold">{r.count}</span>
+                  <span className="text-slate-500">{r.role}:</span>
+                  <span className="text-slate-900 font-bold">{r.count}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* RBAC Privilege Guidelines */}
-          <div className="lg:col-span-2 p-5 rounded-xl bg-slate-900/70 border border-slate-800 space-y-3 text-xs">
-            <span className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold block border-b border-slate-800 pb-2">
-              Privilege Enforcement Matrix (rules.md / systemdesign.md)
+          <div className="lg:col-span-2 p-5 rounded-2xl bg-white border border-[#e5ebe4] shadow-xs space-y-3 text-xs">
+            <span className="text-xs font-mono uppercase tracking-wider text-slate-700 font-bold block border-b border-[#e5ebe4] pb-2">
+              Privilege Enforcement Matrix
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-              <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-1">
-                <div className="font-bold text-red-400 font-mono flex items-center gap-1">
-                  <Shield className="w-3.5 h-3.5" />
+              <div className="p-3.5 rounded-xl bg-rose-50/60 border border-rose-200/80 space-y-1">
+                <div className="font-bold text-rose-700 font-mono flex items-center gap-1">
+                  <Shield className="w-3.5 h-3.5 text-rose-600" />
                   <span>ADMIN</span>
                 </div>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-rose-900/80 leading-relaxed">
                   Full cluster administration, scientific weight calibration, role delegation, and audit log inspection.
                 </p>
               </div>
 
-              <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-1">
-                <div className="font-bold text-emerald-400 font-mono flex items-center gap-1">
-                  <UserCheck className="w-3.5 h-3.5" />
+              <div className="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200/80 space-y-1">
+                <div className="font-bold text-emerald-700 font-mono flex items-center gap-1">
+                  <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
                   <span>ANALYST</span>
                 </div>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-emerald-900/80 leading-relaxed">
                   Submit new satellite analyses, execute change detection, and perform field verification status updates.
                 </p>
               </div>
 
-              <div className="p-3 rounded-lg bg-slate-950/70 border border-slate-800 space-y-1">
-                <div className="font-bold text-cyan-400 font-mono flex items-center gap-1">
-                  <Users className="w-3.5 h-3.5" />
+              <div className="p-3.5 rounded-xl bg-sky-50/60 border border-sky-200/80 space-y-1">
+                <div className="font-bold text-sky-700 font-mono flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5 text-sky-600" />
                   <span>VIEWER</span>
                 </div>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-sky-900/80 leading-relaxed">
                   Read-only telemetry access to authorized workspace results, spatial layers, and public demonstrations.
                 </p>
               </div>
@@ -242,20 +244,20 @@ export default function AdminMembersPage() {
         </div>
 
         {/* Member Directory Table */}
-        <div className="p-5 rounded-xl bg-slate-900/70 border border-slate-800 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-            <h2 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
+        <div className="p-5 rounded-2xl bg-white border border-[#e5ebe4] shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#e5ebe4] pb-3">
+            <h2 className="text-sm font-bold text-slate-900 font-outfit uppercase tracking-wider">
               Workspace Member Roster ({filteredMembers.length})
             </h2>
 
             <div className="relative w-full sm:w-64">
-              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by name, email..."
-                className="w-full h-8 pl-8 pr-3 rounded-lg bg-slate-950 border border-slate-700 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                className="w-full h-8 pl-8 pr-3 rounded-lg bg-[#f8faf7] border border-[#dde4dc] text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-600 font-mono"
               />
             </div>
           </div>
@@ -263,32 +265,32 @@ export default function AdminMembersPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-mono">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400 uppercase text-[10px]">
-                  <th className="pb-2.5">User</th>
-                  <th className="pb-2.5">Role</th>
-                  <th className="pb-2.5">Status</th>
-                  <th className="pb-2.5">Last Active</th>
-                  <th className="pb-2.5 text-right">Actions</th>
+                <tr className="border-b border-[#e5ebe4] text-slate-600 uppercase text-[10px] bg-[#f8faf7]">
+                  <th className="py-2.5 px-3">User</th>
+                  <th className="py-2.5 px-3">Role</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3">Last Active</th>
+                  <th className="py-2.5 px-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-[#f0f3ee]">
                 {filteredMembers.map((m) => (
-                  <tr key={m.user_id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3">
-                      <div className="font-bold text-white">{m.full_name}</div>
-                      <div className="text-[11px] text-slate-400">{m.email}</div>
+                  <tr key={m.user_id} className="hover:bg-[#f3f7f2] transition-colors">
+                    <td className="py-3 px-3">
+                      <div className="font-bold text-slate-900">{m.full_name}</div>
+                      <div className="text-[11px] text-slate-500">{m.email}</div>
                     </td>
-                    <td className="py-3">
+                    <td className="py-3 px-3">
                       <select
                         value={m.role}
                         disabled={updatingId === m.user_id}
                         onChange={(e) => handleRoleChange(m.user_id, e.target.value)}
-                        className={`h-7 px-2 rounded font-bold text-[11px] border focus:outline-none cursor-pointer ${
+                        className={`h-7 px-2.5 rounded-lg font-bold text-[11px] border focus:outline-none cursor-pointer shadow-xs ${
                           m.role === 'admin'
-                            ? 'bg-red-950/80 text-red-300 border-red-700'
+                            ? 'bg-rose-50 text-rose-700 border-rose-200 hover:border-rose-300'
                             : m.role === 'analyst'
-                            ? 'bg-emerald-950/80 text-emerald-300 border-emerald-700'
-                            : 'bg-cyan-950/80 text-cyan-300 border-cyan-700'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:border-emerald-300'
+                            : 'bg-sky-50 text-sky-700 border-sky-200 hover:border-sky-300'
                         }`}
                       >
                         <option value="admin">ADMIN</option>
@@ -296,23 +298,23 @@ export default function AdminMembersPage() {
                         <option value="viewer">VIEWER</option>
                       </select>
                     </td>
-                    <td className="py-3">
+                    <td className="py-3 px-3">
                       <button
                         onClick={() => handleStatusToggle(m.user_id, m.is_active)}
                         disabled={updatingId === m.user_id}
-                        className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-colors ${
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors shadow-xs ${
                           m.is_active
-                            ? 'bg-emerald-950 text-emerald-300 border-emerald-600 hover:bg-red-950 hover:text-red-300 hover:border-red-600'
-                            : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-emerald-950 hover:text-emerald-300'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200'
+                            : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-emerald-50 hover:text-emerald-700'
                         }`}
                       >
                         {m.is_active ? 'ACTIVE' : 'SUSPENDED'}
                       </button>
                     </td>
-                    <td className="py-3 text-slate-400 text-[11px]">
+                    <td className="py-3 px-3 text-slate-500 text-[11px]">
                       {m.last_login_at ? new Date(m.last_login_at).toLocaleDateString() : '—'}
                     </td>
-                    <td className="py-3 text-right text-slate-500 text-[11px]">
+                    <td className="py-3 px-3 text-right text-slate-400 text-[11px]">
                       {updatingId === m.user_id ? 'Updating...' : 'Saved'}
                     </td>
                   </tr>

@@ -22,18 +22,18 @@ export default function TimelinePage() {
 
   return (
     <AppLayout>
-      <div className="space-y-5 pb-12">
+      <div className="space-y-5 pb-12 font-sans">
         <div className="flex items-end justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-white font-mono">TIMELINE & TRENDS</h1>
-            <p className="text-xs text-slate-400 mt-1">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 font-outfit">TIMELINE & TRENDS</h1>
+            <p className="text-xs text-slate-500 mt-0.5 font-medium">
               Monthly cloud-masked Sentinel-2 NDVI and Dynamic World surface water, computed from Earth Engine.
             </p>
           </div>
           <select
             value={areaId}
             onChange={(e) => setAreaId(e.target.value)}
-            className="h-9 px-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 min-w-[260px]"
+            className="h-10 px-3.5 rounded-xl bg-white border border-[#dde4dc] hover:border-emerald-600 text-xs font-semibold text-slate-800 shadow-xs focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 min-w-[260px] transition-all"
           >
             {areas.data?.items.map((a) => (
               <option key={a.id} value={a.id}>
@@ -50,19 +50,19 @@ export default function TimelinePage() {
         )}
         {t && t.points.length > 0 && (
           <>
-            <div className="gis-glass-card rounded-xl border border-slate-800 p-4">
-              <h2 className="text-sm font-semibold text-white font-mono uppercase mb-2">
+            <div className="bg-white rounded-2xl border border-[#e5ebe4] p-5 shadow-xs">
+              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">
                 NDVI — monthly median vs same month previous year
               </h2>
               <TimelineChart points={t.points} mode="ndvi" height={320} />
             </div>
-            <div className="gis-glass-card rounded-xl border border-slate-800 p-4">
-              <h2 className="text-sm font-semibold text-white font-mono uppercase mb-2">
+            <div className="bg-white rounded-2xl border border-[#e5ebe4] p-5 shadow-xs">
+              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">
                 Surface water (ha)
               </h2>
               <TimelineChart points={t.points} mode="water" height={280} />
             </div>
-            <div className="text-[11px] text-slate-500 space-y-1">
+            <div className="text-xs text-slate-500 space-y-1 font-medium bg-white/70 p-4 rounded-xl border border-[#e5ebe4]">
               <p>
                 {t.source} · scale {t.scale_m} m · computed {fmtDate(t.computed_at)}
               </p>

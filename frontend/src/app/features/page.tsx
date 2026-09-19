@@ -35,7 +35,7 @@ export default function FeaturesPage() {
       iconColor: 'text-[#0d472a] bg-[#e6efe8]',
       badgeColor: 'text-emerald-800 bg-emerald-100',
       href: '/explore',
-      image: '/features/feat_map.jpg',
+      image: '/interactive-map.png',
       alt: 'Interactive GIS Map with Reserve Boundaries',
       tag: '11 GIS Layers',
     },
@@ -47,7 +47,7 @@ export default function FeaturesPage() {
       iconColor: 'text-[#0d472a] bg-[#e6efe8]',
       badgeColor: 'text-emerald-800 bg-emerald-100',
       href: '/change-analysis',
-      image: '/features/feat_change.jpg',
+      image: '/change analysis.png',
       alt: 'Bi-Temporal Satellite Forest Change Analysis',
       tag: 'Bi-Temporal Delta',
     },
@@ -59,7 +59,7 @@ export default function FeaturesPage() {
       iconColor: 'text-orange-600 bg-orange-100',
       badgeColor: 'text-orange-800 bg-orange-100',
       href: '/hotspots',
-      image: '/features/feat_hotspots.jpg',
+      image: '/hotspot detection.png',
       alt: 'Thermal and Canopy Disturbance Hotspot Cluster',
       tag: 'Thermal Clusters',
     },
@@ -71,7 +71,7 @@ export default function FeaturesPage() {
       iconColor: 'text-[#0d472a] bg-[#e6efe8]',
       badgeColor: 'text-emerald-800 bg-emerald-100',
       href: '/areas',
-      image: '/features/feat_species.jpg',
+      image: '/spieces insights.png',
       alt: 'Royal Bengal Tiger Species Insights',
       tag: 'Endangered Species',
     },
@@ -83,7 +83,7 @@ export default function FeaturesPage() {
       iconColor: 'text-[#0d472a] bg-[#e6efe8]',
       badgeColor: 'text-emerald-800 bg-emerald-100',
       href: '/reports',
-      image: '/features/feat_reports.jpg',
+      image: '/report & data.png',
       alt: 'Conservation Telemetry Analytics & PDF Reports',
       tag: 'ODbL Verified Data',
     },
@@ -95,7 +95,7 @@ export default function FeaturesPage() {
       iconColor: 'text-[#0d472a] bg-[#e6efe8]',
       badgeColor: 'text-emerald-800 bg-emerald-100',
       href: '/dashboard',
-      image: '/features/feat_community.jpg',
+      image: '/community & awareness.png',
       alt: 'Wildlife Rangers and Field Conservation Community',
       tag: 'Active Rangers',
     },
@@ -307,15 +307,16 @@ export default function FeaturesPage() {
                 </div>
 
                 {/* Preview Image Thumbnail Container */}
-                <div className="relative h-44 sm:h-48 w-full rounded-2xl overflow-hidden border border-slate-100 group-hover:border-emerald-200 transition-colors">
+                <div className="relative h-48 sm:h-52 w-full rounded-2xl overflow-hidden border border-slate-100 group-hover:border-emerald-200 transition-colors bg-slate-900">
                   <Image
                     src={feat.image}
                     alt={feat.alt}
                     fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                   />
                   {/* Subtle Gradient Shade */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent opacity-50 group-hover:opacity-30 transition-opacity" />
 
                   {/* Floating Action Arrow Button */}
                   <Link

@@ -3,10 +3,10 @@ import { cn } from '@/lib/utils';
 import type { Severity } from '@/lib/api';
 
 const STYLES: Record<Severity, string> = {
-  critical: 'bg-red-950/70 text-red-400 border-red-600/60',
-  high: 'bg-amber-950/70 text-amber-400 border-amber-600/60',
-  medium: 'bg-yellow-950/50 text-yellow-300 border-yellow-600/50',
-  low: 'bg-sky-950/50 text-sky-300 border-sky-600/40',
+  critical: 'bg-red-50 text-red-700 border-red-200/80',
+  high: 'bg-amber-50 text-amber-700 border-amber-200/80',
+  medium: 'bg-yellow-50 text-yellow-800 border-yellow-200/80',
+  low: 'bg-sky-50 text-sky-700 border-sky-200/80',
 };
 
 export const SeverityBadge: React.FC<{ severity: Severity; className?: string }> = ({

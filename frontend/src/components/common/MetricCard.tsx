@@ -26,41 +26,41 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   return (
     <div
       className={cn(
-        'gis-glass-card rounded-lg p-5 flex flex-col justify-between border border-slate-800/80 hover:border-emerald-500/40 transition-colors',
+        'bg-white rounded-2xl p-5 flex flex-col justify-between border border-[#e5ebe4] shadow-xs hover:shadow-sm hover:border-emerald-500/40 transition-all',
         className
       )}
     >
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             {title}
           </p>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-white font-mono">
+            <span className="text-2xl font-black tracking-tight text-slate-900 font-sans">
               {value}
             </span>
             {badge && (
-              <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-500/30 text-emerald-300">
+              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-[#e6f4ea] border border-emerald-500/30 text-[#137333]">
                 {badge}
               </span>
             )}
           </div>
         </div>
-        <div className="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 text-emerald-400">
+        <div className="w-10 h-10 rounded-2xl bg-[#e6f4ea] text-[#137333] flex items-center justify-center flex-shrink-0 shadow-xs">
           <Icon className="w-5 h-5" />
         </div>
       </div>
 
       {(subtitle || change) && (
-        <div className="mt-4 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs">
-          {subtitle && <span className="text-slate-400">{subtitle}</span>}
+        <div className="mt-4 pt-3 border-t border-[#f0f3ee] flex items-center justify-between text-xs">
+          {subtitle && <span className="text-slate-500">{subtitle}</span>}
           {change && (
             <span
               className={cn(
                 'font-mono font-medium',
-                changeType === 'positive' && 'text-emerald-400',
-                changeType === 'negative' && 'text-red-400',
-                changeType === 'neutral' && 'text-slate-400'
+                changeType === 'positive' && 'text-[#137333]',
+                changeType === 'negative' && 'text-[#dc2626]',
+                changeType === 'neutral' && 'text-slate-500'
               )}
             >
               {change}

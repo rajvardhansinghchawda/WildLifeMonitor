@@ -30,20 +30,20 @@ export default function AlertsPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-5 pb-12">
+      <div className="space-y-5 pb-12 font-sans">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-white font-mono">ALERTS</h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 font-outfit">ALERTS</h1>
+          <p className="text-xs text-slate-500 mt-0.5 font-medium">
             Raised automatically from high-severity change events. {alerts.data?.unread_count ?? 0} unread in
             your workspace.
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="h-8 px-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200"
+            className="h-10 px-3.5 rounded-xl bg-white border border-[#dde4dc] hover:border-emerald-600 text-xs font-semibold text-slate-800 shadow-xs focus:outline-none focus:border-emerald-600 transition-all"
           >
             <option value="">All statuses</option>
             <option value="unread">Unread</option>
@@ -53,7 +53,7 @@ export default function AlertsPage() {
           <select
             value={severity}
             onChange={(e) => setSeverity(e.target.value)}
-            className="h-8 px-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200"
+            className="h-10 px-3.5 rounded-xl bg-white border border-[#dde4dc] hover:border-emerald-600 text-xs font-semibold text-slate-800 shadow-xs focus:outline-none focus:border-emerald-600 transition-all"
           >
             <option value="">All severities</option>
             {['critical', 'high', 'medium', 'low'].map((s) => (
@@ -75,22 +75,25 @@ export default function AlertsPage() {
 
         <div className="space-y-3">
           {alerts.data?.items.map((a) => (
-            <div key={a.id} className="gis-glass-card rounded-xl border border-slate-800 p-4">
-              <div className="flex items-start justify-between gap-3">
+            <div key={a.id} className="bg-white rounded-2xl border border-[#e5ebe4] p-5 shadow-xs hover:shadow-sm transition-all">
+              <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
                     <SeverityBadge severity={a.severity} />
-                    <span className="text-[10px] font-mono text-slate-500 uppercase">{a.status}</span>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase px-1.5 py-0.5 bg-[#f0f3ee] rounded-md border border-[#dde4dc]">{a.status}</span>
                     {a.read_only && (
-                      <span className="text-[10px] font-mono text-slate-500">curated · read-only</span>
+                      <span className="text-[10px] font-semibold text-slate-500">curated · read-only</span>
                     )}
                   </div>
-                  <h2 className="text-sm text-white mt-1.5">{a.title}</h2>
-                  <p className="text-xs text-slate-400 mt-0.5">{a.message}</p>
-                  <p className="text-[10px] text-slate-500 font-mono mt-1.5">
-                    {a.area_name ?? 'Custom AOI'} · {fmtDate(a.triggered_at)} ·{' '}
-                    <Link href={`/hotspots?id=${a.event_id}`} className="text-emerald-400 hover:underline">
-                      View hotspot
+                  <h2 className="text-base font-bold text-slate-900 mt-2">{a.title}</h2>
+                  <p className="text-xs text-slate-600 mt-1 font-medium leading-relaxed">{a.message}</p>
+                  <p className="text-xs text-slate-500 font-mono mt-2 flex items-center gap-2">
+                    <span>{a.area_name ?? 'Custom AOI'}</span>
+                    <span>·</span>
+                    <span>{fmtDate(a.triggered_at)}</span>
+                    <span>·</span>
+                    <Link href={`/hotspots?id=${a.event_id}`} className="text-emerald-700 font-semibold hover:underline">
+                      View hotspot →
                     </Link>
                   </p>
                 </div>
@@ -100,7 +103,7 @@ export default function AlertsPage() {
                       <button
                         disabled={busy === a.id}
                         onClick={() => setAlertStatus(a, 'acknowledged')}
-                        className="px-2.5 py-1 rounded border border-emerald-700 text-emerald-300 text-[11px] hover:bg-emerald-950"
+                        className="px-3.5 py-1.5 rounded-xl bg-[#e6f4ea] hover:bg-emerald-100 text-[#137333] border border-emerald-300/80 text-xs font-semibold shadow-xs transition-colors"
                       >
                         Acknowledge
                       </button>
@@ -109,7 +112,7 @@ export default function AlertsPage() {
                       <button
                         disabled={busy === a.id}
                         onClick={() => setAlertStatus(a, 'dismissed')}
-                        className="px-2.5 py-1 rounded border border-slate-700 text-slate-300 text-[11px] hover:bg-slate-800"
+                        className="px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 text-xs font-semibold shadow-xs transition-colors"
                       >
                         Dismiss
                       </button>

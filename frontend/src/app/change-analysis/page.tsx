@@ -622,20 +622,20 @@ function ChangeAnalysisInner() {
 
   return (
     <AppLayout>
-      <div className="min-h-screen bg-[#070d18] text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+      <div className="min-h-screen bg-[#f4f6f3] text-slate-800 flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
         {/* ======================= TOP ACTION HEADER ======================= */}
-        <header className="px-6 py-4 border-b border-slate-800/80 bg-[#091122]/95 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between">
+        <header className="px-6 py-4 border-b border-[#e5ebe4] bg-white/95 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                <h1 className="text-xl font-bold font-outfit tracking-tight text-slate-900 flex items-center gap-2">
                   Change Analysis Studio
-                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
                     PS COMPLIANT
                   </span>
                 </h1>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Monitoring habitat change across 5 Problem Statement pillars: AOI, Vegetation Loss, Water Bodies, Urban Expansion, and Deforestation.
               </p>
             </div>
@@ -644,18 +644,18 @@ function ChangeAnalysisInner() {
           <div className="flex items-center gap-3">
             <Link
               href="/map"
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg border border-slate-700 bg-slate-800/60 hover:bg-slate-800 text-xs font-medium text-slate-300 transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border border-[#dde4dc] bg-white hover:bg-[#f3f7f2] text-xs font-semibold text-slate-700 transition-colors shadow-xs"
             >
-              <Compass className="w-4 h-4 text-emerald-400" />
+              <Compass className="w-4 h-4 text-emerald-600" />
               <span>Full Map Explorer</span>
             </Link>
 
             <button
               onClick={handleRunAnalysis}
               disabled={isRunning}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-semibold tracking-wide transition-all shadow-md shadow-emerald-500/20 disabled:opacity-50 active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold tracking-wide transition-all shadow-sm shadow-emerald-700/20 disabled:opacity-50 active:scale-95"
             >
-              <Play className={`w-3.5 h-3.5 fill-slate-950 ${isRunning ? 'animate-spin' : ''}`} />
+              <Play className={`w-3.5 h-3.5 fill-current ${isRunning ? 'animate-spin' : ''}`} />
               <span>{isRunning ? 'Processing Satellite...' : 'Run Analysis'}</span>
             </button>
           </div>
@@ -663,22 +663,22 @@ function ChangeAnalysisInner() {
 
         {/* ======================= NOTIFICATION PILL ======================= */}
         {runMessage && (
-          <div className="bg-emerald-500/15 border-b border-emerald-500/30 px-6 py-2 text-xs font-mono text-emerald-300 flex items-center justify-between">
+          <div className="bg-emerald-50 border-b border-emerald-200 px-6 py-2 text-xs font-mono text-emerald-800 flex items-center justify-between">
             <span className="flex items-center gap-2">
-              <Activity className="w-3.5 h-3.5 animate-pulse" />
+              <Activity className="w-3.5 h-3.5 animate-pulse text-emerald-600" />
               {runMessage}
             </span>
-            <button onClick={() => setRunMessage(null)} className="text-emerald-400 hover:text-white">
+            <button onClick={() => setRunMessage(null)} className="text-emerald-700 hover:text-emerald-900 font-bold">
               ✕
             </button>
           </div>
         )}
 
         {/* ======================= PS REQUIREMENT QUICK BAR ======================= */}
-        <div className="px-6 py-2 bg-[#091326] border-b border-slate-800/80 flex items-center justify-between overflow-x-auto gap-3 text-xs">
-          <div className="flex items-center gap-1.5 shrink-0 text-slate-400 font-mono text-[11px]">
-            <Target className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="font-bold text-slate-200 uppercase">PS Requirements:</span>
+        <div className="px-6 py-2 bg-[#f8faf7] border-b border-[#e5ebe4] flex items-center justify-between overflow-x-auto gap-3 text-xs">
+          <div className="flex items-center gap-1.5 shrink-0 text-slate-500 font-mono text-[11px]">
+            <Target className="w-3.5 h-3.5 text-emerald-600" />
+            <span className="font-bold text-slate-700 uppercase">PS Requirements:</span>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
@@ -688,10 +688,10 @@ function ChangeAnalysisInner() {
                 setSelectedPSRequirement('aoi');
                 handleFitToAOI();
               }}
-              className={`px-3 py-1 rounded-md font-mono text-xs flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1 rounded-xl font-mono text-xs flex items-center gap-1.5 transition-all ${
                 selectedPSRequirement === 'aoi'
-                  ? 'bg-emerald-500 text-slate-950 font-bold shadow'
-                  : 'bg-slate-900/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800'
+                  ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                  : 'bg-white text-slate-700 border border-[#dde4dc] hover:bg-[#f3f7f2]'
               }`}
             >
               <Target className="w-3 h-3 text-current" />
@@ -701,10 +701,10 @@ function ChangeAnalysisInner() {
             {/* 2. Vegetation Loss */}
             <button
               onClick={() => setSelectedPSRequirement('vegetation')}
-              className={`px-3 py-1 rounded-md font-mono text-xs flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1 rounded-xl font-mono text-xs flex items-center gap-1.5 transition-all ${
                 selectedPSRequirement === 'vegetation'
-                  ? 'bg-emerald-500 text-slate-950 font-bold shadow'
-                  : 'bg-slate-900/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800'
+                  ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                  : 'bg-white text-slate-700 border border-[#dde4dc] hover:bg-[#f3f7f2]'
               }`}
             >
               <Trees className="w-3 h-3 text-current" />
@@ -714,10 +714,10 @@ function ChangeAnalysisInner() {
             {/* 3. Water Bodies */}
             <button
               onClick={() => setSelectedPSRequirement('water')}
-              className={`px-3 py-1 rounded-md font-mono text-xs flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1 rounded-xl font-mono text-xs flex items-center gap-1.5 transition-all ${
                 selectedPSRequirement === 'water'
-                  ? 'bg-cyan-500 text-slate-950 font-bold shadow'
-                  : 'bg-slate-900/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800'
+                  ? 'bg-sky-600 text-white font-bold shadow-xs'
+                  : 'bg-white text-slate-700 border border-[#dde4dc] hover:bg-[#f3f7f2]'
               }`}
             >
               <Droplets className="w-3 h-3 text-current" />
@@ -727,10 +727,10 @@ function ChangeAnalysisInner() {
             {/* 4. Urban Expansion */}
             <button
               onClick={() => setSelectedPSRequirement('builtup')}
-              className={`px-3 py-1 rounded-md font-mono text-xs flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1 rounded-xl font-mono text-xs flex items-center gap-1.5 transition-all ${
                 selectedPSRequirement === 'builtup'
-                  ? 'bg-purple-500 text-white font-bold shadow'
-                  : 'bg-slate-900/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800'
+                  ? 'bg-purple-600 text-white font-bold shadow-xs'
+                  : 'bg-white text-slate-700 border border-[#dde4dc] hover:bg-[#f3f7f2]'
               }`}
             >
               <Building2 className="w-3 h-3 text-current" />
@@ -740,10 +740,10 @@ function ChangeAnalysisInner() {
             {/* 5. Deforestation */}
             <button
               onClick={() => setSelectedPSRequirement('deforestation')}
-              className={`px-3 py-1 rounded-md font-mono text-xs flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1 rounded-xl font-mono text-xs flex items-center gap-1.5 transition-all ${
                 selectedPSRequirement === 'deforestation'
-                  ? 'bg-rose-500 text-white font-bold shadow'
-                  : 'bg-slate-900/80 text-slate-300 border border-slate-700/60 hover:bg-slate-800'
+                  ? 'bg-rose-600 text-white font-bold shadow-xs'
+                  : 'bg-white text-slate-700 border border-[#dde4dc] hover:bg-[#f3f7f2]'
               }`}
             >
               <Flame className="w-3 h-3 text-current" />
@@ -753,10 +753,10 @@ function ChangeAnalysisInner() {
             {/* All Composite */}
             <button
               onClick={() => setSelectedPSRequirement('all')}
-              className={`px-3 py-1 rounded-md font-mono text-xs flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1 rounded-xl font-mono text-xs flex items-center gap-1.5 transition-all ${
                 selectedPSRequirement === 'all'
-                  ? 'bg-slate-200 text-slate-950 font-bold shadow'
-                  : 'bg-slate-900/80 text-slate-400 border border-slate-700/60 hover:bg-slate-800'
+                  ? 'bg-slate-900 text-white font-bold shadow-xs'
+                  : 'bg-white text-slate-700 border border-[#dde4dc] hover:bg-[#f3f7f2]'
               }`}
             >
               <Layers className="w-3 h-3 text-current" />
@@ -766,11 +766,11 @@ function ChangeAnalysisInner() {
         </div>
 
         {/* ======================= FILTER & TIMELINE BAR ======================= */}
-        <section className="px-6 py-3 border-b border-slate-800/80 bg-[#0c162d]/90 flex flex-wrap items-center justify-between gap-4 text-xs">
+        <section className="px-6 py-3 border-b border-[#e5ebe4] bg-white flex flex-wrap items-center justify-between gap-4 text-xs">
           <div className="flex flex-wrap items-center gap-3">
             {/* Area Selector (Real Protected Areas from Backend) */}
             <div className="flex flex-col gap-1">
-              <label htmlFor="area-select" className="text-[10px] font-mono uppercase tracking-wider text-slate-400 flex items-center gap-1">
+              <label htmlFor="area-select" className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold flex items-center gap-1">
                 <span>1. AOI: SELECT & VIEW AREA</span>
               </label>
               <div className="flex items-center gap-1.5">
@@ -780,10 +780,10 @@ function ChangeAnalysisInner() {
                     name="area-select"
                     value={selectedAreaId}
                     onChange={(e) => setSelectedAreaId(e.target.value)}
-                    className="appearance-none bg-slate-900 border border-slate-700/80 hover:border-slate-600 rounded-md px-3 py-1.5 pr-8 text-xs font-medium text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer min-w-[210px]"
+                    className="appearance-none bg-[#f8faf7] border border-[#dde4dc] hover:border-emerald-600 rounded-xl px-3 py-1.5 pr-8 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-600 cursor-pointer min-w-[210px] shadow-xs"
                   >
                     {areas.map((a) => (
-                      <option key={a.id} value={a.id} className="bg-slate-900 text-white">
+                      <option key={a.id} value={a.id} className="bg-white text-slate-800">
                         {a.name} ({a.area_km2.toLocaleString()} km²)
                       </option>
                     ))}
@@ -795,7 +795,7 @@ function ChangeAnalysisInner() {
                 <button
                   onClick={handleFitToAOI}
                   title="Zoom and focus on active AOI boundary"
-                  className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700 rounded-md flex items-center gap-1 font-mono text-[11px]"
+                  className="px-2.5 py-1.5 bg-[#f8faf7] hover:bg-[#f3f7f2] text-emerald-700 border border-[#dde4dc] rounded-xl flex items-center gap-1 font-mono text-[11px] font-semibold transition-colors"
                 >
                   <Maximize2 className="w-3 h-3" />
                   <span>Fit AOI</span>
@@ -805,9 +805,9 @@ function ChangeAnalysisInner() {
                 <button
                   onClick={handleFocusChanges}
                   title="Zoom directly into detected disturbance hotspots & change alerts"
-                  className="px-2.5 py-1.5 bg-emerald-950/80 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-500/40 rounded-md flex items-center gap-1 font-mono text-[11px] shadow-sm transition-all"
+                  className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl flex items-center gap-1 font-mono text-[11px] font-semibold shadow-xs transition-all"
                 >
-                  <Target className="w-3 h-3 text-emerald-400" />
+                  <Target className="w-3 h-3 text-emerald-600" />
                   <span>Focus Alerts</span>
                 </button>
               </div>
@@ -815,41 +815,41 @@ function ChangeAnalysisInner() {
 
             {/* Start Date (Interactive Date Picker) */}
             <div className="flex flex-col gap-1">
-              <label htmlFor="custom-start-date" className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+              <label htmlFor="custom-start-date" className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold">
                 START DATE (BASELINE)
               </label>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-700/80 text-slate-200 font-mono text-xs focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/50 transition-all">
-                <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#f8faf7] border border-[#dde4dc] text-slate-800 font-mono text-xs focus-within:border-emerald-600 transition-all shadow-xs">
+                <Calendar className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <input
                   id="custom-start-date"
                   type="date"
                   value={customStartDate}
                   onChange={(e) => setCustomStartDate(e.target.value)}
-                  className="bg-transparent text-slate-200 font-mono text-xs focus:outline-none cursor-pointer [color-scheme:dark] w-[118px]"
+                  className="bg-transparent text-slate-800 font-mono text-xs focus:outline-none cursor-pointer w-[118px]"
                 />
               </div>
             </div>
 
             {/* End Date (Interactive Date Picker) */}
             <div className="flex flex-col gap-1">
-              <label htmlFor="custom-end-date" className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+              <label htmlFor="custom-end-date" className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold">
                 END DATE (OBSERVED)
               </label>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-700/80 text-slate-200 font-mono text-xs focus-within:border-amber-500 focus-within:ring-1 focus-within:ring-amber-500/50 transition-all">
-                <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#f8faf7] border border-[#dde4dc] text-slate-800 font-mono text-xs focus-within:border-rose-600 transition-all shadow-xs">
+                <Calendar className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                 <input
                   id="custom-end-date"
                   type="date"
                   value={customEndDate}
                   onChange={(e) => setCustomEndDate(e.target.value)}
-                  className="bg-transparent text-slate-200 font-mono text-xs focus:outline-none cursor-pointer [color-scheme:dark] w-[118px]"
+                  className="bg-transparent text-slate-800 font-mono text-xs focus:outline-none cursor-pointer w-[118px]"
                 />
               </div>
             </div>
 
             {/* Timeframe Presets */}
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold">
                 PRESETS
               </span>
               <div className="flex items-center gap-1">
@@ -857,10 +857,10 @@ function ChangeAnalysisInner() {
                   type="button"
                   title="5-year comparison: 2021 to 2026"
                   onClick={() => { setCustomStartDate('2021-04-01'); setCustomEndDate('2026-05-01'); }}
-                  className={`px-2 py-1 rounded text-[10px] font-mono border transition-all ${
+                  className={`px-2 py-1 rounded-lg text-[10px] font-mono border transition-all ${
                     customStartDate.startsWith('2021') && customEndDate.startsWith('2026')
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold shadow-sm'
-                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold shadow-xs'
+                      : 'bg-[#f8faf7] hover:bg-white text-slate-700 border-[#dde4dc]'
                   }`}
                 >
                   5y (21-26)
@@ -869,10 +869,10 @@ function ChangeAnalysisInner() {
                   type="button"
                   title="3-year comparison: 2023 to 2026"
                   onClick={() => { setCustomStartDate('2023-01-01'); setCustomEndDate('2026-05-01'); }}
-                  className={`px-2 py-1 rounded text-[10px] font-mono border transition-all ${
+                  className={`px-2 py-1 rounded-lg text-[10px] font-mono border transition-all ${
                     customStartDate.startsWith('2023') && customEndDate.startsWith('2026')
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold shadow-sm'
-                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold shadow-xs'
+                      : 'bg-[#f8faf7] hover:bg-white text-slate-700 border-[#dde4dc]'
                   }`}
                 >
                   3y (23-26)
@@ -881,10 +881,10 @@ function ChangeAnalysisInner() {
                   type="button"
                   title="1-year comparison: 2024 to 2025"
                   onClick={() => { setCustomStartDate('2024-06-01'); setCustomEndDate('2025-06-01'); }}
-                  className={`px-2 py-1 rounded text-[10px] font-mono border transition-all ${
+                  className={`px-2 py-1 rounded-lg text-[10px] font-mono border transition-all ${
                     customStartDate.startsWith('2024') && customEndDate.startsWith('2025')
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-bold shadow-sm'
-                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold shadow-xs'
+                      : 'bg-[#f8faf7] hover:bg-white text-slate-700 border-[#dde4dc]'
                   }`}
                 >
                   1y (24-25)
@@ -894,7 +894,7 @@ function ChangeAnalysisInner() {
 
             {/* PS Requirement Dropdown */}
             <div className="flex flex-col gap-1">
-              <label htmlFor="ps-req-select" className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+              <label htmlFor="ps-req-select" className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold">
                 CORE PS REQUIREMENT
               </label>
               <div className="relative">
@@ -903,14 +903,14 @@ function ChangeAnalysisInner() {
                   name="ps-req-select"
                   value={selectedPSRequirement}
                   onChange={(e) => setSelectedPSRequirement(e.target.value as PSRequirementType)}
-                  className="appearance-none bg-slate-900 border border-slate-700/80 hover:border-slate-600 rounded-md px-3 py-1.5 pr-8 text-xs font-medium text-emerald-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer min-w-[200px]"
+                  className="appearance-none bg-[#f8faf7] border border-[#dde4dc] hover:border-emerald-600 rounded-xl px-3 py-1.5 pr-8 text-xs font-semibold text-emerald-800 focus:outline-none focus:border-emerald-600 cursor-pointer min-w-[200px] shadow-xs"
                 >
-                  <option value="aoi" className="bg-slate-900 text-white">🎯 1. AOI Select / View</option>
-                  <option value="vegetation" className="bg-slate-900 text-white">🌿 2. Vegetation Loss</option>
-                  <option value="water" className="bg-slate-900 text-white">💧 3. Water Bodies</option>
-                  <option value="builtup" className="bg-slate-900 text-white">🏢 4. Urban Expansion</option>
-                  <option value="deforestation" className="bg-slate-900 text-white">🌲 5. Deforestation Alerts</option>
-                  <option value="all" className="bg-slate-900 text-white">📈 All Monitored Layers</option>
+                  <option value="aoi" className="bg-white text-slate-800">🎯 1. AOI Select / View</option>
+                  <option value="vegetation" className="bg-white text-slate-800">🌿 2. Vegetation Loss</option>
+                  <option value="water" className="bg-white text-slate-800">💧 3. Water Bodies</option>
+                  <option value="builtup" className="bg-white text-slate-800">🏢 4. Urban Expansion</option>
+                  <option value="deforestation" className="bg-white text-slate-800">🌲 5. Deforestation Alerts</option>
+                  <option value="all" className="bg-white text-slate-800">📈 All Monitored Layers</option>
                 </select>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
@@ -921,28 +921,28 @@ function ChangeAnalysisInner() {
           <div className="flex items-center gap-3">
             {/* Comparison Mode Pill Switcher */}
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold">
                 COMPARISON MODE
               </span>
-              <div className="flex items-center bg-slate-900 p-0.5 rounded-md border border-slate-800">
+              <div className="flex items-center bg-[#f8faf7] p-1 rounded-xl border border-[#dde4dc] shadow-xs">
                 <button
                   id="mode-btn-swipe"
                   onClick={() => setComparisonMode('swipe')}
-                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                     comparisonMode === 'swipe'
-                      ? 'bg-emerald-500 text-slate-950 font-semibold shadow-sm'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Compare Slider (Overlay)
+                  Compare Slider
                 </button>
                 <button
                   id="mode-btn-side-by-side"
                   onClick={() => setComparisonMode('side-by-side')}
-                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                     comparisonMode === 'side-by-side'
-                      ? 'bg-emerald-500 text-slate-950 font-semibold shadow-sm'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   Side by Side
@@ -950,10 +950,10 @@ function ChangeAnalysisInner() {
                 <button
                   id="mode-btn-difference"
                   onClick={() => setComparisonMode('difference')}
-                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                  className={`px-3 py-1 text-xs rounded-lg transition-colors ${
                     comparisonMode === 'difference'
-                      ? 'bg-emerald-500 text-slate-950 font-semibold shadow-sm'
-                      : 'text-slate-400 hover:text-white'
+                      ? 'bg-emerald-600 text-white font-bold shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   Heatmap
@@ -963,14 +963,14 @@ function ChangeAnalysisInner() {
 
             {/* Basemap Switcher */}
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-semibold">
                 BASEMAP
               </span>
               <button
                 onClick={() => setBasemapType(basemapType === 'satellite' ? 'dark' : 'satellite')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-900 border border-slate-700/80 hover:border-slate-600 text-xs font-medium text-slate-200"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc] hover:border-emerald-600 text-xs font-semibold text-slate-700 shadow-xs transition-colors"
               >
-                <Globe className="w-3.5 h-3.5 text-emerald-400" />
+                <Globe className="w-3.5 h-3.5 text-emerald-600" />
                 <span>{basemapType === 'satellite' ? 'Esri Satellite' : 'Dark Carto'}</span>
               </button>
             </div>
@@ -982,14 +982,14 @@ function ChangeAnalysisInner() {
           {/* ----------------- LEFT DOCK: PS REQUIREMENTS & LAYERS (Col 1-2) ----------------- */}
           <aside className="col-span-12 lg:col-span-2 flex flex-col gap-4">
             {/* PS REQUIREMENTS ACCORDION */}
-            <div className="bg-[#0b1528] rounded-xl border border-slate-800/80 overflow-hidden shadow-lg">
+            <div className="bg-white rounded-2xl border border-[#e5ebe4] overflow-hidden shadow-xs">
               <button
                 onClick={() => setPsRequirementsExpanded(!psRequirementsExpanded)}
-                className="w-full px-3.5 py-2.5 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-300 bg-slate-900/60 border-b border-slate-800"
+                className="w-full px-3.5 py-2.5 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-800 bg-[#f8faf7] border-b border-[#e5ebe4]"
               >
                 <span className="flex items-center gap-1.5">
-                  <Target className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>PS REQUIREMENTS</span>
+                  <Target className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="font-outfit">PS REQUIREMENTS</span>
                 </span>
                 {psRequirementsExpanded ? (
                   <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
@@ -1006,33 +1006,33 @@ function ChangeAnalysisInner() {
                       setSelectedPSRequirement('aoi');
                       handleFitToAOI();
                     }}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition-all ${
                       selectedPSRequirement === 'aoi'
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent'
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold shadow-xs'
+                        : 'text-slate-700 hover:text-slate-900 hover:bg-[#f3f7f2] border border-transparent'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <Target className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <Target className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span>1. AOI Select / View</span>
                     </div>
-                    <span className="text-[10px] font-mono text-slate-500">Active</span>
+                    <span className="text-[10px] font-mono text-emerald-700 font-semibold">Active</span>
                   </button>
 
                   {/* 2. Vegetation Loss */}
                   <button
                     onClick={() => setSelectedPSRequirement('vegetation')}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition-all ${
                       selectedPSRequirement === 'vegetation'
-                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent'
+                        ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold shadow-xs'
+                        : 'text-slate-700 hover:text-slate-900 hover:bg-[#f3f7f2] border border-transparent'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <Trees className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <Trees className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span>2. Vegetation Loss</span>
                     </div>
-                    <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                    <span className="text-[10px] font-mono text-emerald-700 font-bold">
                       {activeMetrics ? `${activeMetrics.vegLossKm2.toFixed(1)} km²` : '---'}
                     </span>
                   </button>
@@ -1040,17 +1040,17 @@ function ChangeAnalysisInner() {
                   {/* 3. Water Bodies */}
                   <button
                     onClick={() => setSelectedPSRequirement('water')}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition-all ${
                       selectedPSRequirement === 'water'
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent'
+                        ? 'bg-sky-50 text-sky-800 border border-sky-300 font-bold shadow-xs'
+                        : 'text-slate-700 hover:text-slate-900 hover:bg-[#f3f7f2] border border-transparent'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <Droplets className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                      <Droplets className="w-3.5 h-3.5 text-sky-600 shrink-0" />
                       <span>3. Water Bodies</span>
                     </div>
-                    <span className="text-[10px] font-mono text-cyan-400 font-bold">
+                    <span className="text-[10px] font-mono text-sky-700 font-bold">
                       {activeMetrics ? `${activeMetrics.waterLossHa.toFixed(1)} ha` : '---'}
                     </span>
                   </button>
@@ -1058,17 +1058,17 @@ function ChangeAnalysisInner() {
                   {/* 4. Urban Expansion */}
                   <button
                     onClick={() => setSelectedPSRequirement('builtup')}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition-all ${
                       selectedPSRequirement === 'builtup'
-                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent'
+                        ? 'bg-purple-50 text-purple-800 border border-purple-300 font-bold shadow-xs'
+                        : 'text-slate-700 hover:text-slate-900 hover:bg-[#f3f7f2] border border-transparent'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <Building2 className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                      <Building2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
                       <span>4. Urban Expansion</span>
                     </div>
-                    <span className="text-[10px] font-mono text-purple-400 font-bold">
+                    <span className="text-[10px] font-mono text-purple-700 font-bold">
                       {activeMetrics ? `${activeMetrics.totalUrbanHa.toFixed(1)} ha` : '---'}
                     </span>
                   </button>
@@ -1076,17 +1076,17 @@ function ChangeAnalysisInner() {
                   {/* 5. Deforestation */}
                   <button
                     onClick={() => setSelectedPSRequirement('deforestation')}
-                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-xs font-medium transition-all ${
                       selectedPSRequirement === 'deforestation'
-                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent'
+                        ? 'bg-rose-50 text-rose-800 border border-rose-300 font-bold shadow-xs'
+                        : 'text-slate-700 hover:text-slate-900 hover:bg-[#f3f7f2] border border-transparent'
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <Flame className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                      <Flame className="w-3.5 h-3.5 text-rose-600 shrink-0" />
                       <span>5. Deforestation</span>
                     </div>
-                    <span className="text-[10px] font-mono text-rose-400 font-bold">
+                    <span className="text-[10px] font-mono text-rose-700 font-bold">
                       {activeMetrics ? `${activeMetrics.severeLossHa.toFixed(1)} ha` : '---'}
                     </span>
                   </button>
@@ -1094,13 +1094,13 @@ function ChangeAnalysisInner() {
                   {/* All Composite */}
                   <button
                     onClick={() => setSelectedPSRequirement('all')}
-                    className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium transition-all ${
+                    className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-medium transition-all ${
                       selectedPSRequirement === 'all'
-                        ? 'bg-slate-200 text-slate-950 font-bold'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50 border border-transparent'
+                        ? 'bg-slate-900 text-white font-bold shadow-xs'
+                        : 'text-slate-700 hover:text-slate-900 hover:bg-[#f3f7f2] border border-transparent'
                     }`}
                   >
-                    <Layers className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+                    <Layers className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                     <span>All PS Indicators</span>
                   </button>
                 </div>
@@ -1108,12 +1108,12 @@ function ChangeAnalysisInner() {
             </div>
 
             {/* ADDITIONAL MAP LAYERS TOGGLE */}
-            <div className="bg-[#0b1528] rounded-xl border border-slate-800/80 overflow-hidden shadow-lg">
+            <div className="bg-white rounded-2xl border border-[#e5ebe4] overflow-hidden shadow-xs">
               <button
                 onClick={() => setLayersExpanded(!layersExpanded)}
-                className="w-full px-3.5 py-2.5 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-300 bg-slate-900/60 border-b border-slate-800"
+                className="w-full px-3.5 py-2.5 flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-800 bg-[#f8faf7] border-b border-[#e5ebe4]"
               >
-                <span>MAP OVERLAYS</span>
+                <span className="font-outfit">MAP OVERLAYS</span>
                 {layersExpanded ? (
                   <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
                 ) : (
@@ -1122,13 +1122,13 @@ function ChangeAnalysisInner() {
               </button>
 
               {layersExpanded && (
-                <div className="p-3 space-y-2.5 text-xs text-slate-300">
+                <div className="p-3.5 space-y-2.5 text-xs text-slate-700">
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium">AOI Boundary (PostGIS)</span>
+                    <span className="text-[11px] font-medium text-slate-700">AOI Boundary (PostGIS)</span>
                     <button
                       onClick={() => setLayerBoundary(!layerBoundary)}
                       className={`w-8 h-4 rounded-full transition-colors relative ${
-                        layerBoundary ? 'bg-emerald-500' : 'bg-slate-700'
+                        layerBoundary ? 'bg-emerald-600' : 'bg-slate-300'
                       }`}
                     >
                       <div
@@ -1140,11 +1140,11 @@ function ChangeAnalysisInner() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium">Threat Hotspots ({hotspots.length})</span>
+                    <span className="text-[11px] font-medium text-slate-700">Threat Hotspots ({hotspots.length})</span>
                     <button
                       onClick={() => setLayerHotspots(!layerHotspots)}
                       className={`w-8 h-4 rounded-full transition-colors relative ${
-                        layerHotspots ? 'bg-emerald-500' : 'bg-slate-700'
+                        layerHotspots ? 'bg-emerald-600' : 'bg-slate-300'
                       }`}
                     >
                       <div
@@ -1156,11 +1156,11 @@ function ChangeAnalysisInner() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium">Roads (OSM Tracks)</span>
+                    <span className="text-[11px] font-medium text-slate-700">Roads (OSM Tracks)</span>
                     <button
                       onClick={() => setLayerRoads(!layerRoads)}
                       className={`w-8 h-4 rounded-full transition-colors relative ${
-                        layerRoads ? 'bg-emerald-500' : 'bg-slate-700'
+                        layerRoads ? 'bg-emerald-600' : 'bg-slate-300'
                       }`}
                     >
                       <div
@@ -1172,11 +1172,11 @@ function ChangeAnalysisInner() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium">Human Settlements</span>
+                    <span className="text-[11px] font-medium text-slate-700">Human Settlements</span>
                     <button
                       onClick={() => setLayerSettlements(!layerSettlements)}
                       className={`w-8 h-4 rounded-full transition-colors relative ${
-                        layerSettlements ? 'bg-emerald-500' : 'bg-slate-700'
+                        layerSettlements ? 'bg-emerald-600' : 'bg-slate-300'
                       }`}
                     >
                       <div
@@ -1188,11 +1188,11 @@ function ChangeAnalysisInner() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-medium">Water Dynamics</span>
+                    <span className="text-[11px] font-medium text-slate-700">Water Dynamics</span>
                     <button
                       onClick={() => setLayerWater(!layerWater)}
                       className={`w-8 h-4 rounded-full transition-colors relative ${
-                        layerWater ? 'bg-emerald-500' : 'bg-slate-700'
+                        layerWater ? 'bg-emerald-600' : 'bg-slate-300'
                       }`}
                     >
                       <div
@@ -1203,7 +1203,7 @@ function ChangeAnalysisInner() {
                     </button>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-800 flex justify-end">
+                  <div className="pt-2 border-t border-[#e5ebe4] flex justify-end">
                     <button
                       onClick={() => {
                         setLayerBoundary(true);
@@ -1212,7 +1212,7 @@ function ChangeAnalysisInner() {
                         setLayerSettlements(false);
                         setLayerWater(true);
                       }}
-                      className="text-[10px] text-slate-400 hover:text-emerald-400 flex items-center gap-1"
+                      className="text-[10px] text-slate-500 hover:text-emerald-700 font-semibold flex items-center gap-1 transition-colors"
                     >
                       <RotateCcw className="w-3 h-3" />
                       <span>Reset Layers</span>
@@ -1223,24 +1223,24 @@ function ChangeAnalysisInner() {
             </div>
 
             {/* HIGH-AESTHETICS TIGER CARD */}
-            <div className="rounded-xl overflow-hidden border border-emerald-500/20 bg-gradient-to-b from-slate-900 to-[#0b1528] shadow-lg relative group">
+            <div className="rounded-2xl overflow-hidden border border-[#e5ebe4] bg-white shadow-xs relative group">
               <div className="relative h-28 w-full overflow-hidden">
                 <Image
                   src="/images/tiger_card.jpg"
                   alt="Bengal Tiger in Wilderness"
                   fill
                   sizes="(max-width: 768px) 100vw, 300px"
-                  className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-80"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500 opacity-90"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0b1528] via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
               </div>
-              <div className="p-3">
-                <p className="text-[11px] font-serif italic text-emerald-200/90 leading-snug">
+              <div className="p-3.5">
+                <p className="text-[11px] font-serif italic text-slate-800 leading-snug">
                   &ldquo;Data today for a wilder tomorrow.&rdquo;
                 </p>
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-800 text-[10px] text-slate-400">
-                  <span className="font-mono text-emerald-400">{currentArea?.name}</span>
-                  <span className="font-mono">{currentArea?.state || 'Reserve'}</span>
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#e5ebe4] text-[10px] text-slate-500 font-mono">
+                  <span className="text-emerald-700 font-bold">{currentArea?.name}</span>
+                  <span>{currentArea?.state || 'Reserve'}</span>
                 </div>
               </div>
             </div>
@@ -1249,27 +1249,27 @@ function ChangeAnalysisInner() {
           {/* ----------------- CENTER VIEWPORT: MAPS, METRICS & CHARTS (Col 3-9) ----------------- */}
           <section className="col-span-12 lg:col-span-7 flex flex-col gap-4">
             {/* 1. COMPARISON MAPS CONTAINER */}
-            <div className="bg-[#0b1528] rounded-xl border border-slate-800/80 p-3 shadow-xl relative">
+            <div className="bg-white rounded-2xl border border-[#e5ebe4] p-3.5 shadow-xs relative">
               {/* SIDE BY SIDE MODE (3 Maps: Baseline, Observed, Difference) */}
               {comparisonMode === 'side-by-side' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {/* MAP 1: BASELINE */}
-                  <div className="bg-[#080e1b] rounded-lg border border-slate-800 overflow-hidden flex flex-col group/card">
-                    <div className="px-3 py-2 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
+                  <div className="bg-[#f8faf7] rounded-xl border border-[#e5ebe4] overflow-hidden flex flex-col group/card shadow-xs">
+                    <div className="px-3 py-2 border-b border-[#e5ebe4] flex items-center justify-between bg-white">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                        <span className="text-xs font-mono font-semibold text-slate-200">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-xs font-mono font-bold text-slate-800">
                           {selectedPSRequirement === 'water' ? 'NDWI' : 'NDVI'} - Baseline
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono text-slate-400">{baselineDates.slice(0, 7)}</span>
+                        <span className="text-[10px] font-mono text-slate-500">{baselineDates.slice(0, 7)}</span>
                         <button
                           id="fullscreen-btn-baseline"
                           title="View Baseline Map Full Screen"
                           aria-label="View Baseline Map Full Screen"
                           onClick={() => setFullscreenCard('baseline')}
-                          className="p-1 text-slate-400 hover:text-emerald-400 rounded hover:bg-slate-800/80 transition-colors"
+                          className="p-1 text-slate-400 hover:text-emerald-700 rounded-lg hover:bg-[#f3f7f2] transition-colors"
                         >
                           <Maximize2 className="w-3.5 h-3.5" />
                         </button>
@@ -1291,29 +1291,29 @@ function ChangeAnalysisInner() {
                         height="100%"
                       />
                     </div>
-                    <div className="px-3 py-1.5 bg-slate-900/60 border-t border-slate-800 text-[10px] font-mono text-slate-400 flex items-center justify-between">
+                    <div className="px-3 py-1.5 bg-white border-t border-[#e5ebe4] text-[10px] font-mono text-slate-600 flex items-center justify-between">
                       <span>Baseline Mean:</span>
-                      <span className="text-emerald-400 font-bold">{activeMetrics?.baselineNdvi.toFixed(2) ?? '0.35'}</span>
+                      <span className="text-emerald-700 font-bold">{activeMetrics?.baselineNdvi.toFixed(2) ?? '0.35'}</span>
                     </div>
                   </div>
 
                   {/* MAP 2: OBSERVED */}
-                  <div className="bg-[#080e1b] rounded-lg border border-slate-800 overflow-hidden flex flex-col group/card">
-                    <div className="px-3 py-2 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
+                  <div className="bg-[#f8faf7] rounded-xl border border-[#e5ebe4] overflow-hidden flex flex-col group/card shadow-xs">
+                    <div className="px-3 py-2 border-b border-[#e5ebe4] flex items-center justify-between bg-white">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full bg-amber-400" />
-                        <span className="text-xs font-mono font-semibold text-slate-200">
+                        <div className="w-2 h-2 rounded-full bg-amber-500" />
+                        <span className="text-xs font-mono font-bold text-slate-800">
                           {selectedPSRequirement === 'water' ? 'NDWI' : 'NDVI'} - Observed
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono text-slate-400">{comparisonDates.slice(0, 7)}</span>
+                        <span className="text-[10px] font-mono text-slate-500">{comparisonDates.slice(0, 7)}</span>
                         <button
                           id="fullscreen-btn-observed"
                           title="View Observed Map Full Screen"
                           aria-label="View Observed Map Full Screen"
                           onClick={() => setFullscreenCard('observed')}
-                          className="p-1 text-slate-400 hover:text-amber-400 rounded hover:bg-slate-800/80 transition-colors"
+                          className="p-1 text-slate-400 hover:text-amber-700 rounded-lg hover:bg-[#f3f7f2] transition-colors"
                         >
                           <Maximize2 className="w-3.5 h-3.5" />
                         </button>
@@ -1337,23 +1337,23 @@ function ChangeAnalysisInner() {
                         height="100%"
                       />
                     </div>
-                    <div className="px-3 py-1.5 bg-slate-900/60 border-t border-slate-800 text-[10px] font-mono text-slate-400 flex items-center justify-between">
+                    <div className="px-3 py-1.5 bg-white border-t border-[#e5ebe4] text-[10px] font-mono text-slate-600 flex items-center justify-between">
                       <span>Observed Mean:</span>
-                      <span className="text-amber-400 font-bold">{activeMetrics?.comparisonNdvi.toFixed(2) ?? '0.30'}</span>
+                      <span className="text-amber-700 font-bold">{activeMetrics?.comparisonNdvi.toFixed(2) ?? '0.30'}</span>
                     </div>
                   </div>
 
                   {/* MAP 3: DIFFERENCE (HEATMAP + REAL POSTGIS POLYGONS) */}
-                  <div className="bg-[#080e1b] rounded-lg border border-slate-800 overflow-hidden flex flex-col group/card">
-                    <div className="px-3 py-2 border-b border-slate-800 flex items-center justify-between bg-slate-900/80">
+                  <div className="bg-[#f8faf7] rounded-xl border border-[#e5ebe4] overflow-hidden flex flex-col group/card shadow-xs">
+                    <div className="px-3 py-2 border-b border-[#e5ebe4] flex items-center justify-between bg-white">
                       <div className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full bg-rose-500" />
-                        <span className="text-xs font-mono font-semibold text-slate-200">
+                        <span className="text-xs font-mono font-bold text-slate-800">
                           Change Heatmap
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono text-rose-400 font-bold">
+                        <span className="text-[10px] font-mono text-rose-600 font-bold">
                           {activeMetrics?.netKm2 !== undefined
                             ? `${activeMetrics.netKm2 > 0 ? '+' : ''}${activeMetrics.netKm2.toFixed(1)} km²`
                             : 'Delta'}
@@ -1363,7 +1363,7 @@ function ChangeAnalysisInner() {
                           title="View Change Heatmap Full Screen"
                           aria-label="View Change Heatmap Full Screen"
                           onClick={() => setFullscreenCard('difference')}
-                          className="p-1 text-slate-400 hover:text-rose-400 rounded hover:bg-slate-800/80 transition-colors"
+                          className="p-1 text-slate-400 hover:text-rose-700 rounded-lg hover:bg-[#f3f7f2] transition-colors"
                         >
                           <Maximize2 className="w-3.5 h-3.5" />
                         </button>
@@ -1387,16 +1387,16 @@ function ChangeAnalysisInner() {
                         height="100%"
                       />
                     </div>
-                    <div className="px-3 py-1.5 bg-slate-900/60 border-t border-slate-800 text-[10px] font-mono flex items-center justify-between">
+                    <div className="px-3 py-1.5 bg-white border-t border-[#e5ebe4] text-[10px] font-mono flex items-center justify-between">
                       <div className="flex items-center gap-2 text-[10px]">
-                        <span className="flex items-center gap-1 text-rose-400">
+                        <span className="flex items-center gap-1 text-rose-600 font-semibold">
                           <span className="w-2 h-2 rounded-full bg-rose-500" /> Loss
                         </span>
-                        <span className="flex items-center gap-1 text-emerald-400">
+                        <span className="flex items-center gap-1 text-emerald-700 font-semibold">
                           <span className="w-2 h-2 rounded-full bg-emerald-500" /> Regrowth
                         </span>
                       </div>
-                      <span className="text-slate-400 font-mono">10m Res</span>
+                      <span className="text-slate-500 font-mono">10m Res</span>
                     </div>
                   </div>
                 </div>
@@ -1404,7 +1404,7 @@ function ChangeAnalysisInner() {
 
               {/* SWIPE MODE: UNIFIED OVERLAY MAP VIEWPORT (Comparing Old Baseline Underneath vs Current Observed On Top) */}
               {comparisonMode === 'swipe' && (
-                <div className="relative h-[540px] w-full rounded-xl overflow-hidden border border-slate-800 bg-[#080e1b] select-none shadow-2xl">
+                <div className="relative h-[540px] w-full rounded-2xl overflow-hidden border border-[#e5ebe4] bg-slate-900 select-none shadow-sm">
                   {/* Layer 1: Underneath (Old / Start Date Clean Sentinel-2 Baseline Satellite View) */}
                   <div className="absolute inset-0">
                     <ComparisonLeafletMap
@@ -1450,99 +1450,90 @@ function ChangeAnalysisInner() {
                         showWater={layerWater}
                         showSettlements={layerSettlements}
                         basemapType={basemapType}
+                        hideControls={true}
                         onHotspotClick={(h) => setSelectedHotspot(h)}
                         height="100%"
                       />
                     </div>
                   </div>
 
-                  {/* Draggable Vertical Glowing Split Divider */}
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-gradient-to-b from-emerald-400 via-white to-emerald-400 cursor-ew-resize flex items-center justify-center z-[500] shadow-[0_0_14px_rgba(16,185,129,0.85)] pointer-events-none"
-                    style={{ left: `${swipePosition}%` }}
-                  >
-                    <div className="w-9 h-9 rounded-full bg-slate-950/95 border-2 border-emerald-400/90 flex items-center justify-center text-white shadow-2xl backdrop-blur-md pointer-events-none">
-                      <div className="flex items-center text-xs font-mono font-bold text-emerald-300 gap-0.5">
-                        <span>⟨</span>
-                        <span>⟩</span>
-                      </div>
+                  {/* Top Left Badge: Baseline Date (Left Side of Slider) */}
+                  <div className="absolute top-3 left-3 z-10 pointer-events-none">
+                    <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur border border-white/20 text-xs font-mono text-emerald-300 shadow-xl flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                      <span>{baselineDates} (Baseline)</span>
                     </div>
                   </div>
 
-                  {/* Native invisible range input overlay for 100% smooth dragging */}
+                  {/* Top Right Badge: Observed Date (Right Side of Slider) */}
+                  <div className="absolute top-3 right-3 z-10 pointer-events-none flex items-center gap-2">
+                    <div className="px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur border border-white/20 text-xs font-mono text-amber-300 shadow-xl flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-400" />
+                      <span>{comparisonDates} (Observed)</span>
+                    </div>
+                    {/* Fullscreen Button */}
+                    <button
+                      id="fullscreen-btn-swipe"
+                      title="View Compare Slider Full Screen"
+                      aria-label="View Compare Slider Full Screen"
+                      onClick={() => setFullscreenCard('swipe')}
+                      className="pointer-events-auto p-1.5 rounded-lg bg-black/70 backdrop-blur border border-white/20 text-slate-300 hover:text-white transition-colors"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Vertical Dividing Slider Line with Draggable Handle */}
+                  <div
+                    className="absolute top-0 bottom-0 z-20 pointer-events-none flex items-center justify-center -translate-x-1/2"
+                    style={{ left: `${swipePosition}%` }}
+                  >
+                    <div className="w-0.5 h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
+                    <div className="absolute w-8 h-8 rounded-full bg-white shadow-2xl flex items-center justify-center text-slate-900 border-2 border-emerald-500">
+                      <ArrowUpDown className="w-4 h-4 rotate-90" />
+                    </div>
+                  </div>
+
+                  {/* Interactive Slider Track (Overlay) */}
                   <input
-                    id="swipe-slider"
-                    name="swipe-slider"
-                    aria-label="Interactive change comparison swipe handle"
                     type="range"
                     min="0"
                     max="100"
                     value={swipePosition}
                     onChange={(e) => setSwipePosition(Number(e.target.value))}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-[520]"
+                    aria-label="Temporal Comparison Slider"
+                    className="absolute inset-0 opacity-0 cursor-ew-resize z-30 w-full h-full"
                   />
 
-                  {/* Top-Left Floating Badge: Old / Baseline Date */}
-                  <div className="absolute top-3.5 left-3.5 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-slate-700/80 shadow-xl z-[500] pointer-events-none">
-                    <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded">
-                      {baselineDates ? baselineDates.slice(0, 4) : '2021'}
-                    </span>
-                    <span className="text-xs font-mono text-slate-200">
-                      {baselineDates ? baselineDates.slice(0, 7) : 'Apr 2021'} · Sentinel 2 (Baseline)
-                    </span>
+                  {/* Bottom Center Hint */}
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 pointer-events-none px-3 py-1 rounded-full bg-black/60 backdrop-blur border border-white/10 text-[10px] font-mono text-slate-300">
+                    ← Drag slider to reveal temporal habitat change →
                   </div>
 
-                  {/* Top-Right Floating Badge: Current / Observed Date + Fullscreen */}
-                  <div className="absolute top-3.5 right-3.5 flex items-center gap-2 z-[500]">
-                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-slate-700/80 shadow-xl pointer-events-none">
-                      <span className="px-1.5 py-0.5 text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded">
-                        {comparisonDates ? comparisonDates.slice(0, 4) : '2026'}
-                      </span>
-                      <span className="text-xs font-mono text-slate-200">
-                        {comparisonDates ? comparisonDates.slice(0, 7) : 'Apr 2026'} · Sentinel 2 (Current)
-                      </span>
+                  {/* Problem Statement Legend / Color Palette Overlay (Bottom Left) */}
+                  <div className="absolute bottom-3 left-3 z-10 pointer-events-auto p-2.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-slate-800 text-[10px] font-mono shadow-xl max-w-[260px]">
+                    <div className="font-bold text-slate-200 mb-1.5 flex items-center justify-between border-b border-slate-800/80 pb-1">
+                      <span>Change Detection Map</span>
+                      <span className="text-[9px] px-1 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30">10m GEE</span>
                     </div>
-                    <button
-                      id="fullscreen-btn-swipe"
-                      title="View Swipe Map Full Screen"
-                      aria-label="View Swipe Map Full Screen"
-                      onClick={() => setFullscreenCard('swipe')}
-                      className="p-1.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors shadow-xl"
-                    >
-                      <Maximize2 className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Bottom-Left Floating GIS Scale Bar */}
-                  <div className="absolute bottom-3.5 left-3.5 px-3 py-1.5 rounded-lg bg-slate-950/85 backdrop-blur-md border border-slate-800 text-[10px] font-mono text-slate-300 z-[500] pointer-events-none flex items-center gap-2.5 shadow-xl">
-                    <div className="flex items-center gap-1">
-                      <span className="w-3 h-1 bg-slate-200 inline-block"></span>
-                      <span className="w-3 h-1 bg-slate-500 inline-block"></span>
-                      <span className="w-3 h-1 bg-slate-200 inline-block"></span>
-                    </div>
-                    <span>0 — 2.5 — 5 km</span>
-                  </div>
-
-                  {/* Bottom-Right Floating Glassmorphic Change Detection Legend (Matching Video) */}
-                  <div className="absolute bottom-3.5 right-3.5 max-w-xs p-3.5 rounded-xl bg-slate-950/90 backdrop-blur-md border border-slate-700/80 shadow-2xl z-[500] pointer-events-none text-left">
-                    <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-800">
-                      <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider">Change Detection</span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-1.5 text-[11px] font-mono">
-                      <div className="flex items-center gap-2 text-slate-300">
-                        <span className="w-3 h-3 rounded-sm bg-rose-500 shrink-0 shadow-[0_0_6px_rgba(244,63,94,0.6)]" />
-                        <span>Deforestation (Forest Loss)</span>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1.5 text-slate-300">
+                        <span className="w-3 h-3 rounded-sm bg-rose-600 shrink-0" />
+                        <span>Vegetation / Forest Loss</span>
                       </div>
-                      <div className="flex items-center gap-2 text-slate-300">
-                        <span className="w-3 h-3 rounded-sm bg-amber-500 shrink-0 shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
-                        <span>Vegetation Loss / Degradation</span>
+                      <div className="flex items-center gap-1.5 text-slate-300">
+                        <span className="w-3 h-3 rounded-sm bg-emerald-500 shrink-0" />
+                        <span>Regrowth / Canopy Gain</span>
                       </div>
-                      <div className="flex items-center gap-2 text-slate-300">
-                        <span className="w-3 h-3 rounded-sm bg-cyan-400 shrink-0 shadow-[0_0_6px_rgba(6,182,212,0.6)]" />
-                        <span>Water Body Change</span>
+                      <div className="flex items-center gap-1.5 text-slate-300">
+                        <span className="w-3 h-3 rounded-sm bg-cyan-400 shrink-0" />
+                        <span>Water Expansion / Reduction</span>
                       </div>
-                      <div className="flex items-center gap-2 text-slate-400">
+                      <div className="flex items-center gap-1.5 text-slate-300">
+                        <span className="w-3 h-3 rounded-sm bg-purple-500 shrink-0" />
+                        <span>Builtup / Agri Encroachment</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-slate-400">
                         <span className="w-3 h-3 rounded-sm bg-slate-600 shrink-0" />
                         <span>No Significant Change</span>
                       </div>
@@ -1556,7 +1547,7 @@ function ChangeAnalysisInner() {
 
               {/* DIFFERENCE MODE (Full-Width Difference Map) */}
               {comparisonMode === 'difference' && (
-                <div className="relative h-[360px] w-full rounded-lg overflow-hidden border border-slate-800 bg-[#080e1b]">
+                <div className="relative h-[360px] w-full rounded-2xl overflow-hidden border border-[#e5ebe4] bg-slate-900 shadow-sm">
                   <ComparisonLeafletMap
                     key={`diff-full-${currentArea?.id || 'diff'}-${aoiZoomCounter}`}
                     center={mapCenter}
@@ -1573,9 +1564,9 @@ function ChangeAnalysisInner() {
                     onHotspotClick={(h) => setSelectedHotspot(h)}
                     height="100%"
                   />
-                  <div className="absolute top-3 left-3 px-3 py-1.5 rounded-lg bg-slate-900/85 backdrop-blur border border-slate-700 text-xs font-mono text-slate-200 z-10">
-                    <div className="font-bold text-rose-400">Change Heatmap Overlay</div>
-                    <div className="text-[10px] text-slate-400">
+                  <div className="absolute top-3 left-3 px-3 py-1.5 rounded-xl bg-white/90 backdrop-blur border border-[#e5ebe4] text-xs font-mono text-slate-800 z-10 shadow-sm">
+                    <div className="font-bold text-rose-600 font-outfit">Change Heatmap Overlay</div>
+                    <div className="text-[10px] text-slate-500">
                       Comparing {baselineDates} vs {comparisonDates}
                     </div>
                   </div>
@@ -1585,7 +1576,7 @@ function ChangeAnalysisInner() {
                       title="View Difference Map Full Screen"
                       aria-label="View Difference Map Full Screen"
                       onClick={() => setFullscreenCard('difference')}
-                      className="p-1.5 rounded bg-slate-900/85 backdrop-blur border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors shadow-lg"
+                      className="p-1.5 rounded-xl bg-white/90 backdrop-blur border border-[#e5ebe4] text-slate-700 hover:text-slate-900 hover:bg-white transition-colors shadow-sm"
                     >
                       <Maximize2 className="w-3.5 h-3.5" />
                     </button>
@@ -1594,19 +1585,19 @@ function ChangeAnalysisInner() {
               )}
             </div>
 
-            {/* 2. REAL KPI SUMMARY STATS CARDS (MAPPED TO REFERENCE VIDEO KEY INSIGHTS) */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {/* 2. REAL KPI SUMMARY STATS CARDS */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
               {/* Card 1: Forest Cover Lost (Pillar 5: Deforestation) */}
               <div
                 onClick={() => setSelectedPSRequirement('deforestation')}
-                className="bg-[#0b1528] hover:bg-[#0e1b33] cursor-pointer rounded-xl border border-slate-800/80 p-3.5 flex items-center gap-3 transition-all"
+                className="bg-white hover:bg-[#f8faf7] cursor-pointer rounded-2xl border border-[#e5ebe4] p-4 flex items-center gap-3.5 transition-all shadow-xs"
               >
-                <div className="w-10 h-10 rounded-lg bg-rose-500/15 border border-rose-500/30 flex items-center justify-center shrink-0">
-                  <Flame className="w-5 h-5 text-rose-400" />
+                <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
+                  <Flame className="w-5 h-5 text-rose-600" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">Forest Cover Lost</span>
-                  <div className="text-lg font-bold font-mono text-rose-400">
+                  <span className="text-[10px] font-mono uppercase text-slate-500 font-semibold block">Forest Cover Lost</span>
+                  <div className="text-lg font-black font-outfit text-rose-600">
                     {activeMetrics ? `-${activeMetrics.severeLossHa.toFixed(1)} ha` : '-0.0 ha'}
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">
@@ -1618,14 +1609,14 @@ function ChangeAnalysisInner() {
               {/* Card 2: Vegetation Decline (Pillar 2: Degradation) */}
               <div
                 onClick={() => setSelectedPSRequirement('vegetation')}
-                className="bg-[#0b1528] hover:bg-[#0e1b33] cursor-pointer rounded-xl border border-slate-800/80 p-3.5 flex items-center gap-3 transition-all"
+                className="bg-white hover:bg-[#f8faf7] cursor-pointer rounded-2xl border border-[#e5ebe4] p-4 flex items-center gap-3.5 transition-all shadow-xs"
               >
-                <div className="w-10 h-10 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0">
-                  <Trees className="w-5 h-5 text-amber-400" />
+                <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+                  <Trees className="w-5 h-5 text-amber-600" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">Vegetation Decline</span>
-                  <div className="text-lg font-bold font-mono text-amber-400">
+                  <span className="text-[10px] font-mono uppercase text-slate-500 font-semibold block">Vegetation Decline</span>
+                  <div className="text-lg font-black font-outfit text-amber-700">
                     {activeMetrics ? `-${(activeMetrics.vegLossKm2 * 100).toFixed(1)} ha` : '-0.0 ha'}
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">
@@ -1637,14 +1628,14 @@ function ChangeAnalysisInner() {
               {/* Card 3: Water Body Reduction (Pillar 3: Water Dynamics) */}
               <div
                 onClick={() => setSelectedPSRequirement('water')}
-                className="bg-[#0b1528] hover:bg-[#0e1b33] cursor-pointer rounded-xl border border-slate-800/80 p-3.5 flex items-center gap-3 transition-all"
+                className="bg-white hover:bg-[#f8faf7] cursor-pointer rounded-2xl border border-[#e5ebe4] p-4 flex items-center gap-3.5 transition-all shadow-xs"
               >
-                <div className="w-10 h-10 rounded-lg bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center shrink-0">
-                  <Droplets className="w-5 h-5 text-cyan-400" />
+                <div className="w-10 h-10 rounded-xl bg-sky-50 border border-sky-200 flex items-center justify-center shrink-0">
+                  <Droplets className="w-5 h-5 text-sky-600" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">Water Body Reduction</span>
-                  <div className="text-lg font-bold font-mono text-cyan-400">
+                  <span className="text-[10px] font-mono uppercase text-slate-500 font-semibold block">Water Body Reduction</span>
+                  <div className="text-lg font-black font-outfit text-sky-700">
                     {activeMetrics ? `-${activeMetrics.waterLossHa.toFixed(1)} ha` : '-0.0 ha'}
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">
@@ -1656,14 +1647,14 @@ function ChangeAnalysisInner() {
               {/* Card 4: New Agricultural Land / Builtup (Pillar 4: Urban Expansion) */}
               <div
                 onClick={() => setSelectedPSRequirement('builtup')}
-                className="bg-[#0b1528] hover:bg-[#0e1b33] cursor-pointer rounded-xl border border-slate-800/80 p-3.5 flex items-center gap-3 transition-all"
+                className="bg-white hover:bg-[#f8faf7] cursor-pointer rounded-2xl border border-[#e5ebe4] p-4 flex items-center gap-3.5 transition-all shadow-xs"
               >
-                <div className="w-10 h-10 rounded-lg bg-purple-500/15 border border-purple-500/30 flex items-center justify-center shrink-0">
-                  <Building2 className="w-5 h-5 text-purple-400" />
+                <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center shrink-0">
+                  <Building2 className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-slate-400 block">New Agri / Builtup</span>
-                  <div className="text-lg font-bold font-mono text-purple-400">
+                  <span className="text-[10px] font-mono uppercase text-slate-500 font-semibold block">New Agri / Builtup</span>
+                  <div className="text-lg font-black font-outfit text-purple-700">
                     {activeMetrics ? `+${(activeMetrics.builtupGainHa || activeMetrics.totalUrbanHa || 0).toFixed(1)} ha` : '+0.0 ha'}
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">
@@ -1676,44 +1667,46 @@ function ChangeAnalysisInner() {
             {/* 3. CHARTS ROW (NDVI Distribution, Land Cover Category Distribution, Time Series) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* CHART 1: NDVI DISTRIBUTION (Dual-Bar Histogram from real backend GEE bins) */}
-              <div className="bg-[#0b1528] rounded-xl border border-slate-800/80 p-3.5 flex flex-col">
+              <div className="bg-white rounded-2xl border border-[#e5ebe4] p-4 flex flex-col shadow-xs">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-slate-200">NDVI Distribution</span>
-                  <div className="flex items-center gap-2 text-[10px] font-mono">
-                    <span className="flex items-center gap-1 text-emerald-400">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" /> Base
+                  <span className="text-xs font-bold font-outfit text-slate-900">NDVI Distribution</span>
+                  <div className="flex items-center gap-2 text-[10px] font-mono font-semibold">
+                    <span className="flex items-center gap-1 text-emerald-700">
+                      <span className="w-2 h-2 rounded-full bg-emerald-600" /> Base
                     </span>
-                    <span className="flex items-center gap-1 text-cyan-400">
-                      <span className="w-2 h-2 rounded-full bg-cyan-400" /> Obs
+                    <span className="flex items-center gap-1 text-sky-700">
+                      <span className="w-2 h-2 rounded-full bg-sky-600" /> Obs
                     </span>
                   </div>
                 </div>
                 <div className="h-40 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={ndviHistogramData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5ebe4" vertical={false} />
                       <XAxis dataKey="ndvi" stroke="#64748b" tick={{ fontSize: 10 }} />
                       <YAxis stroke="#64748b" tick={{ fontSize: 10 }} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#0f172a',
-                          borderColor: '#334155',
+                          backgroundColor: '#ffffff',
+                          borderColor: '#e5ebe4',
                           fontSize: 11,
-                          borderRadius: 6,
+                          borderRadius: 8,
+                          color: '#0f172a',
+                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                         }}
                       />
-                      <Bar dataKey="baseline" fill="#10b981" radius={[2, 2, 0, 0]} />
-                      <Bar dataKey="observed" fill="#06b6d4" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="baseline" fill="#059669" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="observed" fill="#0284c7" radius={[2, 2, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               </div>
 
               {/* CHART 2: AREA BY LAND COVER CATEGORY (from real Area Statistics) */}
-              <div className="bg-[#0b1528] rounded-xl border border-slate-800/80 p-3.5 flex flex-col">
+              <div className="bg-white rounded-2xl border border-[#e5ebe4] p-4 flex flex-col shadow-xs">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-slate-200">Land Cover Category (%)</span>
-                  <span className="text-[10px] font-mono text-slate-400">Dynamic World</span>
+                  <span className="text-xs font-bold font-outfit text-slate-900">Land Cover Category (%)</span>
+                  <span className="text-[10px] font-mono text-slate-500">Dynamic World</span>
                 </div>
                 <div className="h-40 w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -1722,15 +1715,17 @@ function ChangeAnalysisInner() {
                       layout="vertical"
                       margin={{ top: 5, right: 10, left: 20, bottom: 0 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5ebe4" horizontal={false} />
                       <XAxis type="number" stroke="#64748b" tick={{ fontSize: 10 }} />
                       <YAxis dataKey="category" type="category" stroke="#64748b" tick={{ fontSize: 9 }} width={75} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#0f172a',
-                          borderColor: '#334155',
+                          backgroundColor: '#ffffff',
+                          borderColor: '#e5ebe4',
                           fontSize: 11,
-                          borderRadius: 6,
+                          borderRadius: 8,
+                          color: '#0f172a',
+                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                         }}
                       />
                       <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]} />
@@ -1740,36 +1735,38 @@ function ChangeAnalysisInner() {
               </div>
 
               {/* CHART 3: TIME SERIES (from real Backend Timeline) */}
-              <div className="bg-[#0b1528] rounded-xl border border-slate-800/80 p-3.5 flex flex-col">
+              <div className="bg-white rounded-2xl border border-[#e5ebe4] p-4 flex flex-col shadow-xs">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold text-slate-200">NDVI Time Series</span>
-                  <span className="text-[10px] font-mono text-slate-400">Monthly Mean</span>
+                  <span className="text-xs font-bold font-outfit text-slate-900">NDVI Time Series</span>
+                  <span className="text-[10px] font-mono text-slate-500">Monthly Mean</span>
                 </div>
                 <div className="h-40 w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={timeSeriesChartData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5ebe4" />
                       <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 9 }} />
                       <YAxis stroke="#64748b" tick={{ fontSize: 10 }} domain={[0.3, 0.8]} />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#0f172a',
-                          borderColor: '#334155',
+                          backgroundColor: '#ffffff',
+                          borderColor: '#e5ebe4',
                           fontSize: 11,
-                          borderRadius: 6,
+                          borderRadius: 8,
+                          color: '#0f172a',
+                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
                         }}
                       />
                       <Line
                         type="monotone"
                         dataKey="ndvi"
-                        stroke="#10b981"
+                        stroke="#059669"
                         strokeWidth={2}
-                        dot={{ r: 2, fill: '#10b981' }}
+                        dot={{ r: 2, fill: '#059669' }}
                       />
                       <Line
                         type="monotone"
                         dataKey="baseline"
-                        stroke="#64748b"
+                        stroke="#94a3b8"
                         strokeDasharray="3 3"
                         strokeWidth={1.5}
                         dot={false}
@@ -1784,9 +1781,9 @@ function ChangeAnalysisInner() {
           {/* ----------------- RIGHT DOSSIER: INTELLIGENCE & INSIGHTS (Col 10-12) ----------------- */}
           <aside className="col-span-12 lg:col-span-3 flex flex-col gap-4">
             {/* PROBLEM STATEMENT COMPLIANCE DOSSIER */}
-            <div className="bg-[#0b1528] rounded-xl border border-emerald-500/30 p-4 shadow-xl">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2 mb-3">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <div className="bg-white rounded-2xl border border-[#e5ebe4] p-4 shadow-xs">
+              <h2 className="text-xs font-bold font-outfit uppercase tracking-wider text-slate-900 flex items-center gap-2 mb-3">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>PS COMPLIANCE CHECKLIST</span>
               </h2>
 
@@ -1797,20 +1794,20 @@ function ChangeAnalysisInner() {
                     setSelectedPSRequirement('aoi');
                     handleFitToAOI();
                   }}
-                  className={`p-2 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
                     selectedPSRequirement === 'aoi'
-                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                      : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/60'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-semibold shadow-xs'
+                      : 'bg-[#f8faf7] border-[#e5ebe4] text-slate-700 hover:bg-white'
                   }`}
                 >
-                  <div className="flex items-center justify-between font-semibold">
+                  <div className="flex items-center justify-between font-bold">
                     <span className="flex items-center gap-1.5">
-                      <Target className="w-3.5 h-3.5 text-emerald-400" />
+                      <Target className="w-3.5 h-3.5 text-emerald-600" />
                       <span>1. AOI Select / View</span>
                     </span>
-                    <span className="text-[10px] text-emerald-400 font-mono">VERIFIED</span>
+                    <span className="text-[10px] text-emerald-700 font-mono font-bold">VERIFIED</span>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[10px] text-slate-500 mt-1">
                     {currentArea?.name} boundary loaded ({currentArea?.area_km2.toLocaleString()} km² PostGIS).
                   </p>
                 </div>
@@ -1818,22 +1815,22 @@ function ChangeAnalysisInner() {
                 {/* 2. Vegetation loss */}
                 <div
                   onClick={() => setSelectedPSRequirement('vegetation')}
-                  className={`p-2 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
                     selectedPSRequirement === 'vegetation'
-                      ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                      : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/60'
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-900 font-semibold shadow-xs'
+                      : 'bg-[#f8faf7] border-[#e5ebe4] text-slate-700 hover:bg-white'
                   }`}
                 >
-                  <div className="flex items-center justify-between font-semibold">
+                  <div className="flex items-center justify-between font-bold">
                     <span className="flex items-center gap-1.5">
-                      <Trees className="w-3.5 h-3.5 text-emerald-400" />
+                      <Trees className="w-3.5 h-3.5 text-emerald-600" />
                       <span>2. Vegetation Loss</span>
                     </span>
-                    <span className="text-[10px] text-emerald-400 font-mono">
+                    <span className="text-[10px] text-emerald-700 font-mono font-bold">
                       {activeMetrics ? `${activeMetrics.vegLossKm2.toFixed(1)} km²` : 'VERIFIED'}
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[10px] text-slate-500 mt-1">
                     Sentinel-2 10m NDVI degradation & canopy reduction.
                   </p>
                 </div>
@@ -1841,22 +1838,22 @@ function ChangeAnalysisInner() {
                 {/* 3. Water bodies */}
                 <div
                   onClick={() => setSelectedPSRequirement('water')}
-                  className={`p-2 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
                     selectedPSRequirement === 'water'
-                      ? 'bg-cyan-500/15 border-cyan-500/40 text-cyan-300'
-                      : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/60'
+                      ? 'bg-sky-50 border-sky-300 text-sky-900 font-semibold shadow-xs'
+                      : 'bg-[#f8faf7] border-[#e5ebe4] text-slate-700 hover:bg-white'
                   }`}
                 >
-                  <div className="flex items-center justify-between font-semibold">
+                  <div className="flex items-center justify-between font-bold">
                     <span className="flex items-center gap-1.5">
-                      <Droplets className="w-3.5 h-3.5 text-cyan-400" />
+                      <Droplets className="w-3.5 h-3.5 text-sky-600" />
                       <span>3. Water Bodies</span>
                     </span>
-                    <span className="text-[10px] text-cyan-400 font-mono">
+                    <span className="text-[10px] text-sky-700 font-mono font-bold">
                       {activeMetrics ? `${activeMetrics.waterLossHa.toFixed(1)} ha` : 'VERIFIED'}
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[10px] text-slate-500 mt-1">
                     Dynamic World NDWI surface water contraction & expansion.
                   </p>
                 </div>
@@ -1864,22 +1861,22 @@ function ChangeAnalysisInner() {
                 {/* 4. Urban expansion */}
                 <div
                   onClick={() => setSelectedPSRequirement('builtup')}
-                  className={`p-2 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
                     selectedPSRequirement === 'builtup'
-                      ? 'bg-purple-500/15 border-purple-500/40 text-purple-300'
-                      : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/60'
+                      ? 'bg-purple-50 border-purple-300 text-purple-900 font-semibold shadow-xs'
+                      : 'bg-[#f8faf7] border-[#e5ebe4] text-slate-700 hover:bg-white'
                   }`}
                 >
-                  <div className="flex items-center justify-between font-semibold">
+                  <div className="flex items-center justify-between font-bold">
                     <span className="flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5 text-purple-400" />
+                      <Building2 className="w-3.5 h-3.5 text-purple-600" />
                       <span>4. Urban Expansion</span>
                     </span>
-                    <span className="text-[10px] text-purple-400 font-mono">
+                    <span className="text-[10px] text-purple-700 font-mono font-bold">
                       {activeMetrics ? `${activeMetrics.totalUrbanHa.toFixed(1)} ha` : 'VERIFIED'}
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[10px] text-slate-500 mt-1">
                     NDBI impervious surface & infrastructure road encroachment.
                   </p>
                 </div>
@@ -1887,22 +1884,22 @@ function ChangeAnalysisInner() {
                 {/* 5. Deforestation */}
                 <div
                   onClick={() => setSelectedPSRequirement('deforestation')}
-                  className={`p-2 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-xl border cursor-pointer transition-all ${
                     selectedPSRequirement === 'deforestation'
-                      ? 'bg-rose-500/15 border-rose-500/40 text-rose-300'
-                      : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/60'
+                      ? 'bg-rose-50 border-rose-300 text-rose-900 font-semibold shadow-xs'
+                      : 'bg-[#f8faf7] border-[#e5ebe4] text-slate-700 hover:bg-white'
                   }`}
                 >
-                  <div className="flex items-center justify-between font-semibold">
+                  <div className="flex items-center justify-between font-bold">
                     <span className="flex items-center gap-1.5">
-                      <Flame className="w-3.5 h-3.5 text-rose-400" />
+                      <Flame className="w-3.5 h-3.5 text-rose-600" />
                       <span>5. Deforestation</span>
                     </span>
-                    <span className="text-[10px] text-rose-400 font-mono">
+                    <span className="text-[10px] text-rose-700 font-mono font-bold">
                       {activeMetrics ? `${activeMetrics.severeLossHa.toFixed(1)} ha` : 'VERIFIED'}
                     </span>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1">
+                  <p className="text-[10px] text-slate-500 mt-1">
                     Severe canopy clearance alerts (ΔNDVI &lt; -0.4).
                   </p>
                 </div>
@@ -1910,25 +1907,25 @@ function ChangeAnalysisInner() {
             </div>
 
             {/* KEY INSIGHTS & SELECTED HOTSPOT DOSSIER */}
-            <div className="bg-[#0b1528] rounded-xl border border-slate-800/80 p-4 shadow-xl flex flex-col gap-3">
-              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <div className="bg-white rounded-2xl border border-[#e5ebe4] p-4 shadow-xs flex flex-col gap-3">
+              <h2 className="text-xs font-bold font-outfit uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
                 <span>INSPECTED THREAT DOSSIER</span>
               </h2>
 
               {selectedHotspot ? (
-                <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-700/80 text-xs space-y-2">
+                <div className="p-3.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc] text-xs space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-100 uppercase text-[11px]">
+                    <span className="font-bold text-slate-800 uppercase text-[11px]">
                       {selectedHotspot.change_label || selectedHotspot.change_type}
                     </span>
                     <span
                       className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                         selectedHotspot.severity === 'critical'
-                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                          ? 'bg-rose-50 text-rose-700 border border-rose-200'
                           : selectedHotspot.severity === 'high'
-                          ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30'
-                          : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                          ? 'bg-orange-50 text-orange-700 border border-orange-200'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
                       }`}
                     >
                       {selectedHotspot.severity}
@@ -1941,42 +1938,42 @@ function ChangeAnalysisInner() {
                   <div className="grid grid-cols-2 gap-2 text-[11px] font-mono pt-1">
                     <div>
                       <span className="text-slate-500 block text-[9px]">PRIORITY SCORE</span>
-                      <span className="text-amber-400 font-bold">
+                      <span className="text-amber-700 font-bold">
                         {selectedHotspot.priority_score !== null ? `${selectedHotspot.priority_score}/100` : 'P75'}
                       </span>
                     </div>
                     <div>
                       <span className="text-slate-500 block text-[9px]">AFFECTED AREA</span>
-                      <span className="text-white font-bold">
+                      <span className="text-slate-900 font-bold">
                         {selectedHotspot.affected_area_ha ? `${selectedHotspot.affected_area_ha.toFixed(2)} ha` : 'N/A'}
                       </span>
                     </div>
                     <div>
                       <span className="text-slate-500 block text-[9px]">Δ NDVI CHANGE</span>
-                      <span className="text-rose-400 font-bold">
+                      <span className="text-rose-600 font-bold">
                         {selectedHotspot.mean_ndvi_change !== null ? selectedHotspot.mean_ndvi_change.toFixed(4) : 'N/A'}
                       </span>
                     </div>
                     <div>
                       <span className="text-slate-500 block text-[9px]">SENSOR</span>
-                      <span className="text-slate-300 font-bold">
+                      <span className="text-slate-700 font-bold">
                         {selectedHotspot.sensor || 'Sentinel-2 L2A'}
                       </span>
                     </div>
                   </div>
 
                   {selectedHotspot.nearest_known_road_distance_m && (
-                    <div className="text-[10px] font-mono text-slate-400 pt-1 border-t border-slate-800">
+                    <div className="text-[10px] font-mono text-slate-500 pt-1 border-t border-[#dde4dc]">
                       Nearest Road Corridor: {(selectedHotspot.nearest_known_road_distance_m / 1000).toFixed(1)} km
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="text-xs text-slate-400 space-y-2.5">
+                <div className="text-xs text-slate-500 space-y-2.5">
                   <p className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 mt-1.5" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
                     <span>
-                      Total of <b>{hotspots.length} threat events</b> detected in this analysis.
+                      Total of <strong className="text-slate-800">{hotspots.length} threat events</strong> detected in this analysis.
                     </span>
                   </p>
                   <p className="text-[10px] text-slate-500 italic">
@@ -1986,7 +1983,7 @@ function ChangeAnalysisInner() {
                     <button
                       type="button"
                       onClick={() => setSelectedHotspot(hotspots[0])}
-                      className="w-full py-1.5 px-3 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-semibold text-xs transition flex items-center justify-center gap-1.5"
+                      className="w-full py-1.5 px-3 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-700 border border-emerald-500/40 font-semibold text-xs transition flex items-center justify-center gap-1.5"
                     >
                       <span>✨ View Top Priority Threat AI Summary</span>
                       <span>→</span>
@@ -1999,9 +1996,9 @@ function ChangeAnalysisInner() {
               <button
                 onClick={handleGenerateReport}
                 disabled={reportGenerating}
-                className="w-full mt-2 py-2.5 px-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 border border-slate-700/80 transition-colors disabled:opacity-50"
+                className="w-full mt-2 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-2 transition-colors shadow-sm disabled:opacity-50"
               >
-                <FileText className={`w-3.5 h-3.5 text-emerald-400 ${reportGenerating ? 'animate-bounce' : ''}`} />
+                <FileText className={`w-3.5 h-3.5 ${reportGenerating ? 'animate-bounce' : ''}`} />
                 <span>{reportGenerating ? 'Exporting GeoJSON/CSV...' : 'Generate Detailed Report'}</span>
               </button>
             </div>

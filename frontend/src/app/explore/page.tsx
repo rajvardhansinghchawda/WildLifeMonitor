@@ -34,8 +34,8 @@ export default function ExplorePage() {
       <div className="space-y-4 pb-12">
         <div className="flex items-end justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-white font-mono">EXPLORE MAP</h1>
-            <p className="text-xs text-slate-400 mt-1">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 font-outfit">EXPLORE MAP</h1>
+            <p className="text-xs text-slate-500 mt-0.5 font-medium">
               OpenStreetMap basemap with real change-event polygons. Click a polygon for details.
             </p>
           </div>
@@ -45,7 +45,7 @@ export default function ExplorePage() {
               setAreaId(e.target.value);
               setSelected(null);
             }}
-            className="h-9 px-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 min-w-[260px]"
+            className="h-10 px-3.5 rounded-xl bg-white border border-[#dde4dc] hover:border-emerald-600 text-xs font-semibold text-slate-800 shadow-xs focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 min-w-[260px] transition-all"
           >
             <option value="">All areas</option>
             {areas.data?.items.map((a) => (
@@ -58,7 +58,7 @@ export default function ExplorePage() {
         {hotspots.loading && <LoadingBlock />}
         {hotspots.error && <ErrorBlock error={hotspots.error} onRetry={hotspots.reload} />}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-4">
-          <div className="xl:col-span-3">
+          <div className="xl:col-span-3 rounded-2xl border border-[#e5ebe4] overflow-hidden bg-white shadow-xs">
             <GeoMap
               center={area?.coordinates ?? areas.data?.items[0]?.coordinates}
               boundary={boundary.data}
@@ -68,23 +68,23 @@ export default function ExplorePage() {
               height="640px"
             />
           </div>
-          <div className="gis-glass-card rounded-xl border border-slate-800 p-4 h-fit">
+          <div className="bg-white rounded-2xl border border-[#e5ebe4] p-5 h-fit shadow-xs">
             {selected ? (
-              <div className="space-y-1.5 text-xs">
+              <div className="space-y-2 text-xs">
                 <SeverityBadge severity={selected.severity} />
-                <h2 className="text-sm text-white mt-1">{selected.change_label}</h2>
-                <p className="text-slate-400">{selected.area_name}</p>
-                <p className="font-mono text-slate-300">{fmtHa(selected.affected_area_ha)}</p>
-                <p className="font-mono text-slate-400">
+                <h2 className="text-sm font-bold text-slate-900 mt-1">{selected.change_label}</h2>
+                <p className="text-slate-600 font-medium">{selected.area_name}</p>
+                <p className="font-mono text-slate-800 font-semibold">{fmtHa(selected.affected_area_ha)}</p>
+                <p className="font-mono text-slate-500">
                   priority {selected.priority_score !== null ? selected.priority_score.toFixed(0) : 'unscored'}
                 </p>
-                <Link href={`/hotspots?id=${selected.id}`} className="inline-block text-emerald-400 hover:underline">
+                <Link href={`/hotspots?id=${selected.id}`} className="inline-block text-emerald-700 font-semibold hover:underline mt-1">
                   Open full detail →
                 </Link>
               </div>
             ) : (
-              <p className="text-xs text-slate-500">
-                {hotspots.data ? `${hotspots.data.total} events shown.` : ''} Select a polygon.
+              <p className="text-xs text-slate-500 font-medium">
+                {hotspots.data ? `${hotspots.data.total} events shown.` : ''} Select a polygon on the map to inspect details.
               </p>
             )}
           </div>

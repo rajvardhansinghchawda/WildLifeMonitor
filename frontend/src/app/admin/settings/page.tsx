@@ -126,25 +126,25 @@ export default function AdminSettingsPage() {
     <AppLayout>
       <div className="space-y-6">
         {/* Header & Sub-nav */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800/80 pb-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#e5ebe4] pb-5">
           <div>
             <div className="flex items-center gap-2">
               <Link
                 href="/admin"
-                className="text-slate-400 hover:text-white transition-colors p-1 rounded-md hover:bg-slate-800"
+                className="text-slate-500 hover:text-slate-900 transition-colors p-1.5 rounded-lg hover:bg-[#f3f7f2] border border-transparent hover:border-[#dde4dc]"
                 title="Back to Admin"
               >
                 <ChevronLeft className="w-4 h-4" />
               </Link>
-              <span className="text-xl font-bold tracking-tight text-white font-mono flex items-center gap-2">
-                <Sliders className="w-5 h-5 text-amber-400" />
-                <span>SCIENTIFIC TUNING & GUARDRAILS</span>
+              <span className="text-xl font-bold tracking-tight text-slate-900 font-outfit flex items-center gap-2">
+                <Sliders className="w-5 h-5 text-amber-600" />
+                <span>Scientific Tuning & Guardrails</span>
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-500/40">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-semibold">
                 ADMIN LEVEL
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Multi-criteria prioritization formulas, raster spatial tolerances, and immutable audit ledger
             </p>
           </div>
@@ -152,41 +152,41 @@ export default function AdminSettingsPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/admin"
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono flex items-center gap-1.5 transition-colors border border-slate-700"
+              className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#f3f7f2] text-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors border border-[#dde4dc] shadow-xs"
             >
-              <Activity className="w-3.5 h-3.5 text-emerald-400" />
+              <Activity className="w-3.5 h-3.5 text-emerald-600" />
               <span>Telemetry</span>
             </Link>
 
             <Link
               href="/admin/members"
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono flex items-center gap-1.5 transition-colors border border-slate-700"
+              className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#f3f7f2] text-slate-700 text-xs font-medium flex items-center gap-1.5 transition-colors border border-[#dde4dc] shadow-xs"
             >
-              <Users className="w-3.5 h-3.5 text-cyan-400" />
+              <Users className="w-3.5 h-3.5 text-sky-600" />
               <span>Members</span>
             </Link>
 
             <button
               onClick={fetchData}
-              className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700"
+              className="p-2 rounded-xl bg-white hover:bg-[#f3f7f2] text-slate-700 transition-colors border border-[#dde4dc] shadow-xs"
               title="Refresh Settings"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-emerald-400' : ''}`} />
+              <RefreshCw className={`w-4 h-4 text-slate-600 ${loading ? 'animate-spin text-emerald-600' : ''}`} />
             </button>
           </div>
         </div>
 
         {/* Status Alerts */}
         {error && (
-          <div className="rounded-lg bg-red-950/60 border border-red-800/80 p-3.5 flex items-center gap-3 text-red-200 text-xs">
-            <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
+          <div className="rounded-xl bg-rose-50 border border-rose-200 p-3.5 flex items-center gap-3 text-rose-800 text-xs shadow-xs">
+            <AlertTriangle className="w-4 h-4 text-rose-600 flex-shrink-0" />
             <p className="font-mono">{error}</p>
           </div>
         )}
 
         {successMsg && (
-          <div className="rounded-lg bg-emerald-950/60 border border-emerald-800/80 p-3.5 flex items-center gap-3 text-emerald-200 text-xs">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+          <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3.5 flex items-center gap-3 text-emerald-800 text-xs shadow-xs">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
             <p className="font-mono">{successMsg}</p>
           </div>
         )}
@@ -195,22 +195,22 @@ export default function AdminSettingsPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Scientific Prioritization Weights Column */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="gis-glass-card rounded-xl border border-slate-800 p-5 space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+            <div className="bg-white rounded-2xl border border-[#e5ebe4] p-6 space-y-6 shadow-xs">
+              <div className="flex items-center justify-between border-b border-[#e5ebe4] pb-3">
                 <div>
-                  <h2 className="text-sm font-semibold text-white font-mono uppercase flex items-center gap-2">
-                    <Sliders className="w-4 h-4 text-amber-400" />
+                  <h2 className="text-sm font-bold text-slate-900 font-outfit uppercase flex items-center gap-2">
+                    <Sliders className="w-4 h-4 text-amber-600" />
                     <span>Multi-Criteria Priority Weights</span>
                   </h2>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
+                  <p className="text-[11px] text-slate-500 mt-0.5">
                     Defines hotspot composite priority: Score = (W_m × Magnitude) + (W_s × Sensitivity) + (W_c × Context)
                   </p>
                 </div>
                 <span
-                  className={`text-xs font-mono font-bold px-2.5 py-1 rounded border ${
+                  className={`text-xs font-mono font-bold px-2.5 py-1 rounded-lg border ${
                     isWeightValid
-                      ? 'bg-emerald-950 text-emerald-300 border-emerald-500/50'
-                      : 'bg-red-950 text-red-300 border-red-500/50 animate-pulse'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse'
                   }`}
                 >
                   Sum: {weightSum.toFixed(2)} / 1.00
@@ -220,8 +220,8 @@ export default function AdminSettingsPage() {
               {/* Weight 1: Magnitude */}
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-mono">
-                  <span className="text-slate-300">W_magnitude (Change Intensity & Area)</span>
-                  <span className="text-emerald-400 font-bold">{magnitudeWeight.toFixed(2)}</span>
+                  <span className="text-slate-700 font-medium">W_magnitude (Change Intensity & Area)</span>
+                  <span className="text-emerald-700 font-bold">{magnitudeWeight.toFixed(2)}</span>
                 </div>
                 <input
                   type="range"
@@ -230,7 +230,7 @@ export default function AdminSettingsPage() {
                   step="0.05"
                   value={magnitudeWeight}
                   onChange={(e) => setMagnitudeWeight(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                  className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                 />
                 <p className="text-[10px] text-slate-500">
                   Weight applied to NDVI drop rate, deforestation hectare size, and pixel density.
@@ -240,8 +240,8 @@ export default function AdminSettingsPage() {
               {/* Weight 2: Sensitivity */}
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-mono">
-                  <span className="text-slate-300">W_sensitivity (Ecological & Habitat Value)</span>
-                  <span className="text-cyan-400 font-bold">{sensitivityWeight.toFixed(2)}</span>
+                  <span className="text-slate-700 font-medium">W_sensitivity (Ecological & Habitat Value)</span>
+                  <span className="text-sky-700 font-bold">{sensitivityWeight.toFixed(2)}</span>
                 </div>
                 <input
                   type="range"
@@ -250,7 +250,7 @@ export default function AdminSettingsPage() {
                   step="0.05"
                   value={sensitivityWeight}
                   onChange={(e) => setSensitivityWeight(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                  className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-600"
                 />
                 <p className="text-[10px] text-slate-500">
                   Weight applied to core tiger reserve boundaries, critical wildlife corridors, and UNESCO status.
@@ -260,8 +260,8 @@ export default function AdminSettingsPage() {
               {/* Weight 3: Context */}
               <div className="space-y-2">
                 <div className="flex justify-between text-xs font-mono">
-                  <span className="text-slate-300">W_context (Proximity to Roads & Settlements)</span>
-                  <span className="text-amber-400 font-bold">{contextWeight.toFixed(2)}</span>
+                  <span className="text-slate-700 font-medium">W_context (Proximity to Roads & Settlements)</span>
+                  <span className="text-amber-700 font-bold">{contextWeight.toFixed(2)}</span>
                 </div>
                 <input
                   type="range"
@@ -270,17 +270,17 @@ export default function AdminSettingsPage() {
                   step="0.05"
                   value={contextWeight}
                   onChange={(e) => setContextWeight(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-amber-600"
                 />
                 <p className="text-[10px] text-slate-500">
                   Weight applied to human accessibility vector risks (distance to nearest highway, rail, village).
                 </p>
               </div>
 
-              <div className="pt-4 border-t border-slate-800/80 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="pt-4 border-t border-[#e5ebe4] grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Context Buffer */}
-                <div className="space-y-2 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-                  <label className="text-[11px] font-mono text-slate-300 block">Context Buffer (km)</label>
+                <div className="space-y-2 bg-[#f8faf7] p-3 rounded-xl border border-[#dde4dc]">
+                  <label className="text-[11px] font-mono text-slate-600 block">Context Buffer (km)</label>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -289,15 +289,15 @@ export default function AdminSettingsPage() {
                       step="0.5"
                       value={contextBufferKm}
                       onChange={(e) => setContextBufferKm(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs font-mono text-white"
+                      className="w-full px-2.5 py-1 rounded-lg bg-white border border-[#dde4dc] text-xs font-mono text-slate-900 focus:outline-none focus:border-emerald-600"
                     />
-                    <span className="text-[10px] text-slate-400">km</span>
+                    <span className="text-[10px] text-slate-500 font-medium">km</span>
                   </div>
                 </div>
 
                 {/* Cloud Cover */}
-                <div className="space-y-2 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-                  <label className="text-[11px] font-mono text-slate-300 block">Max Cloud Cover (%)</label>
+                <div className="space-y-2 bg-[#f8faf7] p-3 rounded-xl border border-[#dde4dc]">
+                  <label className="text-[11px] font-mono text-slate-600 block">Max Cloud Cover (%)</label>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -306,15 +306,15 @@ export default function AdminSettingsPage() {
                       step="5"
                       value={maxCloudCover}
                       onChange={(e) => setMaxCloudCover(parseInt(e.target.value) || 0)}
-                      className="w-full px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs font-mono text-white"
+                      className="w-full px-2.5 py-1 rounded-lg bg-white border border-[#dde4dc] text-xs font-mono text-slate-900 focus:outline-none focus:border-emerald-600"
                     />
-                    <span className="text-[10px] text-slate-400">%</span>
+                    <span className="text-[10px] text-slate-500 font-medium">%</span>
                   </div>
                 </div>
 
                 {/* NDVI Loss Threshold */}
-                <div className="space-y-2 bg-slate-900/60 p-3 rounded-lg border border-slate-800">
-                  <label className="text-[11px] font-mono text-slate-300 block">NDVI Loss Floor</label>
+                <div className="space-y-2 bg-[#f8faf7] p-3 rounded-xl border border-[#dde4dc]">
+                  <label className="text-[11px] font-mono text-slate-600 block">NDVI Loss Floor</label>
                   <div className="flex items-center gap-2">
                     <input
                       type="number"
@@ -323,9 +323,9 @@ export default function AdminSettingsPage() {
                       step="0.05"
                       value={ndviThreshold}
                       onChange={(e) => setNdviThreshold(parseFloat(e.target.value) || 0)}
-                      className="w-full px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs font-mono text-white"
+                      className="w-full px-2.5 py-1 rounded-lg bg-white border border-[#dde4dc] text-xs font-mono text-slate-900 focus:outline-none focus:border-emerald-600"
                     />
-                    <span className="text-[10px] text-slate-400">ΔNDVI</span>
+                    <span className="text-[10px] text-slate-500 font-medium">ΔNDVI</span>
                   </div>
                 </div>
               </div>
@@ -335,7 +335,7 @@ export default function AdminSettingsPage() {
                 <button
                   type="button"
                   onClick={handleResetDefaults}
-                  className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-mono flex items-center gap-1.5 transition-colors border border-slate-700"
+                  className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-[#f3f7f2] text-slate-700 text-xs font-mono flex items-center gap-1.5 transition-colors border border-[#dde4dc] shadow-xs"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>Reset Defaults</span>
@@ -345,7 +345,7 @@ export default function AdminSettingsPage() {
                   type="button"
                   onClick={handleSave}
                   disabled={saving || !isWeightValid}
-                  className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white text-xs font-mono font-bold flex items-center gap-1.5 transition-colors shadow-lg shadow-emerald-950"
+                  className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white text-xs font-mono font-bold flex items-center gap-1.5 transition-colors shadow-xs"
                 >
                   {saving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                   <span>Save Parameters</span>
@@ -354,49 +354,49 @@ export default function AdminSettingsPage() {
             </div>
 
             {/* Audit Trail Table */}
-            <div className="gis-glass-card rounded-xl border border-slate-800 p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                <h2 className="text-sm font-semibold text-white font-mono uppercase flex items-center gap-2">
-                  <History className="w-4 h-4 text-cyan-400" />
+            <div className="bg-white rounded-2xl border border-[#e5ebe4] p-6 space-y-4 shadow-xs">
+              <div className="flex items-center justify-between border-b border-[#e5ebe4] pb-3">
+                <h2 className="text-sm font-bold text-slate-900 font-outfit uppercase flex items-center gap-2">
+                  <History className="w-4 h-4 text-sky-600" />
                   <span>Administrative Audit Trail ({auditLogs.length} Records)</span>
                 </h2>
-                <span className="text-[10px] font-mono text-slate-400">Immutable Ledger</span>
+                <span className="text-[10px] font-mono text-slate-500">Immutable Ledger</span>
               </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs font-mono">
-                  <thead className="bg-slate-900/80 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+                  <thead className="bg-[#f8faf7] text-slate-600 uppercase text-[10px] border-b border-[#e5ebe4]">
                     <tr>
-                      <th className="py-2 px-3">Timestamp</th>
-                      <th className="py-2 px-3">Actor</th>
-                      <th className="py-2 px-3">Action</th>
-                      <th className="py-2 px-3">Target</th>
-                      <th className="py-2 px-3">Summary</th>
+                      <th className="py-2.5 px-3">Timestamp</th>
+                      <th className="py-2.5 px-3">Actor</th>
+                      <th className="py-2.5 px-3">Action</th>
+                      <th className="py-2.5 px-3">Target</th>
+                      <th className="py-2.5 px-3">Summary</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60">
+                  <tbody className="divide-y divide-[#f0f3ee]">
                     {auditLogs.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-4 text-center text-slate-500 text-xs">
+                        <td colSpan={5} className="py-4 text-center text-slate-400 text-xs">
                           No audit log entries recorded yet.
                         </td>
                       </tr>
                     ) : (
                       auditLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-slate-800/40 transition-colors">
-                          <td className="py-2.5 px-3 text-slate-400 whitespace-nowrap">
+                        <tr key={log.id} className="hover:bg-[#f3f7f2] transition-colors">
+                          <td className="py-2.5 px-3 text-slate-500 whitespace-nowrap">
                             {log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}
                           </td>
-                          <td className="py-2.5 px-3 text-emerald-400 font-semibold">{log.actor_id}</td>
+                          <td className="py-2.5 px-3 text-emerald-700 font-semibold">{log.actor_id}</td>
                           <td className="py-2.5 px-3">
-                            <span className="px-1.5 py-0.5 rounded text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-800/40">
+                            <span className="px-2 py-0.5 rounded-lg text-[10px] bg-sky-50 text-sky-700 border border-sky-200 font-semibold">
                               {log.action}
                             </span>
                           </td>
-                          <td className="py-2.5 px-3 text-slate-300">
+                          <td className="py-2.5 px-3 text-slate-700">
                             {log.target_type} ({log.target_id.slice(0, 8)}…)
                           </td>
-                          <td className="py-2.5 px-3 text-slate-400 max-w-xs truncate text-[11px]">
+                          <td className="py-2.5 px-3 text-slate-500 max-w-xs truncate text-[11px]">
                             {JSON.stringify(log.payload)}
                           </td>
                         </tr>
@@ -411,27 +411,27 @@ export default function AdminSettingsPage() {
           {/* Hard Guardrails & Provider Status Column */}
           <div className="space-y-6">
             {/* Hard Guardrails Card */}
-            <div className="gis-glass-card rounded-xl border border-slate-800 p-5 space-y-4">
-              <h3 className="text-xs font-semibold text-white font-mono uppercase flex items-center gap-2 border-b border-slate-800/80 pb-2.5">
-                <Lock className="w-3.5 h-3.5 text-red-400" />
+            <div className="bg-white rounded-2xl border border-[#e5ebe4] p-5 space-y-4 shadow-xs">
+              <h3 className="text-xs font-bold text-slate-900 font-outfit uppercase flex items-center gap-2 border-b border-[#e5ebe4] pb-2.5">
+                <Lock className="w-3.5 h-3.5 text-rose-600" />
                 <span>Hard Architectural Guardrails</span>
               </h3>
-              <div className="space-y-3 text-xs font-mono">
-                <div className="flex justify-between items-center p-2 rounded bg-slate-900/60 border border-slate-800/60">
-                  <span className="text-slate-400">Max AOI Area</span>
-                  <span className="text-amber-400 font-bold">50,000 km²</span>
+              <div className="space-y-2.5 text-xs font-mono">
+                <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc]">
+                  <span className="text-slate-600">Max AOI Area</span>
+                  <span className="text-amber-700 font-bold">50,000 km²</span>
                 </div>
-                <div className="flex justify-between items-center p-2 rounded bg-slate-900/60 border border-slate-800/60">
-                  <span className="text-slate-400">Max Polygon Vertices</span>
-                  <span className="text-amber-400 font-bold">2,000 pts</span>
+                <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc]">
+                  <span className="text-slate-600">Max Polygon Vertices</span>
+                  <span className="text-amber-700 font-bold">2,000 pts</span>
                 </div>
-                <div className="flex justify-between items-center p-2 rounded bg-slate-900/60 border border-slate-800/60">
-                  <span className="text-slate-400">Max Temporal Window</span>
-                  <span className="text-amber-400 font-bold">180 days</span>
+                <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc]">
+                  <span className="text-slate-600">Max Temporal Window</span>
+                  <span className="text-amber-700 font-bold">180 days</span>
                 </div>
-                <div className="flex justify-between items-center p-2 rounded bg-slate-900/60 border border-slate-800/60">
-                  <span className="text-slate-400">Concurrent Jobs/Org</span>
-                  <span className="text-amber-400 font-bold">5 jobs</span>
+                <div className="flex justify-between items-center p-2.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc]">
+                  <span className="text-slate-600">Concurrent Jobs/Org</span>
+                  <span className="text-amber-700 font-bold">5 jobs</span>
                 </div>
               </div>
               <p className="text-[10px] text-slate-500 italic">
@@ -440,33 +440,33 @@ export default function AdminSettingsPage() {
             </div>
 
             {/* Earth Observation Providers */}
-            <div className="gis-glass-card rounded-xl border border-slate-800 p-5 space-y-4">
-              <h3 className="text-xs font-semibold text-white font-mono uppercase flex items-center gap-2 border-b border-slate-800/80 pb-2.5">
-                <Compass className="w-3.5 h-3.5 text-emerald-400" />
+            <div className="bg-white rounded-2xl border border-[#e5ebe4] p-5 space-y-4 shadow-xs">
+              <h3 className="text-xs font-bold text-slate-900 font-outfit uppercase flex items-center gap-2 border-b border-[#e5ebe4] pb-2.5">
+                <Compass className="w-3.5 h-3.5 text-emerald-600" />
                 <span>Telemetry Ingestion Providers</span>
               </h3>
               <div className="space-y-2.5 text-xs font-mono">
-                <div className="flex items-center justify-between p-2 rounded bg-slate-900/60 border border-slate-800/60">
-                  <span className="text-slate-300">Google Earth Engine</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc]">
+                  <span className="text-slate-700 font-medium">Google Earth Engine</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
                     ACTIVE
                   </span>
                 </div>
-                <div className="flex items-center justify-between p-2 rounded bg-slate-900/60 border border-slate-800/60">
-                  <span className="text-slate-300">Global Forest Watch (GFW)</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc]">
+                  <span className="text-slate-700 font-medium">Global Forest Watch (GFW)</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
                     ACTIVE
                   </span>
                 </div>
-                <div className="flex items-center justify-between p-2 rounded bg-slate-900/60 border border-slate-800/60">
-                  <span className="text-slate-300">NASA FIRMS Active Fires</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc]">
+                  <span className="text-slate-700 font-medium">NASA FIRMS Active Fires</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 font-semibold">
                     NOMINAL
                   </span>
                 </div>
-                <div className="flex items-center justify-between p-2 rounded bg-slate-900/60 border border-slate-800/60">
-                  <span className="text-slate-300">Overpass Context Vector</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc]">
+                  <span className="text-slate-700 font-medium">Overpass Context Vector</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
                     ONLINE
                   </span>
                 </div>
@@ -474,27 +474,27 @@ export default function AdminSettingsPage() {
             </div>
 
             {/* Storage & Caching Layer */}
-            <div className="gis-glass-card rounded-xl border border-slate-800 p-5 space-y-4">
-              <h3 className="text-xs font-semibold text-white font-mono uppercase flex items-center gap-2 border-b border-slate-800/80 pb-2.5">
-                <Layers className="w-3.5 h-3.5 text-cyan-400" />
+            <div className="bg-white rounded-2xl border border-[#e5ebe4] p-5 space-y-4 shadow-xs">
+              <h3 className="text-xs font-bold text-slate-900 font-outfit uppercase flex items-center gap-2 border-b border-[#e5ebe4] pb-2.5">
+                <Layers className="w-3.5 h-3.5 text-sky-600" />
                 <span>Persistence & Data Integrity</span>
               </h3>
               <div className="space-y-2.5 text-xs font-mono">
-                <div className="flex items-center justify-between p-2 rounded bg-slate-900/60 border border-slate-800/60">
-                  <span className="text-slate-300">PostGIS Spatial Store</span>
-                  <span className="text-emerald-400 font-bold">SRID 4326</span>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc]">
+                  <span className="text-slate-700 font-medium">PostGIS Spatial Store</span>
+                  <span className="text-emerald-700 font-bold">SRID 4326</span>
                 </div>
-                <div className="flex items-center justify-between p-2 rounded bg-slate-900/60 border border-slate-800/60">
-                  <span className="text-slate-300">MinIO GeoTIFF Bucket</span>
-                  <span className="text-emerald-400 font-bold">codeniti-rasters</span>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc]">
+                  <span className="text-slate-700 font-medium">MinIO GeoTIFF Bucket</span>
+                  <span className="text-emerald-700 font-bold">codeniti-rasters</span>
                 </div>
-                <div className="flex items-center justify-between p-2 rounded bg-slate-900/60 border border-slate-800/60">
-                  <span className="text-slate-300">Redis Result Caching</span>
-                  <span className="text-emerald-400 font-bold">TTL 300s</span>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc]">
+                  <span className="text-slate-700 font-medium">Redis Result Caching</span>
+                  <span className="text-emerald-700 font-bold">TTL 300s</span>
                 </div>
-                <div className="flex items-center justify-between p-2 rounded bg-slate-900/60 border border-slate-800/60">
-                  <span className="text-slate-300">Outbox Event Queue</span>
-                  <span className="text-emerald-400 font-bold">At-least-once</span>
+                <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#f8faf7] border border-[#dde4dc]">
+                  <span className="text-slate-700 font-medium">Outbox Event Queue</span>
+                  <span className="text-emerald-700 font-bold">At-least-once</span>
                 </div>
               </div>
             </div>

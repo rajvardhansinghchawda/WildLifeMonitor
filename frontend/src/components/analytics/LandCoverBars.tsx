@@ -23,13 +23,13 @@ export const LandCoverBars: React.FC<{ distribution: Record<string, number> }> =
     <div className="space-y-2">
       {rows.map(([k, v]) => (
         <div key={k}>
-          <div className="flex justify-between text-[11px] text-slate-300 mb-0.5">
+          <div className="flex justify-between text-[11px] text-slate-700 font-medium mb-1">
             <span className="capitalize">{k.replace(/_/g, ' ')}</span>
-            <span className="font-mono">{v.toFixed(1)}%</span>
+            <span className="font-mono font-semibold text-slate-900">{v.toFixed(1)}%</span>
           </div>
-          <div className="h-1.5 rounded bg-slate-800 overflow-hidden">
+          <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
             <div
-              className="h-full rounded"
+              className="h-full rounded-full"
               style={{ width: `${Math.min(100, v)}%`, background: COLORS[k] ?? '#94a3b8' }}
             />
           </div>

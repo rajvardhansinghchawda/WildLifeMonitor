@@ -9,7 +9,7 @@ const TemporalCompareSlider = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="w-full h-[700px] bg-slate-950 flex items-center justify-center text-xs font-mono text-slate-500 animate-pulse">
+      <div className="w-full h-[700px] bg-white rounded-2xl border border-[#e5ebe4] shadow-xs flex items-center justify-center text-xs font-medium text-slate-500 animate-pulse">
         Loading Satellite Comparison Studio...
       </div>
     ),
@@ -20,7 +20,7 @@ export default function ComparePage() {
   return (
     <Suspense
       fallback={
-        <div className="h-screen w-screen flex items-center justify-center bg-[#070c17] text-slate-400 font-mono text-xs">
+        <div className="h-screen w-screen flex items-center justify-center bg-[#f4f6f3] text-slate-500 font-medium text-xs">
           Loading TerraWatch Satellite Comparison...
         </div>
       }

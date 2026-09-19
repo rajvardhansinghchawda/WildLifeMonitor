@@ -28,43 +28,48 @@ export default function ProfilePage() {
 
   return (
     <AppLayout>
-      <div className="space-y-5 pb-12 max-w-2xl">
-        <h1 className="text-xl font-bold tracking-tight text-white font-mono">PROFILE</h1>
-        <div className="gis-glass-card rounded-xl border border-slate-800 p-4 space-y-3">
+      <div className="space-y-5 pb-12 max-w-2xl font-sans">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-slate-900 font-outfit">RANGER PROFILE</h1>
+          <p className="text-xs text-slate-500 mt-0.5 font-medium">
+            Manage your personal credentials, contact email, and workspace assignments.
+          </p>
+        </div>
+        <div className="bg-white rounded-2xl border border-[#e5ebe4] p-6 space-y-4 shadow-xs">
           <div>
-            <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Full name</label>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Full name</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="h-9 w-full px-3 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200"
+              className="h-10 w-full px-3.5 rounded-xl bg-white border border-[#dde4dc] hover:border-emerald-600 text-xs font-semibold text-slate-800 focus:outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 shadow-xs transition-all"
             />
           </div>
           <div>
-            <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Email</label>
-            <p className="text-xs text-slate-300">{user?.email}</p>
+            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Email</label>
+            <p className="text-sm font-semibold text-slate-800 bg-[#f8faf7] px-3.5 py-2.5 rounded-xl border border-[#e5ebe4]">{user?.email}</p>
           </div>
-          <p className="text-[11px] text-slate-500">
+          <p className="text-xs text-slate-500 font-medium">
             Member since {fmtDate(user?.created_at)} · last sign-in {fmtDate(user?.last_login_at)}
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pt-1">
             <button
               onClick={save}
               disabled={busy || name.trim().length < 2 || name === user?.full_name}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold disabled:opacity-40"
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs disabled:opacity-40 transition-all"
             >
-              Save
+              {busy ? 'Saving…' : 'Save changes'}
             </button>
-            {msg && <span className="text-[11px] text-slate-400">{msg}</span>}
+            {msg && <span className="text-xs text-slate-600 font-medium">{msg}</span>}
           </div>
         </div>
 
-        <div className="gis-glass-card rounded-xl border border-slate-800 p-4">
-          <h2 className="text-sm font-semibold text-white font-mono uppercase mb-2">Workspaces & roles</h2>
-          <div className="divide-y divide-slate-800/60">
+        <div className="bg-white rounded-2xl border border-[#e5ebe4] p-6 shadow-xs">
+          <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">Workspaces & roles</h2>
+          <div className="divide-y divide-[#f0f3ee]">
             {user?.memberships.map((m) => (
-              <div key={m.workspace_id} className="py-2 flex items-center justify-between text-xs">
-                <span className="text-slate-200">{m.workspace_name}</span>
-                <span className="font-mono text-slate-400">
+              <div key={m.workspace_id} className="py-3 flex items-center justify-between text-xs">
+                <span className="font-semibold text-slate-800">{m.workspace_name}</span>
+                <span className="font-mono text-slate-600 bg-[#f8faf7] px-2 py-0.5 rounded-lg border border-[#e5ebe4]">
                   {m.role}
                   {m.is_public ? ' · curated (read-only)' : ''}
                 </span>
