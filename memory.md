@@ -520,3 +520,32 @@ ajesh.sharma@forest.gov.in (Senior Director NTCA - Admin Role)
   - Commit: 8bf85e9 ("feat: add custom date interval selection and telemetry interpolation to compare slider")
   - Push: Successful (599ddbb..8bf85e9 -> origin/backend)
 
+## [2026-09-19 12:31] Phase 36 — CARTO Basemap API Key Integration & Watermark Elimination
+- User Request: User provided CARTO basemap API key with screenshot of "API KEY REQUIRED" watermark on Carto dark matter basemap, requesting to add it into .env.
+- Exploration:
+  - Inspected frontend map components (`GeoMap.tsx`, `ComparisonLeafletMap.tsx`, `PublicMap.tsx`).
+  - Identified that CartoDB Dark Matter basemap raster tiles (`https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png`) now mandate an API key, rendering diagonal watermarks when requested unauthenticated.
+  - Verified with CARTO documentation that appending `?key=YOUR_KEY` to the tile URL authenticates tile requests and removes the watermark.
+  - Verified HTTP 200 and valid raster tile response using the user-provided key.
+- Implementation Details:
+  1. Environment Variables Configuration:
+     - Added `NEXT_PUBLIC_CARTO_API_KEY` to `frontend/.env.local`.
+     - Added `CARTO_API_KEY` and `NEXT_PUBLIC_CARTO_API_KEY` to root `.env` and `backend/.env`.
+     - Added placeholders `NEXT_PUBLIC_CARTO_API_KEY=""` and `CARTO_API_KEY=` to `frontend/.env.example` and `backend/.env.example`.
+     - Confirmed all `.env` and `.env.local` files are strictly gitignored per Rule 11.
+  2. Map Component Updates (`GeoMap.tsx` and `ComparisonLeafletMap.tsx`):
+     - Dynamically reads `process.env.NEXT_PUBLIC_CARTO_API_KEY`.
+     - Constructs Carto dark basemap tile URL with `?key=${cartoKey}` and `subdomains: 'abcd'`.
+     - Configured both initial map mount and dynamic basemap switching.
+     - Added Carto dark tile support in `ComparisonLeafletMap` observed comparison pane when in swipe mode.
+  3. Syntax & Type Cleanup:
+     - Fixed `AreaSummary` imports in `areas/page.tsx` and `dashboard/page.tsx` to reference `@/lib/api`.
+     - Added null safety for timeline NDVI interpolation in `TemporalCompareSlider.tsx`.
+- Verification:
+  - CARTO tile endpoint verified with API key returning valid image stream.
+  - Local Next.js dev server verified running and returning HTTP 200 across `/`, `/dashboard`, `/compare`, `/change-analysis`, and `/areas`.
+- Git:
+  - Branch: backend
+  - Commit: Pending commit
+  - Push: Pending push
+

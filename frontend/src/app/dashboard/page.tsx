@@ -22,14 +22,13 @@ import {
   Search,
   Loader2,
 } from 'lucide-react';
-import { AreaSummary } from '@/types';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { MetricCard } from '@/components/common/MetricCard';
 import { SeverityBadge } from '@/components/common/SeverityBadge';
 import { EmptyBlock, LoadingBlock } from '@/components/common/ApiState';
 import { TimelineChart } from '@/components/analytics/TimelineChart';
 import { LandCoverBars } from '@/components/analytics/LandCoverBars';
-import api from '@/lib/api';
+import api, { AreaSummary } from '@/lib/api';
 import { useApi } from '@/lib/use-api';
 import { fmtDate, fmtHa, fmtNum, healthColor } from '@/lib/format';
 import {

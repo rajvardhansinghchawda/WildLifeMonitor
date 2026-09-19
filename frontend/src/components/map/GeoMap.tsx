@@ -90,11 +90,16 @@ export default function GeoMap({
           }
         ).addTo(map);
       } else {
+        const cartoKey = process.env.NEXT_PUBLIC_CARTO_API_KEY;
+        const cartoUrl = cartoKey
+          ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${cartoKey}`
+          : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
         tileLayerRef.current = L.tileLayer(
-          'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+          cartoUrl,
           {
             maxZoom: 18,
-            attribution: '&copy; CartoDB',
+            subdomains: 'abcd',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
           }
         ).addTo(map);
       }
@@ -139,11 +144,16 @@ export default function GeoMap({
         }
       ).addTo(map);
     } else {
+      const cartoKey = process.env.NEXT_PUBLIC_CARTO_API_KEY;
+      const cartoUrl = cartoKey
+        ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${cartoKey}`
+        : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
       tileLayerRef.current = L.tileLayer(
-        'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+        cartoUrl,
         {
           maxZoom: 18,
-          attribution: '&copy; CartoDB',
+          subdomains: 'abcd',
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
         }
       ).addTo(map);
     }

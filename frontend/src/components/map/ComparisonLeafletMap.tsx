@@ -43,6 +43,7 @@ export interface ComparisonLeafletMapProps {
   syncCenter?: { lat: number; lon: number };
   syncZoom?: number;
   dateSpanYears?: number;
+  viewMode?: string;
 }
 
 export default function ComparisonLeafletMap({
@@ -72,6 +73,7 @@ export default function ComparisonLeafletMap({
   syncCenter,
   syncZoom,
   dateSpanYears = 5,
+  viewMode = 'Natural Color',
 }: ComparisonLeafletMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
@@ -109,13 +111,19 @@ export default function ComparisonLeafletMap({
         L.control.zoom({ position: 'bottomright' }).addTo(map);
       }
 
-      // Basemap Layer
-      const tileClassName =
-        basemapType === 'satellite'
-          ? mode === 'baseline'
-            ? 'sat-baseline-tiles'
-            : 'sat-observed-tiles'
-          : '';
+      // Basemap Layer with Multi-Spectral Spectral Shaders
+      let tileClassName = '';
+      if (basemapType === 'satellite') {
+        if (viewMode === 'NDVI False Color') {
+          tileClassName = mode === 'baseline' ? 'sat-ndvi-baseline' : 'sat-ndvi-observed';
+        } else if (viewMode === 'NDWI Water Bodies') {
+          tileClassName = mode === 'baseline' ? 'sat-ndwi-baseline' : 'sat-ndwi-observed';
+        } else if (viewMode === 'Urban Encroachment') {
+          tileClassName = mode === 'baseline' ? 'sat-baseline-tiles' : 'sat-urban-tiles';
+        } else {
+          tileClassName = mode === 'baseline' ? 'sat-baseline-tiles' : 'sat-observed-tiles';
+        }
+      }
 
       if (basemapType === 'satellite') {
         L.tileLayer(
@@ -127,11 +135,16 @@ export default function ComparisonLeafletMap({
           }
         ).addTo(map);
       } else {
+        const cartoKey = process.env.NEXT_PUBLIC_CARTO_API_KEY;
+        const cartoUrl = cartoKey
+          ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${cartoKey}`
+          : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
         L.tileLayer(
-          'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+          cartoUrl,
           {
             maxZoom: 18,
-            attribution: '&copy; CartoDB',
+            subdomains: 'abcd',
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
           }
         ).addTo(map);
       }
@@ -263,12 +276,36 @@ export default function ComparisonLeafletMap({
 
       // In isCompareSwipe mode, add secondary observed satellite tile layer into observed-pane so satellite imagery changes across time
       if (basemapType === 'satellite') {
+        let obsTileClass = 'sat-observed-tiles';
+        if (viewMode === 'NDVI False Color') {
+          obsTileClass = 'sat-ndvi-observed';
+        } else if (viewMode === 'NDWI Water Bodies') {
+          obsTileClass = 'sat-ndwi-observed';
+        } else if (viewMode === 'Urban Encroachment') {
+          obsTileClass = 'sat-urban-tiles';
+        }
+
         const obsTiles = L.tileLayer(
           'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
           {
             maxZoom: 18,
             attribution: 'Esri Satellite (Observed)',
-            className: 'sat-observed-tiles',
+            className: obsTileClass,
+            pane: 'observed-pane',
+          }
+        ).addTo(map);
+        layersGroupRef.current.push(obsTiles);
+      } else {
+        const cartoKey = process.env.NEXT_PUBLIC_CARTO_API_KEY;
+        const cartoUrl = cartoKey
+          ? `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${cartoKey}`
+          : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+        const obsTiles = L.tileLayer(
+          cartoUrl,
+          {
+            maxZoom: 18,
+            subdomains: 'abcd',
+            attribution: '&copy; CartoDB',
             pane: 'observed-pane',
           }
         ).addTo(map);
@@ -276,7 +313,22 @@ export default function ComparisonLeafletMap({
       }
     }
 
-    // 0. Render Baseline Satellite Raster (if provided in swipe mode)
+    // 0. Render Baseline Pristine Canopy Overlay (Lush healthy vegetation on Before side)
+    if (isCompareSwipe && boundaryGeoJson) {
+      const baseCanopy = L.geoJSON(boundaryGeoJson, {
+        style: {
+          color: '#10b981',
+          weight: 2.0,
+          opacity: 0.85,
+          fillColor: '#059669',
+          fillOpacity: viewMode === 'NDVI False Color' ? 0.35 : 0.08,
+        },
+        interactive: false,
+      }).addTo(map);
+      layersGroupRef.current.push(baseCanopy);
+    }
+
+    // 0b. Render Baseline Satellite Raster (if provided in swipe mode)
     if (baselineRaster && baselineRaster.url && baselineRaster.bounds && isCompareSwipe) {
       try {
         const baseImg = L.imageOverlay(baselineRaster.url, baselineRaster.bounds, {
@@ -304,14 +356,14 @@ export default function ComparisonLeafletMap({
       }
     }
 
-    // 2. Render Real PostGIS Protected Area Boundary (Clean crisp outline, transparent interior so satellite imagery is pristine)
+    // 2. Render Real PostGIS Protected Area Boundary (Clean crisp outline)
     if (showBoundary && boundaryGeoJson) {
       const boundaryStyle =
         mode === 'baseline'
-          ? { color: '#10b981', weight: 2.2, opacity: 0.95, fillColor: '#10b981', fillOpacity: 0.0 }
+          ? { color: '#10b981', weight: 2.4, opacity: 0.95, fillColor: '#10b981', fillOpacity: 0.0 }
           : mode === 'observed'
-          ? { color: '#eab308', weight: 2.2, opacity: 0.95, fillColor: '#eab308', fillOpacity: 0.0 }
-          : { color: '#38bdf8', weight: 2.0, opacity: 0.9, fillColor: '#0284c7', fillOpacity: 0.05 };
+          ? { color: '#eab308', weight: 2.4, opacity: 0.95, fillColor: '#eab308', fillOpacity: 0.0 }
+          : { color: '#38bdf8', weight: 2.2, opacity: 0.9, fillColor: '#0284c7', fillOpacity: 0.05 };
 
       const bLayer = L.geoJSON(boundaryGeoJson, {
         style: boundaryStyle,
@@ -417,8 +469,8 @@ export default function ComparisonLeafletMap({
 
         const color = psBg;
 
-        // Visual radius scaled for high GIS visibility (420m to 1400m)
-        const radiusMeters = Math.max(420, Math.sqrt(((h.affected_area_ha || 1.2) * 10000) / Math.PI) * 1.55);
+        // Visual radius scaled for high GIS visibility across all zoom levels (1200m to 3500m)
+        const radiusMeters = Math.max(1200, Math.sqrt(((h.affected_area_ha || 4.5) * 10000) / Math.PI) * 2.8);
         const seed = Math.abs(Math.sin((lat || 21) * 1000 + (lon || 79) * 2000) * 10000);
         const latMeters = 111320;
         const lonMeters = 111320 * Math.cos(((lat || 21) * Math.PI) / 180);
@@ -430,10 +482,10 @@ export default function ComparisonLeafletMap({
             const polyLayer = L.geoJSON(polyGeom as any, {
               style: {
                 color: color,
-                weight: 2.5,
+                weight: psSymbol === '🔥' ? 3.0 : 2.5,
                 opacity: 1.0,
                 fillColor: color,
-                fillOpacity: mode === 'baseline' ? 0.25 : 0.70,
+                fillOpacity: mode === 'baseline' ? 0.25 : 0.75,
               },
               pane: targetPane,
             }).addTo(map);
@@ -472,7 +524,7 @@ export default function ComparisonLeafletMap({
                 const pLon = lon + (pDist * Math.cos(pAngle)) / lonMeters;
 
                 const particle = L.circleMarker([pLat, pLon], {
-                  radius: 3.0,
+                  radius: 3.5,
                   color: '#ffffff',
                   weight: 1.2,
                   opacity: 0.95,
@@ -488,10 +540,8 @@ export default function ComparisonLeafletMap({
           }
         } else if (lat && lon) {
           // If polygon geometry is not defined, render organic terrain-conforming irregular polygon and micro-particles
-          // NO large geometric circles: uses harmonic terrain jitter and 10m pixel-level micro-particles
           try {
-            // 1. Organic irregular polygon (12 harmonic vertices conforming to natural terrain boundary)
-            const numPoints = 12;
+            const numPoints = 14;
             const polygonPoints: [number, number][] = [];
             const haloPoints: [number, number][] = [];
 
@@ -499,22 +549,22 @@ export default function ComparisonLeafletMap({
               const angle = (i / numPoints) * 2 * Math.PI;
               const p1 = Math.sin(angle * 2.5 + seed);
               const p2 = Math.cos(angle * 4.1 + seed * 1.3);
-              const rFactor = 0.65 + 0.35 * (0.5 + 0.3 * p1 + 0.2 * p2);
+              const rFactor = 0.70 + 0.30 * (0.5 + 0.3 * p1 + 0.2 * p2);
               const r = radiusMeters * rFactor;
               const dLat = (r * Math.sin(angle)) / latMeters;
               const dLon = (r * Math.cos(angle)) / lonMeters;
               polygonPoints.push([lat + dLat, lon + dLon]);
-              haloPoints.push([lat + dLat * 1.35, lon + dLon * 1.35]);
+              haloPoints.push([lat + dLat * 1.4, lon + dLon * 1.4]);
             }
 
             // Outer glowing radar pulse halo
             if (mode !== 'baseline') {
               const haloPoly = L.polygon(haloPoints, {
                 color: color,
-                weight: 1.5,
-                opacity: 0.75,
+                weight: 1.8,
+                opacity: 0.85,
                 fillColor: color,
-                fillOpacity: 0.18,
+                fillOpacity: psSymbol === '🔥' ? 0.30 : 0.20,
                 dashArray: '4, 4',
                 interactive: false,
                 pane: targetPane,
@@ -524,12 +574,12 @@ export default function ComparisonLeafletMap({
 
             // Inner high-contrast core disturbance polygon
             const organicPoly = L.polygon(polygonPoints, {
-              color: color,
-              weight: 2.2,
-              opacity: 0.95,
+              color: psSymbol === '🔥' ? '#fca5a5' : color,
+              weight: psSymbol === '🔥' ? 2.8 : 2.2,
+              opacity: 1.0,
               fillColor: color,
-              fillOpacity: mode === 'baseline' ? 0.25 : 0.68,
-              dashArray: mode === 'baseline' ? '3, 3' : undefined,
+              fillOpacity: mode === 'baseline' ? 0.25 : 0.72,
+              dashArray: mode === 'baseline' ? '3, 3' : (ct.includes('water') ? '4, 4' : undefined),
               pane: targetPane,
             }).addTo(map);
 
@@ -662,7 +712,7 @@ export default function ComparisonLeafletMap({
               [lat, lon],
               [roadOffsetLat, lon + 0.01],
             ],
-            { color: '#f59e0b', weight: 2, dashArray: '4 4', opacity: 0.85 }
+            { color: '#f59e0b', weight: 2.2, dashArray: '4 4', opacity: 0.9, pane: targetPane }
           ).addTo(map);
           roadLine.bindTooltip(`Road Proximity Vector: ${distKm} km`, { sticky: true });
           layersGroupRef.current.push(roadLine);
@@ -693,20 +743,22 @@ export default function ComparisonLeafletMap({
             const waterPoly = L.polygon(pts, {
               color: '#06b6d4',
               fillColor: '#0284c7',
-              fillOpacity: 0.35,
-              weight: 1.5,
+              fillOpacity: 0.45,
+              weight: 2,
               dashArray: '3 3',
+              pane: targetPane,
             }).addTo(map);
             waterPoly.bindTooltip(`Surface Water Dynamics: ${h.affected_area_ha?.toFixed(2) ?? '3.50'} ha`);
             layersGroupRef.current.push(waterPoly);
 
             // Water pixel micro-particles
             const wp = L.circleMarker([lat, lon], {
-              radius: 3,
+              radius: 3.5,
               color: '#38bdf8',
               fillColor: '#0284c7',
-              fillOpacity: 0.9,
+              fillOpacity: 0.95,
               weight: 1,
+              pane: targetPane,
             }).addTo(map);
             layersGroupRef.current.push(wp);
           }
@@ -723,11 +775,11 @@ export default function ComparisonLeafletMap({
           if (lat && lon) {
             const icon = L.divIcon({
               className: 'gis-settlement-micro-icon',
-              html: `<div style="width: 7px; height: 7px; background: #a855f7; border: 1px solid #ffffff; box-shadow: 0 0 6px #a855f7; border-radius: 1px;"></div>`,
+              html: `<div style="width: 8px; height: 8px; background: #a855f7; border: 1.5px solid #ffffff; box-shadow: 0 0 8px #a855f7; border-radius: 2px;"></div>`,
               iconSize: [8, 8],
               iconAnchor: [4, 4],
             });
-            const sm = L.marker([lat, lon], { icon }).addTo(map);
+            const sm = L.marker([lat, lon], { icon, pane: targetPane }).addTo(map);
             sm.bindTooltip(`Settlement/Encroachment Boundary Indicator`);
             layersGroupRef.current.push(sm);
           }

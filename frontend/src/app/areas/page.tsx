@@ -6,10 +6,9 @@ import { useSearchParams } from 'next/navigation';
 import { Globe, Loader2, Search } from 'lucide-react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { EmptyBlock, ErrorBlock, LoadingBlock } from '@/components/common/ApiState';
-import api from '@/lib/api';
+import api, { AreaSummary } from '@/lib/api';
 import { useApi } from '@/lib/use-api';
 import { fmtDate, fmtNum, healthColor } from '@/lib/format';
-import { AreaSummary } from '@/types';
 
 function AreasInner() {
   const params = useSearchParams();

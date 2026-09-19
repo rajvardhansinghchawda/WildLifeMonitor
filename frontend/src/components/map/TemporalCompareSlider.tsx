@@ -521,7 +521,7 @@ export default function TemporalCompareSlider({
       if (targetTime >= t0 && targetTime <= t1) {
         const denom = t1 - t0 || 1;
         const ratio = (targetTime - t0) / denom;
-        const ndvi = sorted[i].ndvi + ratio * (sorted[i + 1].ndvi - sorted[i].ndvi);
+        const ndvi = (sorted[i].ndvi ?? 0.5) + ratio * ((sorted[i + 1].ndvi ?? 0.5) - (sorted[i].ndvi ?? 0.5));
         const w0 = sorted[i].water_cover_ha ?? totalReserveAreaKm2 * 7.5;
         const w1 = sorted[i + 1].water_cover_ha ?? totalReserveAreaKm2 * 7.0;
         const water_cover_ha = w0 + ratio * (w1 - w0);
@@ -558,7 +558,7 @@ export default function TemporalCompareSlider({
       if (targetTime >= t0 && targetTime <= t1) {
         const denom = t1 - t0 || 1;
         const ratio = (targetTime - t0) / denom;
-        const ndvi = sorted[i].ndvi + ratio * (sorted[i + 1].ndvi - sorted[i].ndvi);
+        const ndvi = (sorted[i].ndvi ?? 0.5) + ratio * ((sorted[i + 1].ndvi ?? 0.5) - (sorted[i].ndvi ?? 0.5));
         const w0 = sorted[i].water_cover_ha ?? totalReserveAreaKm2 * 7.5;
         const w1 = sorted[i + 1].water_cover_ha ?? totalReserveAreaKm2 * 7.0;
         const water_cover_ha = w0 + ratio * (w1 - w0);
@@ -1250,7 +1250,7 @@ export default function TemporalCompareSlider({
         {/* ONE SINGLE MAP INSTANCE (SAME MAP CANVAS + TWO SATELLITE LAYERS + CLIPPING) */}
         <div className="absolute inset-0">
           <ComparisonLeafletMap
-            key={`single-map-${activeArea?.id}-${baselineYear}-${observedYear}-${detectionType}-${aoiZoomCounter}-${basemapType}`}
+            key={`single-map-${activeArea?.id}-${baselineYear}-${observedYear}-${detectionType}-${viewMode}-${aoiZoomCounter}-${basemapType}`}
             center={syncedCenter}
             zoom={syncedZoom}
             boundaryGeoJson={currentBoundary}
@@ -1258,6 +1258,7 @@ export default function TemporalCompareSlider({
             mode="observed"
             isCompareSwipe={true}
             swipePosition={swipePosition}
+            viewMode={viewMode}
             baselineRaster={baselineOverlay}
             rasterOverlay={changeOverlay || comparisonOverlay}
             showBoundary={true}
@@ -1285,6 +1286,19 @@ export default function TemporalCompareSlider({
               <span>◀</span>
               <span>▶</span>
             </div>
+          </div>
+
+          {/* Floating Comparison Telemetry Inspector HUD Pill */}
+          <div
+            className="absolute top-8 -translate-x-1/2 px-3 py-1.5 rounded-xl bg-[#070d1a]/95 backdrop-blur-md border border-emerald-500/60 shadow-2xl flex items-center gap-2 whitespace-nowrap text-[11px] font-mono pointer-events-none transition-all duration-75"
+          >
+            <span className="text-emerald-400 font-bold">
+              {baselineYear}: Pristine (NDVI {baseNdvi.toFixed(2)})
+            </span>
+            <span className="text-slate-400">➔</span>
+            <span className="text-rose-400 font-bold">
+              {observedYear}: {forestDeltaPct < 0 ? `${Math.abs(forestDeltaPct).toFixed(1)}% Loss` : 'Observed'} ({filteredHotspots.length} Alerts)
+            </span>
           </div>
         </div>
 
@@ -1318,32 +1332,26 @@ export default function TemporalCompareSlider({
               </div>
             </div>
             <div className="flex items-center gap-1.5 text-[10px] font-mono shrink-0">
-              <div className="px-2 py-1 rounded bg-emerald-950/70 border border-emerald-500/40 text-emerald-300">
-                NDVI: <b className="text-white">{baseNdvi.toFixed(2)}</b>
-              </div>
-              <div className="px-2 py-1 rounded bg-slate-900/85 border border-slate-700 text-slate-300">
-                Canopy: <b className="text-emerald-400">{baseForestKm2} km²</b>
-              </div>
+              <span className="text-emerald-400 font-semibold">NDVI {baseNdvi.toFixed(2)}</span>
+              <span className="text-slate-500">|</span>
+              <span className="text-cyan-400 font-semibold">{baseWaterKm2} km² Water</span>
             </div>
           </div>
         </div>
 
         {/* Top-Right Floating Badge: After / Observed Date Telemetry */}
         <div className="absolute top-3.5 right-3.5 z-[500] pointer-events-none">
-          <div className="bg-[#070d1a]/95 backdrop-blur-md border border-rose-500/60 rounded-xl p-2.5 shadow-2xl flex items-center gap-3 border-r-4 border-r-rose-500">
+          <div className="bg-[#070d1a]/95 backdrop-blur-md border border-rose-500/60 rounded-xl p-2.5 shadow-2xl flex items-center gap-3 border-r-4 border-r-rose-500 text-right">
             <div className="flex items-center gap-1.5 text-[10px] font-mono shrink-0">
-              <div className="px-2 py-1 rounded bg-rose-950/80 border border-rose-500/50 text-rose-300 font-bold flex items-center gap-1">
-                <span>🔥</span> {filteredHotspots.length} Alerts
-              </div>
-              <div className="px-2 py-1 rounded bg-rose-950/70 border border-rose-500/40 text-rose-300">
-                Net: <b className="text-white">{forestDeltaPct.toFixed(1)}%</b>
-              </div>
+              <span className="text-rose-400 font-semibold">NDVI {obsNdvi.toFixed(2)}</span>
+              <span className="text-slate-500">|</span>
+              <span className="text-cyan-400 font-semibold">{obsWaterKm2} km² Water</span>
             </div>
-            <div className="text-right">
+            <div>
               <div className="flex items-center justify-end gap-2">
                 <span className="text-xs font-mono font-bold text-white flex items-center gap-1">
-                  <Calendar className="w-3 h-3 text-rose-400 shrink-0" />
                   <span>{observedDateFormatted}</span>
+                  <Calendar className="w-3 h-3 text-rose-400 shrink-0" />
                 </span>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-mono">
                   AFTER • {observedYear}
@@ -1369,31 +1377,61 @@ export default function TemporalCompareSlider({
           </div>
         </div>
 
-        {/* Bottom-Right Floating Glassmorphic Change Detection Legend (Matching Reference Video) */}
-        <div className="absolute bottom-4 right-16 max-w-xs p-3 rounded-xl bg-slate-950/90 backdrop-blur-md border border-slate-700/80 shadow-2xl z-[500] pointer-events-none text-left select-none">
-          <div className="flex items-center gap-2 mb-1.5 pb-1 border-b border-slate-800">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[11px] font-mono font-bold text-slate-200 uppercase tracking-wider">
-              Change Detection (Swipe)
-            </span>
+        {/* Bottom-Right Floating Glassmorphic Change Detection Legend with Interactive Pillar Filters */}
+        <div className="absolute bottom-4 right-16 max-w-xs p-3 rounded-xl bg-slate-950/90 backdrop-blur-md border border-slate-700/80 shadow-2xl z-[500] pointer-events-auto text-left select-none">
+          <div className="flex items-center justify-between gap-2 mb-1.5 pb-1 border-b border-slate-800">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[11px] font-mono font-bold text-slate-200 uppercase tracking-wider">
+                PS Pillars ({filteredHotspots.length} Alerts)
+              </span>
+            </div>
+            {detectionType !== 'vegetation' && (
+              <button
+                onClick={() => setDetectionType('vegetation')}
+                className="text-[9px] font-mono text-emerald-400 hover:text-emerald-300 underline"
+              >
+                Reset All
+              </button>
+            )}
           </div>
           <div className="grid grid-cols-1 gap-1 text-[10px] font-mono">
-            <div className="flex items-center gap-2 text-slate-300">
+            <button
+              onClick={() => setDetectionType(detectionType === 'forest' ? 'vegetation' : 'forest')}
+              className={`flex items-center gap-2 px-1.5 py-1 rounded transition-colors text-left ${
+                detectionType === 'forest' ? 'bg-rose-500/20 text-rose-300 font-bold border border-rose-500/40' : 'text-slate-300 hover:bg-slate-800/60'
+              }`}
+            >
               <span className="w-2.5 h-2.5 rounded-sm bg-rose-500 shrink-0 shadow-[0_0_6px_rgba(244,63,94,0.6)]" />
               <span>Deforestation (Forest Loss)</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-300">
+            </button>
+            <button
+              onClick={() => setDetectionType(detectionType === 'vegetation' ? 'forest' : 'vegetation')}
+              className={`flex items-center gap-1.5 px-1.5 py-1 rounded transition-colors text-left ${
+                detectionType === 'vegetation' ? 'bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40' : 'text-slate-300 hover:bg-slate-800/60'
+              }`}
+            >
               <span className="w-2.5 h-2.5 rounded-sm bg-amber-500 shrink-0 shadow-[0_0_6px_rgba(245,158,11,0.6)]" />
-              <span>Vegetation Loss / Degradation</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-300">
+              <span>Vegetation Degradation (NDVI)</span>
+            </button>
+            <button
+              onClick={() => setDetectionType(detectionType === 'water' ? 'vegetation' : 'water')}
+              className={`flex items-center gap-2 px-1.5 py-1 rounded transition-colors text-left ${
+                detectionType === 'water' ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40' : 'text-slate-300 hover:bg-slate-800/60'
+              }`}
+            >
               <span className="w-2.5 h-2.5 rounded-sm bg-cyan-400 shrink-0 shadow-[0_0_6px_rgba(6,182,212,0.6)]" />
-              <span>Water Body Dynamics</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-300">
+              <span>Water Body Depletion</span>
+            </button>
+            <button
+              onClick={() => setDetectionType(detectionType === 'urban' ? 'vegetation' : 'urban')}
+              className={`flex items-center gap-2 px-1.5 py-1 rounded transition-colors text-left ${
+                detectionType === 'urban' ? 'bg-purple-500/20 text-purple-300 font-bold border border-purple-500/40' : 'text-slate-300 hover:bg-slate-800/60'
+              }`}
+            >
               <span className="w-2.5 h-2.5 rounded-sm bg-purple-500 shrink-0 shadow-[0_0_6px_rgba(168,85,247,0.6)]" />
-              <span>Urban Expansion</span>
-            </div>
+              <span>Human Encroachment</span>
+            </button>
           </div>
         </div>
 

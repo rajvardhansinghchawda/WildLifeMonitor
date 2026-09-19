@@ -148,13 +148,59 @@
   -webkit-text-fill-color: transparent;
 }
 
-/* Satellite comparison layer temporal visual grading */
+/* Satellite comparison layer temporal visual grading & multi-spectral modes */
 .sat-baseline-tiles {
-  filter: saturate(1.45) contrast(1.12) brightness(1.04) hue-rotate(-6deg) !important;
+  filter: saturate(1.55) contrast(1.15) brightness(1.05) hue-rotate(-8deg) !important;
 }
 
 .sat-observed-tiles {
-  filter: saturate(0.85) contrast(1.08) brightness(0.93) !important;
+  filter: saturate(0.80) contrast(1.18) brightness(0.92) hue-rotate(5deg) !important;
+}
+
+/* NDVI False Color Multi-Spectral Simulation */
+.sat-ndvi-baseline {
+  filter: saturate(1.8) contrast(1.3) brightness(1.02) hue-rotate(-25deg) !important;
+}
+
+.sat-ndvi-observed {
+  filter: saturate(1.1) contrast(1.4) brightness(0.95) hue-rotate(35deg) !important;
+}
+
+/* NDWI Water Bodies Spectral Mode */
+.sat-ndwi-baseline {
+  filter: saturate(1.7) contrast(1.35) brightness(1.0) hue-rotate(180deg) !important;
+}
+
+.sat-ndwi-observed {
+  filter: saturate(1.2) contrast(1.4) brightness(0.88) hue-rotate(195deg) !important;
+}
+
+/* Urban Encroachment Spectral Mode */
+.sat-urban-tiles {
+  filter: saturate(0.65) contrast(1.5) brightness(0.85) !important;
+}
+
+/* Deforestation Radar Pulse & Alert Animations */
+@keyframes deforest-pulse {
+  0% {
+    transform: scale(0.96);
+    opacity: 0.95;
+    filter: drop-shadow(0 0 4px #ef4444);
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 0.70;
+    filter: drop-shadow(0 0 14px #dc2626);
+  }
+  100% {
+    transform: scale(0.96);
+    opacity: 0.95;
+    filter: drop-shadow(0 0 4px #ef4444);
+  }
+}
+
+.animate-deforest-pulse {
+  animation: deforest-pulse 2.2s infinite ease-in-out;
 }
 
 /* Custom styling for HTML5 date inputs in dark GIS theme */
