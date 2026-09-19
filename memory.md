@@ -545,11 +545,24 @@ ajesh.sharma@forest.gov.in (Senior Director NTCA - Admin Role)
   - CARTO tile endpoint verified with API key returning valid image stream.
   - Local Next.js dev server verified running and returning HTTP 200 across `/`, `/dashboard`, `/compare`, `/change-analysis`, and `/areas`.
 - Git:
-  - Branch: backend
-  - Commit: 407d3f3 ("feat: configure CARTO basemap API key and eliminate tile watermarks")
-  - Push: Successful (9877cd4..407d3f3 -> origin/backend)
-  - Remote: https://github.com/rajvardhansinghchawda/WildLifeMonitor.git
+  - Branch: `backend`
+  - Commit: `407d3f3` ("feat: configure CARTO basemap API key and eliminate tile watermarks")
+  - Push: Successful (`9877cd4..407d3f3 -> origin/backend`)
+  - Remote: `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git`
   - Status: Clean working tree, fully synced with GitHub.
+
+## [2026-09-19 13:34] Phase 40 — Temporarily Hide Voice Calling Agent Everywhere in Frontend
+- Agent: Principal Frontend & AI Systems Architect
+- User Request: "ek kam karo ki jo vo calling agen t hai na formtent me uske temp hide kar do sab jagah se plan karo appoval lo"
+- Actions & Implementation:
+  - Added feature toggle `const SHOW_VOICE_CALLING_AGENT = false;` in `frontend/src/components/chat/ChatWidget.tsx`.
+  - Guarded and hid the floating "Call AI Ranger" pill button next to the chat bubble.
+  - Guarded and hid the header "Call Ranger" phone button inside the opened chat window.
+  - Prevented mounting of `<VoiceCallModal>` and guarded the `open-voice-call` browser event listener.
+  - Preserved standard text chat functionality ("Ask the Habitat" / "Vanyora AI") and kept all voice code intact for seamless one-toggle re-enablement (`SHOW_VOICE_CALLING_AGENT = true`).
+- Verification:
+  - Verified `ChatWidget.tsx` file modifications.
+  - Implementation plan and walkthrough artifacts generated.
 
 ## [2026-09-19 12:35] Phase 37 — Visual Habitat Change Contrast, Multi-Spectral Shaders & 4-Pillar Interactive Compare Slider
 - Agent: Principal GIS & Satellite UI Systems Architect
@@ -627,7 +640,18 @@ ajesh.sharma@forest.gov.in (Senior Director NTCA - Admin Role)
 - Git:
   - Branch: backend
   - Commit: ade53b9 ("feat: enrich coordinates with human-readable habitat sectors and sync remote pull")
-  - Push: Successful (2c6d1fe..ade53b9 -> origin/backend)
-  - Remote: https://github.com/rajvardhansinghchawda/WildLifeMonitor.git
-  - Status: Working tree completely clean, up to date with remote origin/backend.
+## [2026-09-19 13:30] Phase 40 — Temporarily Hide Voice Calling Agent Everywhere in Frontend
+- Agent: Principal Frontend & AI Systems Architect
+- User Request: "ek kam karo ki jo vo calling agen t hai na formtent me uske temp hide kar do sab jagah se plan karo appoval lo"
+- Actions & Findings:
+  - Reviewed all entry points of the real-time Voice Calling Agent ("Call AI Ranger" / "Call Ranger" / `VoiceCallModal`).
+  - Anchored a feature toggle in `frontend/src/components/chat/ChatWidget.tsx`: `const SHOW_VOICE_CALLING_AGENT = false;`.
+  - Conditionally hid the floating pill button ("Call AI Ranger") next to the chat widget.
+  - Conditionally hid the header button ("Call Ranger") inside the opened chat window.
+  - Prevented mounting of `<VoiceCallModal>` and guarded the `open-voice-call` browser event listener.
+  - Preserved standard text chat functionality ("Ask the Habitat" / "Vanyora AI") and kept all voice code intact for one-toggle re-enablement (`SHOW_VOICE_CALLING_AGENT = true`).
+- Verification:
+  - Inspected diff in `ChatWidget.tsx`.
+  - Created implementation plan and walkthrough documentation.
+
 

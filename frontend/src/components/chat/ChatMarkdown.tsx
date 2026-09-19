@@ -32,14 +32,15 @@ function Inline({ text, eventHref }: { text: string; eventHref?: (id: string) =>
           const id = normaliseId(part);
           const chip = (
             <span
-              title={id}
-              className="inline-block px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-800 text-emerald-300 font-mono text-[10px] align-baseline"
+              title={`View event ${id} on interactive map`}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/80 border border-emerald-600/50 text-emerald-300 font-mono text-[10px] align-baseline hover:bg-emerald-900 hover:border-emerald-400 transition-all shadow-xs"
             >
-              #{id.slice(0, 8)}
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>📍 #{id.slice(0, 8)}</span>
             </span>
           );
           return eventHref ? (
-            <Link key={i} href={eventHref(id)} className="hover:opacity-80">
+            <Link key={i} href={eventHref(id)} className="hover:opacity-90 transition-opacity">
               {chip}
             </Link>
           ) : (
@@ -81,6 +82,24 @@ export default function ChatMarkdown({
       continue;
     }
 
+    // blockquote
+    if (line.trim().startsWith('>')) {
+      const quotes: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith('>')) {
+        quotes.push(lines[i].replace(/^\s*>\s?/, ''));
+        i++;
+      }
+      blocks.push(
+        <div
+          key={key++}
+          className="my-2 p-2.5 rounded-lg bg-amber-950/20 border-l-2 border-amber-500 text-[11px] text-amber-200/90 space-y-1"
+        >
+          <Inline text={quotes.join(' ')} eventHref={eventHref} />
+        </div>
+      );
+      continue;
+    }
+
     // table
     if (isTableRow(line) && i + 1 < lines.length && isSeparator(lines[i + 1])) {
       const header = cells(line);
@@ -88,22 +107,22 @@ export default function ChatMarkdown({
       const rows: string[][] = [];
       while (i < lines.length && isTableRow(lines[i])) rows.push(cells(lines[i++]));
       blocks.push(
-        <div key={key++} className="overflow-x-auto my-1.5">
+        <div key={key++} className="overflow-x-auto my-2 rounded-lg border border-slate-800 bg-slate-950/60 shadow-xs">
           <table className="text-[11px] border-collapse w-full">
             <thead>
-              <tr>
+              <tr className="bg-slate-900/90 border-b border-slate-800">
                 {header.map((h, c) => (
-                  <th key={c} className="text-left px-2 py-1 border-b border-slate-700 text-slate-300 font-semibold">
+                  <th key={c} className="text-left px-2.5 py-1.5 text-emerald-400 font-semibold uppercase tracking-wider text-[10px]">
                     <Inline text={h} eventHref={eventHref} />
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-800/60">
               {rows.map((r, ri) => (
-                <tr key={ri} className="border-b border-slate-800/70">
+                <tr key={ri} className="even:bg-slate-900/30 hover:bg-slate-800/40 transition-colors">
                   {r.map((c, ci) => (
-                    <td key={ci} className="px-2 py-1 align-top">
+                    <td key={ci} className="px-2.5 py-1.5 align-top text-slate-200">
                       <Inline text={c} eventHref={eventHref} />
                     </td>
                   ))}
@@ -120,7 +139,7 @@ export default function ChatMarkdown({
     const h = line.match(/^\s*#{1,4}\s+(.*)$/);
     if (h) {
       blocks.push(
-        <p key={key++} className="font-semibold text-white mt-2 mb-0.5">
+        <p key={key++} className="font-semibold text-emerald-300 text-xs mt-2.5 mb-1 flex items-center gap-1.5">
           <Inline text={h[1]} eventHref={eventHref} />
         </p>
       );
@@ -138,9 +157,9 @@ export default function ChatMarkdown({
       }
       const Tag = ordered ? 'ol' : 'ul';
       blocks.push(
-        <Tag key={key++} className={`${ordered ? 'list-decimal' : 'list-disc'} pl-4 my-1 space-y-0.5`}>
+        <Tag key={key++} className={`${ordered ? 'list-decimal' : 'list-disc'} pl-4 my-1.5 space-y-1 text-slate-200`}>
           {items.map((it, n) => (
-            <li key={n}>
+            <li key={n} className="leading-relaxed">
               <Inline text={it} eventHref={eventHref} />
             </li>
           ))}
@@ -154,6 +173,7 @@ export default function ChatMarkdown({
     while (
       i < lines.length &&
       lines[i].trim() &&
+      !lines[i].trim().startsWith('>') &&
       !isTableRow(lines[i]) &&
       !/^\s*#{1,4}\s+/.test(lines[i]) &&
       !/^\s*([-*•]|\d+[.)])\s+/.test(lines[i])
@@ -161,11 +181,11 @@ export default function ChatMarkdown({
       para.push(lines[i++]);
     }
     blocks.push(
-      <p key={key++} className="my-1 leading-relaxed">
+      <p key={key++} className="my-1 leading-relaxed text-slate-200">
         <Inline text={para.join(' ')} eventHref={eventHref} />
       </p>
     );
   }
 
-  return <div className="space-y-0.5">{blocks}</div>;
+  return <div className="space-y-0.5 text-xs">{blocks}</div>;
 }

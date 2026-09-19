@@ -34,6 +34,7 @@ import {
   FALLBACK_DEMOS,
 } from '@/lib/public-demo-data';
 import FoldText from '@/components/ui/FoldText';
+import PublicChat from '@/components/chat/PublicChat';
 
 export default function PublicDemoPage() {
   const [demonstrations, setDemonstrations] = useState<PublicDemonstrationItem[]>([]);
@@ -848,6 +849,9 @@ export default function PublicDemoPage() {
           </div>
         </div>
       )}
+
+      {/* Floating Grounded Habitat AI Assistant */}
+      <PublicChat />
     </div>
   );
 }

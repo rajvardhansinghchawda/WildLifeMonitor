@@ -59,6 +59,54 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
     {
         "type": "function",
         "function": {
+            "name": "get_reserve_profile",
+            "description": (
+                "General reserve profile, total area km2, state, biome, precomputed statistics, "
+                "and overall Habitat Health Index (0-100)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {"analysis_id": {"type": "string"}},
+                "required": ["analysis_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_vegetation_loss_summary",
+            "description": (
+                "Aggregated summary of forest & canopy loss (total hectares affected, event count, "
+                "average NDVI drop, largest disturbance patch, and top priority loss locations)."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {"analysis_id": {"type": "string"}},
+                "required": ["analysis_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_water_dynamics",
+            "description": (
+                "Water bodies dynamics: surface water area trends, drying vs expanding water bodies, "
+                "NDWI metrics, and specific water change events."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "analysis_id": {"type": "string"},
+                    "limit": {"type": "integer", "description": f"max {MAX_EVENTS}"},
+                },
+                "required": ["analysis_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "get_events",
             "description": (
                 "List change events (id, type, area_ha, confidence, priority_score, status, "
@@ -110,6 +158,21 @@ TOOL_SCHEMAS: List[Dict[str, Any]] = [
                     "top_n": {"type": "integer", "description": f"max {MAX_EVENTS}"},
                 },
                 "required": ["analysis_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_monitored_reserves",
+            "description": (
+                "List monitored wildlife reserves and national parks in India with their state and area km2."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "limit": {"type": "integer", "description": "Number of reserves to list (max 40)"},
+                },
             },
         },
     },
@@ -347,12 +410,174 @@ class ChatToolbox:
         )
         return row
 
+    async def get_reserve_profile(self, analysis_id: Any) -> Dict[str, Any]:
+        if not self._is_bound(analysis_id):
+            return OUT_OF_SCOPE
+        analysis = await self._load()
+        if analysis is None:
+            return OUT_OF_SCOPE
+        area = None
+        if analysis.area_id:
+            area = (
+                await self.db.execute(select(ProtectedArea).where(ProtectedArea.id == analysis.area_id))
+            ).scalar_one_or_none()
+        health = pq.health_for_analysis(analysis)
+        stats = dict(area.statistics or {}) if area and area.statistics else {}
+        return {
+            "analysis_id": str(analysis.id),
+            "reserve_name": area.name if area else (self._area_name or "Custom AOI"),
+            "designation": area.designation if area else "Protected Area",
+            "state": area.state if area else None,
+            "country": area.country if area else "India",
+            "biome": area.biome if area else None,
+            "total_area_km2": round(float(area.area_km2), 2) if area and area.area_km2 else None,
+            "centroid": {
+                "lat": round(float(area.centroid_lat), self.coord_precision) if area and area.centroid_lat else None,
+                "lon": round(float(area.centroid_lon), self.coord_precision) if area and area.centroid_lon else None,
+            } if area else None,
+            "habitat_health_index": health.get("score") if health else None,
+            "health_rating": health.get("rating") if health else None,
+            "health_components": health.get("components") if health else None,
+            "key_statistics": {
+                "mean_tree_canopy_percent": stats.get("tree_cover_percent") or stats.get("canopy_cover_percent"),
+                "water_surface_ha": stats.get("water_surface_ha") or stats.get("water_area_ha"),
+                "baseline_mean_ndvi": stats.get("baseline_mean_ndvi"),
+            } if stats else {},
+            "monitoring_status": analysis.status,
+        }
+
+    async def get_vegetation_loss_summary(self, analysis_id: Any) -> Dict[str, Any]:
+        if not self._is_bound(analysis_id):
+            return OUT_OF_SCOPE
+        analysis = await self._load()
+        if analysis is None:
+            return OUT_OF_SCOPE
+        veg_layer = next((lyr for lyr in analysis.layers if lyr.layer_type == "vegetation"), None)
+        veg_metrics = dict(veg_layer.metrics or {}) if veg_layer and veg_layer.metrics else {}
+
+        stats_row = (await self.db.execute(
+            select(
+                func.count(ChangeEvent.id),
+                func.sum(ChangeEvent.affected_area_ha),
+                func.avg(ChangeEvent.mean_ndvi_change),
+                func.max(ChangeEvent.affected_area_ha),
+            ).where(
+                ChangeEvent.analysis_id == self.analysis_id,
+                ChangeEvent.change_type.in_(["vegetationlosscandidate", "forestalert"]),
+            )
+        )).one()
+
+        total_count = stats_row[0] or 0
+        total_ha = round(float(stats_row[1] or 0.0), 2)
+        avg_ndvi_drop = round(float(stats_row[2] or 0.0), 3) if stats_row[2] is not None else None
+        max_single_patch_ha = round(float(stats_row[3] or 0.0), 2) if stats_row[3] is not None else 0.0
+
+        top_events = (await self.db.execute(
+            select(ChangeEvent)
+            .where(
+                ChangeEvent.analysis_id == self.analysis_id,
+                ChangeEvent.change_type.in_(["vegetationlosscandidate", "forestalert"]),
+            )
+            .order_by(ChangeEvent.priority_score.desc().nulls_last(), ChangeEvent.affected_area_ha.desc())
+            .limit(5)
+        )).scalars().all()
+
+        return {
+            "analysis_id": str(self.analysis_id),
+            "reserve_name": self._area_name,
+            "layer_reported_loss_ha": veg_metrics.get("vegetationlossareaha"),
+            "total_loss_candidate_ha": total_ha,
+            "total_loss_events_count": int(total_count),
+            "average_ndvi_drop": avg_ndvi_drop,
+            "largest_single_loss_patch_ha": max_single_patch_ha,
+            "top_priority_loss_locations": [self._event_row(e, analysis) for e in top_events],
+            "observation_window": f"{analysis.comparison_start} vs {analysis.baseline_start}",
+        }
+
+    async def get_water_dynamics(self, analysis_id: Any, limit: Any = 10) -> Dict[str, Any]:
+        if not self._is_bound(analysis_id):
+            return OUT_OF_SCOPE
+        analysis = await self._load()
+        if analysis is None:
+            return OUT_OF_SCOPE
+        water_layer = next((lyr for lyr in analysis.layers if lyr.layer_type == "water"), None)
+        water_metrics = dict(water_layer.metrics or {}) if water_layer and water_layer.metrics else {}
+
+        ev_res = await self.db.execute(
+            select(ChangeEvent)
+            .where(
+                ChangeEvent.analysis_id == self.analysis_id,
+                ChangeEvent.change_type.in_(["watergaincandidate", "waterlosscandidate"]),
+            )
+            .order_by(ChangeEvent.affected_area_ha.desc(), ChangeEvent.id)
+            .limit(_clamp(limit, 10))
+        )
+        events = ev_res.scalars().all()
+
+        counts = (await self.db.execute(
+            select(ChangeEvent.change_type, func.count(ChangeEvent.id), func.sum(ChangeEvent.affected_area_ha))
+            .where(
+                ChangeEvent.analysis_id == self.analysis_id,
+                ChangeEvent.change_type.in_(["watergaincandidate", "waterlosscandidate"]),
+            )
+            .group_by(ChangeEvent.change_type)
+        )).all()
+
+        summary_by_type = {}
+        for ctype, count, total_ha in counts:
+            summary_by_type[ctype] = {
+                "count": int(count),
+                "total_area_ha": round(float(total_ha or 0.0), 2),
+            }
+
+        return {
+            "analysis_id": str(self.analysis_id),
+            "reserve_name": self._area_name,
+            "water_layer_status": water_layer.status if water_layer else "not_requested",
+            "water_layer_metrics": {
+                k: v for k, v in water_metrics.items() if k != "distributions"
+            },
+            "water_summary": {
+                "water_loss_drying_bodies": summary_by_type.get("waterlosscandidate", {"count": 0, "total_area_ha": 0.0}),
+                "water_gain_expansion": summary_by_type.get("watergaincandidate", {"count": 0, "total_area_ha": 0.0}),
+            },
+            "events": [self._event_row(e, analysis) for e in events],
+            "observation_window": f"{analysis.comparison_start} vs {analysis.baseline_start}",
+        }
+
+    async def list_monitored_reserves(self, limit: Any = 20) -> Dict[str, Any]:
+        lim = max(1, min(40, int(limit or 20)))
+        rows = (await self.db.execute(
+            select(ProtectedArea.name, ProtectedArea.state, ProtectedArea.country, ProtectedArea.area_km2, ProtectedArea.designation)
+            .order_by(ProtectedArea.name)
+            .limit(lim)
+        )).all()
+        return {
+            "total_available_in_catalog": len(rows),
+            "reserves": [
+                {
+                    "name": r[0],
+                    "state": r[1],
+                    "country": r[2] or "India",
+                    "area_km2": round(float(r[3]), 1) if r[3] else None,
+                    "designation": r[4],
+                }
+                for r in rows
+            ],
+        }
+
     # ------------------------------------------------------------------ dispatch
     async def call(self, name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a tool by name. Unknown tools/bad args return an error dict, never raise."""
         try:
             if name == "get_analysis_summary":
                 return await self.get_analysis_summary(arguments.get("analysis_id"))
+            if name == "get_reserve_profile":
+                return await self.get_reserve_profile(arguments.get("analysis_id"))
+            if name == "get_vegetation_loss_summary":
+                return await self.get_vegetation_loss_summary(arguments.get("analysis_id"))
+            if name == "get_water_dynamics":
+                return await self.get_water_dynamics(arguments.get("analysis_id"), arguments.get("limit", 10))
             if name == "get_events":
                 return await self.get_events(
                     arguments.get("analysis_id"),
@@ -367,6 +592,8 @@ class ChatToolbox:
                 return await self.get_priority_ranking(
                     arguments.get("analysis_id"), arguments.get("top_n", 10)
                 )
+            if name == "list_monitored_reserves":
+                return await self.list_monitored_reserves(arguments.get("limit", 20))
         except (TypeError, ValueError) as exc:
             return {"error": "bad_arguments", "message": str(exc)}
         return {"error": "unknown_tool", "message": f"No tool named {name!r}."}
