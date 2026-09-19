@@ -716,9 +716,45 @@ ajesh.sharma@forest.gov.in (Senior Director NTCA - Admin Role)
   - Live Endpoint Test: Verified live `GET /api/v1/hotspots/{id}/summary` with real token; successfully returned `groq_llm` synthesized briefs in English and Hinglish with status 200.
   - Frontend Status: Next.js Turbopack dev server actively running on `localhost:3000` with HMR reflecting all changes immediately.
 - Git:
+## [2026-09-19 14:32] Phase 42 — Multi-View AI Summary Deployment & Responsive Layout Fixes
+- Agent: Principal AI & Fullstack Systems Architect
+- User Request:
+  - "Summary is not present"
+  - In response to earlier queries: "neko summary repot kaha dikhe gi ui me" and "In this we are not getting clear insights when we open full detail and go into the hotspot tab, it shows all numbers, I want to show a summarized insight in natural language, can we use LLM for that??"
+- Root Cause Analysis & Discoveries:
+  1. Viewport & Layout Stacking on `/hotspots`:
+     - The layout previously used `xl:grid-cols-5`. On displays narrower than 1280px (standard laptops, split screens, browser zoom), Tailwind collapsed into a single column, stacking the 224-row table on top. Without a height cap, the table pushed the Detail Panel and AI Summary card 5,000px down the page, making it appear missing.
+  2. Multi-Tab Dossier Ambiguity:
+     - The user's workflow includes inspecting threat events across `/change-analysis` (`INSPECTED THREAT DOSSIER` box which previously showed only numbers: Priority Score, Affected Area, Δ NDVI Change, Sensor, Nearest Road Corridor) as well as the Dashboard map modal and Compare Slider HUD drawer. The AI summary had only been mounted in `/hotspots`.
+  3. Coordinate Resolution Safety:
+     - In `HotspotAiSummaryCard.tsx`, accessing `hotspot.coordinates.lat` directly risked a runtime error if a hotspot object had flat `centroid_lat` instead of nested `coordinates`.
+- Implementation:
+  1. `frontend/src/app/hotspots/page.tsx`:
+     - Upgraded grid to `grid-cols-1 lg:grid-cols-12 gap-5 items-start`.
+     - Wrapped the 224-row table in `max-h-[460px] overflow-y-auto` with sticky headers.
+     - Pinned the detail panel on the right: `lg:col-span-5 lg:sticky lg:top-4`, keeping the AI summary and telemetry permanently in view next to the map.
+     - Added an empty-state guidance card when no hotspot is currently selected.
+  2. `frontend/src/components/hotspots/HotspotAiSummaryCard.tsx`:
+     - Updated props to accept `HotspotDetail | Hotspot`.
+     - Added safe fallback resolution: `hotspot.coordinates?.lat ?? (hotspot as any).centroid_lat ?? 0`.
+     - Clarified branding and buttons: `✨ AI THREAT SUMMARY`, `LLM Synthesized` badge, and `Full Summary ↗` action.
+     - Enhanced modal with `✨ AI Executive Threat Summary & Dossier`, structured tabs/takeaways, and prominent `[✕]` close button.
+  3. `frontend/src/app/change-analysis/page.tsx`:
+     - Mounted `<HotspotAiSummaryCard hotspot={selectedHotspot} className="my-2" />` right inside `INSPECTED THREAT DOSSIER` above the numeric grid.
+     - Added a "View Top Priority Threat AI Summary →" quick-action button when no hotspot is currently clicked.
+  4. `frontend/src/app/dashboard/page.tsx`:
+     - Mounted `<HotspotAiSummaryCard hotspot={selectedHotspot} />` inside the GIS map hotspot inspection modal.
+  5. `frontend/src/components/map/TemporalCompareSlider.tsx`:
+     - Mounted `<HotspotAiSummaryCard hotspot={selectedHotspot} />` inside the bottom-left Hotspot Telemetry HUD Drawer.
+- Verification:
+  - TypeScript Compiler (`npx tsc --noEmit`): 0 errors across entire Next.js codebase.
+  - Browser Verification (Chrome DevTools MCP):
+    - Navigated to `http://localhost:3000/hotspots`: Confirmed sticky side-by-side card with live Groq LLaMA-3.3 synthesis (`Satpura National Park Sector`). Clicked `Full Summary ↗` and verified full modal dossier with `[✕]` close button, language toggle, and recommendations.
+    - Navigated to `http://localhost:3000/change-analysis`: Scrolled to `INSPECTED THREAT DOSSIER` and visually verified `✨ AI THREAT SUMMARY` rendered with live LLM synthesis for Bandhavgarh National Park.
+- Git:
   - Branch: backend
-  - Commit: 0f2212f ("feat: add natural language hotspot intelligence brief with expandable dossier modal")
-  - Push: Successful (2314037..0f2212f -> origin/backend)
+  - Commit: Pending push
+  - Push: In progress
   - Remote: https://github.com/rajvardhansinghchawda/WildLifeMonitor.git
-  - Status: Clean working tree, fully synchronized with GitHub remote.
+  - Status: Staged and ready.
 

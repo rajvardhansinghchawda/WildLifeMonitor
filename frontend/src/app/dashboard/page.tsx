@@ -52,6 +52,7 @@ import { useAuth } from '@/lib/auth';
 import { useApi } from '@/lib/use-api';
 import { fmtDate, fmtHa, fmtNum } from '@/lib/format';
 import { formatCoordinatesWithPlace } from '@/lib/geo-names';
+import { HotspotAiSummaryCard } from '@/components/hotspots/HotspotAiSummaryCard';
 
 // Dynamically import client-only Leaflet GeoMap
 const GeoMap = dynamic(() => import('@/components/map/GeoMap'), {
@@ -573,12 +574,18 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     </div>
+
+                    {/* AI Threat Summary in Dashboard Map Modal */}
+                    <div className="mt-2.5">
+                      <HotspotAiSummaryCard hotspot={selectedHotspot} />
+                    </div>
+
                     <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between">
                       <Link
                         href={`/hotspots?id=${selectedHotspot.id}`}
                         className="text-[11px] font-bold text-[#137333] hover:underline flex items-center gap-1"
                       >
-                        <span>View Details</span>
+                        <span>Open Hotspots Ledger</span>
                         <ArrowRight className="w-3 h-3" />
                       </Link>
                     </div>

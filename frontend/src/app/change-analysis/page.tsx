@@ -51,6 +51,7 @@ import api, {
   ResultManifest,
 } from '@/lib/api';
 import type { RasterOverlayConfig } from '@/components/map/ComparisonLeafletMap';
+import { HotspotAiSummaryCard } from '@/components/hotspots/HotspotAiSummaryCard';
 
 // Dynamically import the real Leaflet map component (client-side only)
 const ComparisonLeafletMap = dynamic(
@@ -1934,6 +1935,9 @@ function ChangeAnalysisInner() {
                     </span>
                   </div>
 
+                  {/* Natural Language AI Threat Summary Card */}
+                  <HotspotAiSummaryCard hotspot={selectedHotspot} className="my-2" />
+
                   <div className="grid grid-cols-2 gap-2 text-[11px] font-mono pt-1">
                     <div>
                       <span className="text-slate-500 block text-[9px]">PRIORITY SCORE</span>
@@ -1968,16 +1972,26 @@ function ChangeAnalysisInner() {
                   )}
                 </div>
               ) : (
-                <div className="text-xs text-slate-400 space-y-2">
+                <div className="text-xs text-slate-400 space-y-2.5">
                   <p className="flex items-start gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0 mt-1.5" />
                     <span>
-                      Total of <b>{hotspots.length} threat events</b> verified in database.
+                      Total of <b>{hotspots.length} threat events</b> detected in this analysis.
                     </span>
                   </p>
-                  <p className="text-[10px] text-slate-500 italic mt-1">
-                    Click any marker or polygon on the map to inspect its exact telemetry coordinates and provenance.
+                  <p className="text-[10px] text-slate-500 italic">
+                    Click any marker or polygon on the map to inspect its exact telemetry and AI summary report.
                   </p>
+                  {hotspots.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedHotspot(hotspots[0])}
+                      className="w-full py-1.5 px-3 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-semibold text-xs transition flex items-center justify-center gap-1.5"
+                    >
+                      <span>✨ View Top Priority Threat AI Summary</span>
+                      <span>→</span>
+                    </button>
+                  )}
                 </div>
               )}
 
