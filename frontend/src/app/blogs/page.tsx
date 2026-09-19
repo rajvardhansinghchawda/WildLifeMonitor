@@ -86,7 +86,7 @@ export default function BlogsPage() {
             heading: 'From Space to the Savanna',
             paragraphs: [
               'Until recently, wildlife rangers relied almost entirely on footprint tracking, physical trail cameras, and retrospective field visits to detect illegal land incursions. In vast reserves spanning thousands of square kilometers, this left dangerous blind spots.',
-              'With the integration of Copernicus Sentinel-2 and Landsat multi-spectral telemetry into Wildlife Watch, ground units now receive 10-meter spatial resolution updates every five days. Changes in canopy density, localized fires, and drying waterholes are flagged autonomously before irreversible habitat fragmentation occurs.',
+              'With the integration of Copernicus Sentinel-2 and Landsat multi-spectral telemetry into VANYORA, ground units now receive 10-meter spatial resolution updates every five days. Changes in canopy density, localized fires, and drying waterholes are flagged autonomously before irreversible habitat fragmentation occurs.',
             ],
           },
           {
@@ -136,7 +136,7 @@ export default function BlogsPage() {
             heading: 'Climate Impacts on Pelagic Foraging',
             paragraphs: [
               'Sea surface temperature anomalies detected from space reveal shifting thermal fronts where krill and plankton concentrate. As warm currents displace these blooms toward the poles, migratory routes are extending by thousands of kilometers annually.',
-              'Wildlife Watch is pioneering cross-biome telemetry models, connecting marine thermal boundary shifts with coastal habitat health indices.',
+              'VANYORA is pioneering cross-biome telemetry models, connecting marine thermal boundary shifts with coastal habitat health indices.',
             ],
           },
         ],
@@ -178,7 +178,7 @@ export default function BlogsPage() {
           {
             heading: 'Bi-Temporal Delta Monitoring',
             paragraphs: [
-              'By comparing multi-year radar and optical baselines, Wildlife Watch can discern between natural seasonal leaf shedding and true anthropogenic canopy loss.',
+              'By comparing multi-year radar and optical baselines, VANYORA can discern between natural seasonal leaf shedding and true anthropogenic canopy loss.',
               'Algorithms identify disturbance clusters smaller than half an acre, generating instant geo-referenced alert tickets for field patrol units before illegal settlements become permanent.',
             ],
           },
@@ -291,17 +291,17 @@ export default function BlogsPage() {
         <Link href="/" className="flex items-center gap-3.5 group">
           <Image
             src="/primary logo 1.png"
-            alt="Wildlife Watch Logo"
-            width={34}
-            height={42}
+            alt="VANYORA Logo"
+            width={36}
+            height={44}
             className="h-10 w-auto object-contain group-hover:scale-105 transition-transform"
             priority
           />
           <div className="flex flex-col">
-            <span className="font-bold text-lg tracking-tight text-white leading-tight">
-              Wildlife Watch
+            <span className="font-outfit font-black text-xl tracking-[0.14em] text-white uppercase leading-none drop-shadow-sm">
+              VANYORA
             </span>
-            <span className="text-[11px] text-emerald-300/80 font-medium tracking-wider">
+            <span className="text-[10px] text-emerald-400 font-bold tracking-[0.2em] uppercase mt-1">
               Monitor • Protect • Conserve
             </span>
           </div>
@@ -679,7 +679,7 @@ export default function BlogsPage() {
           <div className="w-7 h-7 rounded-full bg-[#0d472a] flex items-center justify-center text-emerald-300">
             <TreePine className="w-4 h-4" />
           </div>
-          <span>Wildlife Watch • Conservation Journalism & Telemetry Updates</span>
+          <span>VANYORA • Conservation Journalism & Telemetry Updates</span>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-slate-600">
           <Link href="/" className="hover:text-slate-900 transition-colors">

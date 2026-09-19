@@ -1,5 +1,5 @@
 /**
- * Wildlife Watch — Public Demonstration API Client
+ * VANYORA — Public Demonstration API Client
  *
  * Dedicated typed client for unauthenticated public demonstration endpoints.
  * ZERO mock data fallback: all responses are strictly fetched from FastAPI + PostGIS.

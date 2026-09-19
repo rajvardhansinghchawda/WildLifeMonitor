@@ -104,7 +104,7 @@ export default function TemporalCompareSlider({
   useEffect(() => {
     let active = true;
     api.areas
-      .list({ limit: 10 })
+      .list()
       .then((res) => {
         if (!active || !res?.items) return;
         setAreaList(res.items);
@@ -165,7 +165,7 @@ export default function TemporalCompareSlider({
           const [bRes, tRes, eRes] = await Promise.all([
             api.areas.boundary(activeArea.id).catch(() => null),
             api.areas.timeline(activeArea.id).catch(() => null),
-            api.events.list({ area_id: activeArea.id, limit: 100 }).catch(() => null),
+            api.hotspots.list({ area_id: activeArea.id, limit: 100 } as any).catch(() => null),
           ]);
           if (bRes) bound = bRes;
           if (tRes) time = tRes;
@@ -254,7 +254,7 @@ export default function TemporalCompareSlider({
 
         // Try authenticated API first
         try {
-          const analysesRes = await api.analyses.list({ area_id: activeArea.id, limit: 10 });
+          const analysesRes = await api.analyses.list({ area_id: activeArea.id } as any);
           if (analysesRes?.items && analysesRes.items.length > 0) {
             readyAnalysis =
               analysesRes.items.find((a) => a.status === 'succeeded' || a.status === 'partial') ||
@@ -479,7 +479,7 @@ export default function TemporalCompareSlider({
   const trendData = useMemo(() => {
     return timelinePoints.map((pt) => {
       const yr = pt.date.slice(0, 4);
-      const computedKm2 = Math.round(totalReserveAreaKm2 * (pt.ndvi / 0.62) * (yr === '2024' ? 0.875 : 1));
+      const computedKm2 = Math.round(totalReserveAreaKm2 * ((pt.ndvi ?? 0.5) / 0.62) * (yr === '2024' ? 0.875 : 1));
       return {
         year: yr,
         date: pt.date,

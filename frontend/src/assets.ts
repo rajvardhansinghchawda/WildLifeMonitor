@@ -1,5 +1,5 @@
 /**
- * Wildlife Watch - Central Assets Registry
+ * VANYORA - Central Assets Registry
  *
  * Unified asset catalog for all images, satellite composites, wildlife portraits,
  * reserve photography, cartographic overlays, and video telemetry feeds.
@@ -38,7 +38,7 @@ export interface ImageAsset {
   height?: number;
   aspectRatio?: string;
   attribution?: string;
-  tags?: string[];
+  tags?: readonly string[] | string[];
   metadata?: Record<string, string | number | boolean>;
 }
 
@@ -54,7 +54,7 @@ export interface VideoAsset {
   resolution: string;
   fps?: number;
   attribution?: string;
-  tags?: string[];
+  tags?: readonly string[] | string[];
   metadata?: Record<string, string | number | boolean>;
 }
 
@@ -87,7 +87,7 @@ export function createRadarReticleSvg(): string {
 export function getPlaceholderImage(
   width: number = 800,
   height: number = 450,
-  title: string = 'WILDLIFE WATCH TELEMETRY',
+  title: string = 'VANYORA TELEMETRY',
   subtitle: string = 'SENTINEL-2 / SATELLITE ASSET'
 ): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="#070b10"/><rect x="2" y="2" width="${width - 4}" height="${height - 4}" fill="none" stroke="rgba(16,185,129,0.25)" stroke-width="1.5"/><line x1="0" y1="0" x2="${width}" y2="${height}" stroke="rgba(30,41,59,0.3)" stroke-width="1"/><line x1="0" y1="${height}" x2="${width}" y2="0" stroke="rgba(30,41,59,0.3)" stroke-width="1"/><text x="50%" y="46%" dominant-baseline="middle" text-anchor="middle" fill="#34d399" font-family="monospace" font-size="14" font-weight="bold" letter-spacing="2">${title}</text><text x="50%" y="56%" dominant-baseline="middle" text-anchor="middle" fill="#64748b" font-family="monospace" font-size="11" letter-spacing="1">${subtitle}</text></svg>`;
@@ -105,15 +105,15 @@ export const IMAGES = {
   branding: {
     logo: {
       id: 'brand-logo',
-      title: 'Wildlife Watch Primary Emblem',
+      title: 'VANYORA Primary Emblem',
       description: 'Tactical geo-intelligence platform insignia featuring forest canopy and satellite orbital vector',
       category: 'branding' as const,
       url: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=400&q=80',
       thumbnailUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?auto=format&fit=crop&w=120&q=80',
-      alt: 'Wildlife Watch Emblem',
+      alt: 'VANYORA Emblem',
       width: 400,
       height: 400,
-      attribution: 'Wildlife Watch Geo-Intelligence Lab',
+      attribution: 'VANYORA Geo-Intelligence Lab',
       tags: ['brand', 'logo', 'insignia'],
     },
     homepageHeroBg: {
@@ -127,7 +127,7 @@ export const IMAGES = {
       width: 1920,
       height: 1080,
       aspectRatio: '16:9',
-      attribution: 'Wildlife Watch Conservation Media',
+      attribution: 'VANYORA Conservation Media',
       tags: ['hero', 'homepage', 'tiger', 'bengal-tiger', 'habitat'],
     },
     rangerInsignia: {
@@ -535,7 +535,7 @@ export const IMAGES = {
       alt: 'Bi-Temporal Diverging Change Detection Surface',
       width: 1200,
       height: 800,
-      attribution: 'Wildlife Watch Bi-Temporal Difference Pipeline',
+      attribution: 'VANYORA Bi-Temporal Difference Pipeline',
       tags: ['change-detection', 'delta-ndvi', 'divergence'],
       metadata: { deltaThreshold: '±0.10 NDVI', epochs: 'T0 Baseline vs T1 Target' },
     },
@@ -656,7 +656,7 @@ export const VIDEOS = {
       format: 'mp4' as const,
       resolution: '1080p',
       fps: 30,
-      attribution: 'Wildlife Watch Airborne Telemetry Unit',
+      attribution: 'VANYORA Airborne Telemetry Unit',
       tags: ['drone', 'patrol', 'canopy', 'aerial', 'surveillance'],
       metadata: { altitudeMeters: 120, sensor: 'RGB 4K Optical Gimbal' },
     },
@@ -768,7 +768,7 @@ export const VIDEOS = {
   operational: {
     platformOverviewBriefing: {
       id: 'video-op-platform-overview',
-      title: 'Wildlife Watch Geo-Intelligence System Architecture',
+      title: 'VANYORA Geo-Intelligence System Architecture',
       description: 'Operational briefing demonstrating multi-spectral indices, Earth Engine integration, and ranger alert dispatch',
       category: 'operational_briefing' as const,
       url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4',
@@ -777,7 +777,7 @@ export const VIDEOS = {
       format: 'mp4' as const,
       resolution: '1080p',
       fps: 24,
-      attribution: 'Wildlife Watch System Briefing',
+      attribution: 'VANYORA System Briefing',
       tags: ['briefing', 'operational', 'gis', 'tutorial'],
     },
   },

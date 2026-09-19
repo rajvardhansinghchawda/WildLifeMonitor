@@ -3,7 +3,7 @@ import './globals.css';
 import { AuthProvider } from '@/lib/auth';
 
 export const metadata: Metadata = {
-  title: 'Wildlife Watch - Wildlife Habitat Monitoring & Change Detection',
+  title: 'VANYORA - Wildlife Habitat Monitoring & Change Detection',
   description:
     'Production GIS platform for wildlife habitat integrity monitoring, multi-spectral change detection, and conservation telemetry.',
 };
