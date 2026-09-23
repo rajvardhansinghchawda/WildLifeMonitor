@@ -1,0 +1,46 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Sidebar } from './Sidebar';
+import { TopNav } from './TopNav';
+import { useAuth } from '@/lib/auth';
+import AuthChat from '@/components/chat/AuthChat';
+
+interface AppLayoutProps {
+  children: React.ReactNode;
+}
+
+export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) router.replace('/login');
+  }, [loading, user, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[#f4f6f3] text-xs text-slate-500 font-mono">
+        Authenticating…
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen w-screen overflow-hidden bg-[#f4f6f3] text-slate-800 antialiased font-sans">
+      <Sidebar isCollapsed={isSidebarCollapsed} setIsCollapsed={setIsSidebarCollapsed} />
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden relative">
+        <main className="flex-1 overflow-y-auto bg-[#f4f6f3] relative">
+          <div className="max-w-[1520px] mx-auto px-4 sm:px-6 pt-3 pb-8 space-y-4 relative">
+            <TopNav />
+            {children}
+          </div>
+        </main>
+      </div>
+      <AuthChat />
+    </div>
+  );
+};
+

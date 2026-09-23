@@ -1,0 +1,1 @@
+"""Scientific analysis algorithms package."""

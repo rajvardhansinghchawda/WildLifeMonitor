@@ -1,0 +1,37 @@
+# Python virtual environments
+.venv/
+env/
+venv/
+ENV/
+
+# Node / frontend
+node_modules/
+.next/
+dist/
+out/
+
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Credentials and secrets (rules.md)
+*.json
+!package*.json
+!tsconfig*.json
+credentials/
+secrets/
+.env
+.env.*
+!.env.example
+
+# Local storage and test artifacts
+*.log
+volumes/
+data/
+scratch_git.ps1
+*.mp4
+*.pdf
