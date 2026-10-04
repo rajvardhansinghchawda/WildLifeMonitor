@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
@@ -25,6 +25,10 @@ import {
   Share2,
   CheckCircle2,
   Menu,
+  ExternalLink,
+  MapPin,
+  Cpu,
+  Radio,
 } from 'lucide-react';
 import {
   getPublicDemonstrations,
@@ -36,14 +40,17 @@ import {
   FALLBACK_DEMOS,
 } from '@/lib/public-demo-data';
 import { formatCoordinatesWithPlace } from '@/lib/geo-names';
-import FoldText from '@/components/ui/FoldText';
 import PublicChat from '@/components/chat/PublicChat';
+import HeroVideoScroll from '@/components/landing/HeroVideoScroll';
 
 const PublicMap = dynamic(() => import('@/components/public/PublicMap'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[480px] bg-slate-950 flex items-center justify-center text-xs font-mono text-emerald-400/60 animate-pulse">
-      Loading Satellite GIS Telemetry Map…
+    <div className="w-full h-[520px] bg-[#060c09] flex items-center justify-center text-xs font-mono text-emerald-400/70 animate-pulse border border-emerald-500/20 rounded-2xl">
+      <div className="flex flex-col items-center gap-3">
+        <Satellite className="w-6 h-6 text-emerald-400 animate-spin" style={{ animationDuration: '6s' }} />
+        <span>Loading Satellite GIS Telemetry Map…</span>
+      </div>
     </div>
   ),
 });
@@ -60,7 +67,6 @@ export default function PublicDemoPage() {
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeNav, setActiveNav] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Load demonstrations
@@ -109,7 +115,6 @@ export default function PublicDemoPage() {
   const activeDemo = demonstrations.find((d) => d.id === selectedDemoId) || demonstrations[0];
 
   const scrollToSection = (id: string) => {
-    setActiveNav(id);
     setMobileMenuOpen(false);
     const element = document.getElementById(id);
     if (element) {
@@ -126,11 +131,11 @@ export default function PublicDemoPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#0b0f14] text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950">
+    <div className="relative min-h-screen bg-[#060c09] text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950 overflow-x-hidden">
       {/* ========================================================================= */}
-      {/* 1. TOP NAVIGATION BAR                                                     */}
+      {/* 1. TOP NAVIGATION BAR (Glassmorphism with Emerald Glow)                   */}
       {/* ========================================================================= */}
-      <header className="fixed top-0 inset-x-0 z-50 h-16 bg-black/35 backdrop-blur-md border-b border-white/10 px-6 lg:px-12 flex items-center justify-between transition-all">
+      <header className="fixed top-0 inset-x-0 z-50 h-16 bg-[#060c09]/80 backdrop-blur-xl border-b border-emerald-500/15 px-6 lg:px-12 flex items-center justify-between transition-all">
         {/* Brand Logo & Tagline */}
         <Link href="/" className="flex items-center gap-3.5 group">
           <Image
@@ -145,95 +150,77 @@ export default function PublicDemoPage() {
             <span className="font-outfit font-black text-xl tracking-[0.14em] text-white uppercase leading-none drop-shadow-sm">
               VANYORA
             </span>
-            <span className="text-[10px] text-emerald-400 font-bold tracking-[0.2em] uppercase mt-1">
-              Monitor • Protect • Conserve
+            <span className="text-[10px] font-mono tracking-widest text-emerald-400 font-semibold uppercase mt-0.5">
+              Planetary Wildlife AI
             </span>
           </div>
         </Link>
 
-        {/* Center Navigation Links (Desktop) */}
-        <nav className="hidden md:flex items-center gap-1">
-          {[
-            { id: 'home', label: 'Home', href: '/' },
-            { id: 'about', label: 'About Us', href: '/about' },
-            { id: 'features', label: 'Features', href: '/features' },
-            { id: 'impact', label: 'Impact', href: '/#impact' },
-            { id: 'blogs', label: 'Blogs', href: '/blogs' },
-            { id: 'contact', label: 'Contact', href: '/#contact' },
-          ].map((item) => {
-            const isActive = activeNav === item.id;
-            if (item.href.startsWith('/#')) {
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => scrollToSection(item.href.replace('/#', ''))}
-                  className="relative px-4 py-2 text-sm font-semibold tracking-wide transition-all text-white/80 hover:text-white"
-                >
-                  {item.label}
-                </button>
-              );
-            }
-            if (item.href === '/') {
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => scrollToSection('home')}
-                  className={`relative px-4 py-2 text-sm font-semibold tracking-wide transition-all ${
-                    isActive ? 'text-white bg-[#2ecc71] rounded-sm' : 'text-white/80 hover:text-white'
-                  }`}
-                >
-                  {item.label}
-                </button>
-              );
-            }
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                className="relative px-4 py-2 text-sm font-semibold transition-colors text-white/80 hover:text-white tracking-wide"
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+        {/* Desktop Navigation Links */}
+        <nav className="hidden md:flex items-center gap-8">
+          <button
+            onClick={() => scrollToSection('home')}
+            className="text-xs font-mono font-bold tracking-widest uppercase text-white/80 hover:text-emerald-400 transition-colors"
+          >
+            Sanctuary
+          </button>
+          <button
+            onClick={() => scrollToSection('features')}
+            className="text-xs font-mono font-bold tracking-widest uppercase text-white/80 hover:text-emerald-400 transition-colors"
+          >
+            Capabilities
+          </button>
+          <button
+            onClick={() => scrollToSection('demo')}
+            className="text-xs font-mono font-bold tracking-widest uppercase text-white/80 hover:text-emerald-400 transition-colors"
+          >
+            Live Radar
+          </button>
+          <button
+            onClick={() => scrollToSection('impact')}
+            className="text-xs font-mono font-bold tracking-widest uppercase text-white/80 hover:text-emerald-400 transition-colors"
+          >
+            Telemetry
+          </button>
+          <Link
+            href="/compare"
+            className="text-xs font-mono font-bold tracking-widest uppercase text-yellow-400/90 hover:text-yellow-300 transition-colors flex items-center gap-1"
+          >
+            <span>Satellite Slider</span>
+          </Link>
         </nav>
 
-        {/* Right Action Icons & Buttons */}
-        <div className="hidden sm:flex items-center gap-3">
-          {/* Quick Search Button */}
+        {/* Action Controls & Navigation */}
+        <div className="hidden md:flex items-center gap-3.5">
+          {/* Quick Reserve Search Button */}
           <button
             onClick={() => setSearchModalOpen(true)}
-            aria-label="Search reserves and incidents"
-            className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center text-white transition-colors"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-emerald-500/20 text-white/70 hover:text-white text-xs font-mono transition-all hover:border-emerald-500/40"
           >
-            <Search className="w-4 h-4" />
+            <Search className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Search Reserves…</span>
+            <kbd className="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white/50">⌘K</kbd>
           </button>
 
-          {/* Login Button */}
+          {/* Investigator Login */}
           <Link
             href="/login"
-            className="px-4 py-1.5 rounded-sm bg-white/10 hover:bg-white/20 border border-white/20 text-sm font-semibold text-white transition-all"
+            className="px-4 py-1.5 rounded-lg border border-white/15 hover:border-white/30 text-white/90 hover:text-white text-xs font-mono font-semibold transition-all hover:bg-white/5"
           >
             Login
           </Link>
 
-          {/* Get Started Button */}
+          {/* Launch Explorer */}
           <Link
             href="/explore"
-            className="px-4 py-1.5 rounded-sm bg-[#2ecc71] hover:bg-[#27b360] text-slate-950 text-sm font-bold tracking-tight shadow-lg shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95"
+            className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-bold text-xs font-mono tracking-wide shadow-lg shadow-emerald-500/20 transition-all hover:scale-105"
           >
-            Get Started
+            Launch Studio
           </Link>
         </div>
 
         {/* Mobile Hamburger Toggle */}
-        <div className="flex sm:hidden items-center gap-2">
-          <button
-            onClick={() => setSearchModalOpen(true)}
-            className="p-2 text-white"
-          >
-            <Search className="w-5 h-5" />
-          </button>
+        <div className="flex items-center gap-2 md:hidden">
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="p-2 text-white"
@@ -245,345 +232,186 @@ export default function PublicDemoPage() {
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="fixed top-16 inset-x-0 z-40 bg-black/95 border-b border-white/10 p-6 space-y-4 backdrop-blur-2xl md:hidden">
+        <div className="fixed top-16 inset-x-0 z-40 bg-[#060c09]/95 border-b border-emerald-500/20 p-6 space-y-4 backdrop-blur-2xl md:hidden">
           <div className="flex flex-col gap-3">
             {[
-              { id: 'home', label: 'Home', href: '/' },
-              { id: 'about', label: 'About Us', href: '/about' },
-              { id: 'features', label: 'Features', href: '/features' },
-              { id: 'impact', label: 'Impact', href: '/#impact' },
-              { id: 'blogs', label: 'Blogs', href: '/blogs' },
-              { id: 'contact', label: 'Contact', href: '/#contact' },
-            ].map((item) => {
-              if (item.href.startsWith('/#')) {
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      scrollToSection(item.href.replace('/#', ''));
-                    }}
-                    className="text-left py-2 text-sm font-semibold text-white/80 hover:text-[#2ecc71] tracking-wide"
-                  >
-                    {item.label}
-                  </button>
-                );
-              }
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="text-left py-2 text-sm font-semibold text-white/80 hover:text-[#2ecc71] tracking-wide"
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
+              { id: 'home', label: 'Sanctuary Hero' },
+              { id: 'features', label: 'Core Capabilities' },
+              { id: 'demo', label: 'Live Radar Hub' },
+              { id: 'impact', label: 'Telemetry & Stats' },
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => scrollToSection(item.id)}
+                className="text-left py-2 text-sm font-semibold text-white/80 hover:text-emerald-400 tracking-wide font-mono"
+              >
+                {item.label}
+              </button>
+            ))}
+            <Link
+              href="/compare"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-left py-2 text-sm font-semibold text-yellow-400 tracking-wide font-mono"
+            >
+              Satellite Comparison Slider →
+            </Link>
           </div>
           <div className="pt-4 border-t border-white/10 flex gap-3">
             <Link
               href="/login"
-              className="flex-1 py-2 rounded-sm text-center bg-white/10 text-white text-sm font-semibold"
+              className="flex-1 py-2 rounded-lg text-center bg-white/10 text-white text-sm font-semibold font-mono"
             >
               Login
             </Link>
             <Link
               href="/explore"
-              className="flex-1 py-2 rounded-sm text-center bg-[#2ecc71] text-slate-950 text-sm font-bold"
+              className="flex-1 py-2 rounded-lg text-center bg-emerald-500 text-slate-950 text-sm font-bold font-mono"
             >
-              Get Started
+              Explore Studio
             </Link>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* 2. CINEMATIC HERO SECTION (MATCHING MOCKUP)                               */}
+      {/* 2. CINEMATIC HERO SCROLL RUNWAY                                           */}
+      {/* 60fps frame-by-frame video scrub, FoldText "Forest", cursor-tracking deer */}
+      {/* ========================================================================= */}
+      <HeroVideoScroll
+        onWatchStory={() => setVideoModalOpen(true)}
+        onExploreFeatures={() => scrollToSection('features')}
+      />
+
+      {/* ========================================================================= */}
+      {/* 3. CORE CAPABILITIES (3 Curated Bento Glass Cards)                         */}
       {/* ========================================================================= */}
       <section
-        id="home"
-        className="relative min-h-screen w-full flex flex-col justify-between pt-16 overflow-hidden"
+        id="features"
+        className="relative z-10 w-full py-24 sm:py-32 px-6 lg:px-12 bg-gradient-to-b from-[#060c09] via-[#08130d] to-[#060c09]"
       >
-        {/* Deer Landscape Background */}
-        <div className="absolute inset-0 z-0">
-          <Image
-            src="/deer-bg.png"
-            alt="Deer standing in a lush green forest"
-            fill
-            priority
-            className="object-cover object-center"
-            quality={95}
-          />
-          {/* Light overlay — keep the vibrant green forest visible like the reference */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/25 to-black/10" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60" />
-        </div>
+        {/* Ambient Bioluminescent Flare */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-emerald-500/5 blur-[160px] pointer-events-none" />
 
-        {/* Top-right brand badge (like World Animal Protection logo in reference) */}
-        <div className="absolute top-20 right-6 z-10 flex flex-col items-center text-center select-none pointer-events-none">
-          <Image
-            src="/primary logo 1.png"
-            alt="VANYORA Logo"
-            width={36}
-            height={44}
-            className="h-11 w-auto object-contain mb-1 drop-shadow-md"
-          />
-          <span className="font-outfit font-black text-[10px] text-white/85 leading-tight tracking-[0.18em] uppercase text-center">
-            VANYORA
-          </span>
-        </div>
-
-        {/* ── HERO HEADLINE (centre-left, vertically centred) ── */}
-        <div className="relative z-10 flex-1 flex flex-col justify-center px-8 sm:px-14 lg:px-20 pb-32">
-          {/* "the" small italic prefix */}
-          <div className="flex items-baseline gap-2 sm:gap-3">
-            <span
-              className="text-white font-serif italic font-normal select-none"
-              style={{ fontSize: 'clamp(1.8rem, 4vw, 3.5rem)', lineHeight: 1 }}
-            >
-              The
-            </span>
-            {/* "Forest" — animated 3D FoldText unfolding effect */}
-            <h1 className="leading-none select-none">
-              <FoldText
-                text="Forest"
-                splitBy="char"
-                hinge="top"
-                trigger="mount"
-                duration={1.8}
-                stagger={0.16}
-                ease="power3.out"
-                perspective={700}
-                creaseShading={0.55}
-                fontSize="clamp(5rem, 14vw, 13rem)"
-                fontWeight={900}
-                color="#ffffff"
-                className="drop-shadow-[0_4px_24px_rgba(0,0,0,0.7)] tracking-tight"
-                style={{
-                  fontFamily: "'Georgia', 'Times New Roman', serif",
-                  lineHeight: 0.88,
-                  textTransform: 'none',
-                }}
-              />
-            </h1>
-          </div>
-
-          {/* "is their house" — yellow text, background removed */}
-          <div
-            className="inline-flex items-center mt-2 sm:mt-3"
-            style={{ marginLeft: 'clamp(4rem, 9vw, 12rem)' }}
-          >
-            <span
-              className="text-yellow-400 font-bold tracking-tight leading-none drop-shadow-[0_4px_24px_rgba(0,0,0,0.7)]"
-              style={{
-                fontFamily: "'Georgia', 'Times New Roman', serif",
-                fontSize: 'clamp(2rem, 5.5vw, 5.5rem)',
-              }}
-            >
-              is their house
-            </span>
-          </div>
-        </div>
-
-        {/* ── BOTTOM TELEMETRY STATS & ACTION BAR ── */}
-        <div className="relative z-10 w-full bg-black/75 backdrop-blur-xl border-t border-white/10 shadow-2xl">
-          <div className="flex flex-col md:flex-row items-stretch divide-y md:divide-y-0 md:divide-x divide-white/10">
-            {/* Stat 1: Protected Habitat */}
-            <div className="flex-1 min-w-0 px-5 sm:px-7 py-3.5 sm:py-4 flex flex-col justify-center hover:bg-white/[0.03] transition-colors group">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="flex h-2 w-2 relative">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="text-[10px] font-mono font-bold tracking-widest text-emerald-400 uppercase flex items-center gap-1.5">
-                  <TreePine className="w-3 h-3 text-emerald-400" />
-                  Live Surveillance
-                </span>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-white font-extrabold text-base sm:text-lg tracking-tight font-outfit">
-                  18,450 km²
-                </span>
-                <span className="text-white/80 text-xs font-semibold">Protected Habitat</span>
-              </div>
-              <p className="text-white/50 text-[11px] truncate mt-0.5 group-hover:text-white/70 transition-colors">
-                24 Wildlife Corridors & Reserves Under Active Watch
-              </p>
+        <div className="max-w-6xl mx-auto space-y-16 relative">
+          {/* Header */}
+          <div className="text-center max-w-2xl mx-auto space-y-4">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-bold tracking-widest uppercase">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Core Planetary Capabilities</span>
             </div>
-
-            {/* Stat 2: Satellite Sensing */}
-            <div className="flex-1 min-w-0 px-5 sm:px-7 py-3.5 sm:py-4 flex flex-col justify-center hover:bg-white/[0.03] transition-colors group">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="h-2 w-2 rounded-full bg-cyan-400"></span>
-                <span className="text-[10px] font-mono font-bold tracking-widest text-cyan-400 uppercase flex items-center gap-1.5">
-                  <Satellite className="w-3 h-3 text-cyan-400" />
-                  Sentinel-2 & SAR
-                </span>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-white font-extrabold text-base sm:text-lg tracking-tight font-outfit">
-                  10m Resolution
-                </span>
-                <span className="text-white/80 text-xs font-semibold">&lt; 48h Revisit</span>
-              </div>
-              <p className="text-white/50 text-[11px] truncate mt-0.5 group-hover:text-white/70 transition-colors">
-                Multi-Spectral Canopy & Surface Hydrology Delta
-              </p>
-            </div>
-
-            {/* Stat 3: AI Heuristic Triage */}
-            <div className="flex-1 min-w-0 px-5 sm:px-7 py-3.5 sm:py-4 flex flex-col justify-center hover:bg-white/[0.03] transition-colors group">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="h-2 w-2 rounded-full bg-amber-400"></span>
-                <span className="text-[10px] font-mono font-bold tracking-widest text-amber-400 uppercase flex items-center gap-1.5">
-                  <Activity className="w-3 h-3 text-amber-400" />
-                  AI Heuristic Triage
-                </span>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-white font-extrabold text-base sm:text-lg tracking-tight font-outfit">
-                  98.4% Precision
-                </span>
-                <span className="text-white/80 text-xs font-semibold">Instant Alert</span>
-              </div>
-              <p className="text-white/50 text-[11px] truncate mt-0.5 group-hover:text-white/70 transition-colors">
-                Automated Verification for Forest Ranger Patrols
-              </p>
-            </div>
-
-            {/* Explore Section Navigation */}
-            <div className="px-4 sm:px-6 py-3.5 sm:py-4 flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => scrollToSection('features')}
-                className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-white/70 hover:text-white flex items-center justify-center transition-all hover:scale-105"
-                aria-label="Explore features"
-                title="Explore platform features"
-              >
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Watch video button */}
-            <div className="px-5 sm:px-8 py-3.5 sm:py-4 flex items-center gap-3.5 flex-shrink-0 bg-white/[0.02]">
-              <button
-                onClick={() => setVideoModalOpen(true)}
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-gradient-to-tr from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 flex items-center justify-center text-slate-950 shadow-lg shadow-emerald-500/20 hover:scale-105 transition-all flex-shrink-0"
-                aria-label="Watch video"
-              >
-                <Play className="w-4 h-4 fill-current ml-0.5" />
-              </button>
-              <div className="flex flex-col cursor-pointer" onClick={() => setVideoModalOpen(true)}>
-                <span className="text-white text-xs font-bold leading-tight hover:text-emerald-400 transition-colors">Watch Story</span>
-                <span className="text-white/50 text-[10px]">Mission Overview</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-
-
-      {/* ========================================================================= */}
-      {/* 4. PLATFORM FEATURES SHOWCASE                                             */}
-      {/* ========================================================================= */}
-      <section id="features" className="w-full py-20 bg-slate-950/60 border-t border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <div className="text-center max-w-3xl mx-auto space-y-3">
-            <span className="text-xs font-mono font-bold tracking-widest text-[#48e596] uppercase">
-              Core Capabilities
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-              AI-Driven Planetary Habitat Surveillance
+            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight font-outfit">
+              AI Surveillance for Sanctuary Protection
             </h2>
-            <p className="text-slate-400 text-sm sm:text-base">
-              Harnessing multi-spectral Earth observation and automated heuristic triage to empower
-              park rangers, researchers, and wildlife conservationists.
+            <p className="text-slate-300/80 text-sm sm:text-base leading-relaxed">
+              Synthesizing 10m Copernicus Sentinel-2 multispectral imagery and autonomous heuristic triage to empower forest rangers and conservationists.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Feature 1 */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/50 transition-all group">
-              <div className="w-12 h-12 rounded-xl bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-[#48e596] mb-5 group-hover:scale-110 transition-transform">
-                <Satellite className="w-6 h-6" />
+          {/* 3 Curated Architectural Bento Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Pillar 1: Sentinel-2 Multispectral */}
+            <div className="group relative p-8 rounded-3xl bg-black/45 backdrop-blur-2xl border border-emerald-500/20 hover:border-emerald-400/60 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(16,185,129,0.15)] flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-emerald-950/80 border border-emerald-500/40 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform shadow-lg shadow-emerald-500/20">
+                  <Satellite className="w-7 h-7" />
+                </div>
+                <div className="text-xs font-mono font-bold text-emerald-400 tracking-wider uppercase">
+                  01 / Orbital Vision
+                </div>
+                <h3 className="text-xl font-bold text-white font-outfit">
+                  10m Multi-Spectral Earth Observation
+                </h3>
+                <p className="text-xs text-slate-300/80 leading-relaxed">
+                  Computes high-frequency Sentinel-2 canopy deltas (NDVI, NBR, NDWI) and cloud-masked L2A composites to expose illegal logging and water depletion.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Multi-Spectral Analysis</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Computes 10m Sentinel-2 band differences (NDVI, NBR, NDWI) to pinpoint illegal logging,
-                canopy disturbance, and water body shrinkage.
-              </p>
+              <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-emerald-400/90">
+                <span>&lt; 48h Satellite Revisit</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              </div>
             </div>
 
-            {/* Feature 2 */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/50 transition-all group">
-              <div className="w-12 h-12 rounded-xl bg-teal-950/80 border border-teal-500/40 flex items-center justify-center text-teal-400 mb-5 group-hover:scale-110 transition-transform">
-                <ShieldAlert className="w-6 h-6" />
+            {/* Pillar 2: Autonomous Threat Triage */}
+            <div className="group relative p-8 rounded-3xl bg-black/45 backdrop-blur-2xl border border-emerald-500/20 hover:border-emerald-400/60 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(16,185,129,0.15)] flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-teal-950/80 border border-teal-500/40 flex items-center justify-center text-teal-400 group-hover:scale-110 transition-transform shadow-lg shadow-teal-500/20">
+                  <Cpu className="w-7 h-7" />
+                </div>
+                <div className="text-xs font-mono font-bold text-teal-400 tracking-wider uppercase">
+                  02 / Autonomous AI Triage
+                </div>
+                <h3 className="text-xl font-bold text-white font-outfit">
+                  Heuristic Priority Engine
+                </h3>
+                <p className="text-xs text-slate-300/80 leading-relaxed">
+                  Multi-factor neural scoring combining change magnitude (50%), core reserve sensitivity (30%), and road/settlement proximity (20%) with 98.4% precision.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">AI Priority Scoring</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Multi-component heuristic engine combining change magnitude (50%), core reserve zone
-                sensitivity (30%), and road/settlement proximity (20%).
-              </p>
+              <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-teal-400/90">
+                <span>98.4% Heuristic Precision</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+              </div>
             </div>
 
-            {/* Feature 3 */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/50 transition-all group">
-              <div className="w-12 h-12 rounded-xl bg-cyan-950/80 border border-cyan-500/40 flex items-center justify-center text-cyan-400 mb-5 group-hover:scale-110 transition-transform">
-                <Compass className="w-6 h-6" />
+            {/* Pillar 3: Ranger Field Dispatch */}
+            <div className="group relative p-8 rounded-3xl bg-black/45 backdrop-blur-2xl border border-emerald-500/20 hover:border-emerald-400/60 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_12px_40px_rgba(16,185,129,0.15)] flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-amber-950/80 border border-amber-500/40 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform shadow-lg shadow-amber-500/20">
+                  <Compass className="w-7 h-7" />
+                </div>
+                <div className="text-xs font-mono font-bold text-amber-400 tracking-wider uppercase">
+                  03 / Tactical Response
+                </div>
+                <h3 className="text-xl font-bold text-white font-outfit">
+                  Vectorized Ranger Interception
+                </h3>
+                <p className="text-xs text-slate-300/80 leading-relaxed">
+                  Dispatches encrypted GIS incident polygons straight to field patrol GPS units with anti-poaching coordinate generalization to safeguard wildlife nests.
+                </p>
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Ranger Dispatch</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Direct export of incident polygons to field GPS and patrol routing software, prioritizing
-                critical threats before irreversible destruction occurs.
-              </p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 hover:border-emerald-500/50 transition-all group">
-              <div className="w-12 h-12 rounded-xl bg-purple-950/80 border border-purple-500/40 flex items-center justify-center text-purple-400 mb-5 group-hover:scale-110 transition-transform">
-                <ShieldCheck className="w-6 h-6" />
+              <div className="mt-6 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] font-mono text-amber-400/90">
+                <span>Differential Privacy Protected</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               </div>
-              <h3 className="text-lg font-bold text-white mb-2">Anti-Poaching Privacy</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Enforces differential privacy and coordinate generalization on public feeds to prevent
-                exposing endangered species denning and nesting sites.
-              </p>
             </div>
           </div>
         </div>
       </section>
 
       {/* ========================================================================= */}
-      {/* LIVE SATELLITE DEMONSTRATION & GIS VERIFICATION HUB                       */}
+      {/* 4. LIVE SATELLITE DEMONSTRATION RADAR HUB                                  */}
+      {/* Interactive Leaflet GIS Map, Real Copernicus Boundaries, Threat Hotspots  */}
       {/* ========================================================================= */}
-      <section id="demo" className="w-full py-20 bg-[#070b10] border-t border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-            <div>
-              <span className="text-xs font-mono font-bold tracking-widest text-emerald-400 uppercase flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                Live Satellite Telemetry Hub
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-1">
-                Public Demonstration Portal
+      <section
+        id="demo"
+        className="relative z-10 w-full py-24 px-6 lg:px-12 bg-gradient-to-b from-[#060c09] to-[#040805]"
+      >
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* Section Heading & Reserve Pills */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-semibold uppercase">
+                <Radio className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+                <span>Live Copernicus GIS Console</span>
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight font-outfit">
+                Interactive Sanctuary Radar
               </h2>
-              <p className="text-slate-400 text-sm mt-1 max-w-2xl">
-                Explore real Copernicus Sentinel-2 satellite boundaries, vegetation loss candidates, and
-                anti-poaching coordinate generalizations with zero mock data.
+              <p className="text-slate-300/80 text-xs sm:text-sm max-w-xl leading-relaxed">
+                Inspect live Sentinel-2 satellite boundaries, vegetation loss candidates, and anti-poaching generalized coordinates with zero synthetic mock data.
               </p>
             </div>
 
-            {/* Reserve Selector Tabs */}
-            <div className="flex flex-wrap items-center gap-2">
+            {/* Reserve Selector Pills */}
+            <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-black/60 backdrop-blur-xl border border-emerald-500/20 max-w-xl overflow-x-auto">
               {demonstrations.map((d) => (
                 <button
                   key={d.id}
                   onClick={() => setSelectedDemoId(d.id)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-semibold transition-all cursor-pointer ${
+                  className={`px-4 py-2 rounded-xl text-xs font-mono font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 ${
                     activeDemo?.id === d.id
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                      : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-800'
+                      ? 'bg-emerald-500 text-slate-950 font-bold shadow-lg shadow-emerald-500/30'
+                      : 'text-slate-300 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   {d.area_name}
@@ -594,449 +422,294 @@ export default function PublicDemoPage() {
 
           {/* Active Reserve Metadata Strip */}
           {activeDemo && (
-            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+            <div className="p-4 rounded-2xl bg-black/50 backdrop-blur-xl border border-emerald-500/20 flex flex-wrap items-center justify-between gap-3 text-xs font-mono shadow-xl">
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="font-bold text-white text-sm">{activeDemo.area_name}</span>
-                <span className="text-slate-500">·</span>
-                <span className="text-slate-400">{activeDemo.designation}</span>
-                <span className="text-slate-500">·</span>
-                <span className="text-cyan-300">
-                  📍 {formatCoordinatesWithPlace(activeDemo.centroid.lat, activeDemo.centroid.lon, activeDemo.area_name)}
+                <div className="flex items-center gap-1.5 text-white font-bold">
+                  <MapPin className="w-4 h-4 text-emerald-400" />
+                  <span>{activeDemo.area_name}</span>
+                </div>
+                <span className="text-emerald-500/40">|</span>
+                <span className="text-slate-300">{activeDemo.designation}</span>
+                <span className="text-emerald-500/40">|</span>
+                <span className="text-emerald-400">
+                  {formatCoordinatesWithPlace(
+                    activeDemo.centroid.lat,
+                    activeDemo.centroid.lon,
+                    activeDemo.area_name
+                  )}
                 </span>
-                <span className="text-slate-500">·</span>
-                <span className="text-emerald-400">{Math.round(activeDemo.area_km2).toLocaleString()} km²</span>
               </div>
-              <div className="flex items-center gap-4 text-slate-400">
-                <span>Baseline: {activeDemo.baseline_period.start} ➔ {activeDemo.baseline_period.end}</span>
-                <span>Observed: {activeDemo.comparison_period.start} ➔ {activeDemo.comparison_period.end}</span>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                <span className="text-emerald-400 font-semibold uppercase text-[11px]">
+                  Protected Habitat Monitored
+                </span>
               </div>
             </div>
           )}
 
-          {/* GIS Map & Incident Details Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* Map Frame (8 cols) */}
-            <div className="lg:col-span-8 rounded-2xl overflow-hidden border border-slate-800 bg-[#060b16] h-[480px]">
-              {activeDemo && (
-                <PublicMap
-                  key={`public-map-${activeDemo.id}`}
-                  centroid={activeDemo.centroid}
-                  boundary={activeDemo.boundary}
-                  events={events}
-                  selectedEventId={selectedEvent?.id}
-                  onSelectEvent={(ev) => setSelectedEvent(ev)}
-                  height="100%"
-                />
-              )}
-            </div>
-
-            {/* Selected Incident Telemetry Dossier (4 cols) */}
-            <div className="lg:col-span-4 rounded-2xl bg-slate-900/50 border border-slate-800 p-5 space-y-4">
-              <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
-                <h3 className="text-xs font-bold text-white font-mono uppercase tracking-wider">
-                  Incident Intelligence
-                </h3>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-emerald-400 border border-slate-700">
-                  {events.length} Incidents
-                </span>
+          {/* Interactive GIS Map Container */}
+          <div className="relative rounded-3xl overflow-hidden border border-emerald-500/25 shadow-[0_16px_50px_rgba(0,0,0,0.6)] bg-black/60 backdrop-blur-xl">
+            {activeDemo ? (
+              <PublicMap
+                key={activeDemo.id}
+                centroid={activeDemo.centroid}
+                boundary={activeDemo.boundary}
+                events={events}
+                selectedEventId={selectedEvent?.id}
+                onSelectEvent={(ev) => setSelectedEvent(ev)}
+                height="520px"
+              />
+            ) : (
+              <div className="h-[520px] flex items-center justify-center text-xs font-mono text-slate-400">
+                Loading Sanctuary Boundary Data…
               </div>
-
-              {selectedEvent ? (
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold bg-red-950 text-red-300 border border-red-800">
-                      {selectedEvent.priority_band} SEVERITY
-                    </span>
-                    <h4 className="text-sm font-bold text-white mt-2 leading-tight">
-                      {selectedEvent.change_label}
-                    </h4>
-                    <p className="text-[10px] text-cyan-300 font-mono mt-1 flex items-center gap-1">
-                      <span>📍 {formatCoordinatesWithPlace(selectedEvent.generalized_coordinates.lat, selectedEvent.generalized_coordinates.lon, activeDemo.area_name)}</span>
-                    </p>
-                    <p className="text-[11px] text-slate-400 mt-0.5 font-mono">
-                      Status: {selectedEvent.status.replace(/_/g, ' ').toUpperCase()}
-                    </p>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-1.5 font-mono text-[11px]">
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Affected Area:</span>
-                      <span className="text-white font-bold">{selectedEvent.affected_area_ha} ha</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-400">Priority Score:</span>
-                      <span className="text-emerald-400 font-bold">{selectedEvent.priority_score?.toFixed(2) ?? 'Telemetry High'}</span>
-                    </div>
-                    {selectedEvent.nearest_known_road_distance_m && (
-                      <div className="flex justify-between">
-                        <span className="text-slate-400">Track Distance:</span>
-                        <span className="text-cyan-300">{selectedEvent.nearest_known_road_distance_m}m</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <p className="text-[10.5px] text-slate-500 leading-relaxed italic">
-                    Coordinates generalized per anti-poaching security protocols. Full telemetry unlocked upon investigator login.
-                  </p>
-
-                  <Link
-                    href="/explore"
-                    className="block text-center py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold font-mono transition-colors shadow-sm"
-                  >
-                    Open Full Investigation Portal →
-                  </Link>
-                </div>
-              ) : (
-                <div className="py-12 text-center text-xs text-slate-500 font-mono">
-                  {eventsLoading ? 'Loading incident telemetry...' : 'Click an incident marker on the map to inspect telemetry evidence.'}
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </section>
 
       {/* ========================================================================= */}
-      {/* 5. CONSERVATION IMPACT & METRICS SECTION                                  */}
+      {/* 5. HABITAT VITAL SIGNS (4 Glowing Minimalist Metric Pillars)               */}
       {/* ========================================================================= */}
-      <section id="impact" className="w-full py-20 bg-[#0b0f14] border-t border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <div className="text-center max-w-3xl mx-auto space-y-3">
-            <span className="text-xs font-mono font-bold tracking-widest text-[#48e596] uppercase">
-              Proven Conservation Impact
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-              Safeguarding Critical Ecological Corridors
-            </h2>
-            <p className="text-slate-400 text-sm sm:text-base">
-              Measurable conservation outcomes delivered across protected tiger reserves, biosphere
-              reserves, and wildlife sanctuaries globally.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 text-center space-y-2">
-              <div className="text-4xl sm:text-5xl font-black text-white font-mono">1.4M+</div>
-              <div className="text-sm font-semibold text-emerald-400">Hectares Monitored</div>
-              <p className="text-xs text-slate-500">Under constant 5-day Sentinel-2 revisit orbit</p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 text-center space-y-2">
-              <div className="text-4xl sm:text-5xl font-black text-white font-mono">420+</div>
-              <div className="text-sm font-semibold text-teal-400">Early Alerts Intercepted</div>
-              <p className="text-xs text-slate-500">Unauthorized encroachments identified early</p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 text-center space-y-2">
-              <div className="text-4xl sm:text-5xl font-black text-white font-mono">88%</div>
-              <div className="text-sm font-semibold text-cyan-400">False Alarms Reduced</div>
-              <p className="text-xs text-slate-500">Via dry-season matched baseline windows</p>
-            </div>
-
-            <div className="p-6 rounded-2xl bg-slate-900/40 border border-slate-800 text-center space-y-2">
-              <div className="text-4xl sm:text-5xl font-black text-white font-mono">12</div>
-              <div className="text-sm font-semibold text-purple-400">Partner Forest Reserves</div>
-              <p className="text-xs text-slate-500">Collaborating with local forest departments</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 6. CONSERVATION STORIES & BLOGS                                           */}
-      {/* ========================================================================= */}
-      <section id="blogs" className="w-full py-20 bg-slate-950/60 border-t border-slate-800/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div>
-              <span className="text-xs font-mono font-bold tracking-widest text-[#48e596] uppercase">
-                Field Dispatches
+      <section
+        id="impact"
+        className="relative z-10 w-full py-20 px-6 lg:px-12 bg-gradient-to-b from-[#040805] via-[#07100b] to-[#060c09] border-t border-emerald-500/10"
+      >
+        <div className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {/* Metric 1 */}
+            <div className="p-6 rounded-2xl bg-black/45 backdrop-blur-xl border border-emerald-500/20 text-center hover:border-emerald-400/50 transition-all">
+              <span className="text-3xl sm:text-4xl font-black text-white font-outfit tracking-tight block">
+                18,450 km²
               </span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mt-1">
-                Conservation Stories & Research
-              </h2>
-            </div>
-            <Link
-              href="/explore"
-              className="text-xs font-mono text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
-            >
-              <span>Explore Interactive Reserve Catalog</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Story 1 */}
-            <div className="rounded-2xl bg-slate-900/60 border border-slate-800 overflow-hidden group hover:border-slate-700 transition-all">
-              <div className="relative h-48 w-full overflow-hidden">
-                <Image
-                  src="/hero-tiger.jpg"
-                  alt="Tiger Corridor Story"
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <span className="absolute top-3 left-3 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-950/80 text-emerald-300 border border-emerald-500/30">
-                  Tiger Telemetry
-                </span>
-              </div>
-              <div className="p-5 space-y-2">
-                <span className="text-[11px] text-slate-500 font-mono">September 2026 • 6 min read</span>
-                <h3 className="text-base font-bold text-white group-hover:text-emerald-400 transition-colors">
-                  The Corridors of Kanha: Safeguarding Central India&apos;s Tiger Dispersal
-                </h3>
-                <p className="text-xs text-slate-400 line-clamp-2">
-                  How high-frequency satellite telemetry helps preserve forest stepping stones between
-                  Kanha and Pench Tiger Reserves.
-                </p>
-              </div>
+              <span className="text-xs font-mono text-emerald-400 font-semibold tracking-wider uppercase mt-1 block">
+                Habitat Surveillance
+              </span>
+              <span className="text-[11px] text-slate-400/70 mt-1 block">
+                Continuous Active Watch
+              </span>
             </div>
 
-            {/* Story 2 */}
-            <div className="rounded-2xl bg-slate-900/60 border border-slate-800 overflow-hidden group hover:border-slate-700 transition-all">
-              <div className="relative h-48 w-full overflow-hidden">
-                <Image
-                  src="/story-elephant.jpg"
-                  alt="Elephant Migration Story"
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <span className="absolute top-3 left-3 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-950/80 text-teal-300 border border-teal-500/30">
-                  Habitat Corridors
-                </span>
-              </div>
-              <div className="p-5 space-y-2">
-                <span className="text-[11px] text-slate-500 font-mono">August 2026 • 8 min read</span>
-                <h3 className="text-base font-bold text-white group-hover:text-teal-400 transition-colors">
-                  Dry-Season Spectral Analysis: Distinguishing Leaf-Fall from Deforestation
-                </h3>
-                <p className="text-xs text-slate-400 line-clamp-2">
-                  Leveraging matched temporal observation windows to eliminate seasonal false alarms in
-                  tropical dry deciduous ecosystems.
-                </p>
-              </div>
+            {/* Metric 2 */}
+            <div className="p-6 rounded-2xl bg-black/45 backdrop-blur-xl border border-emerald-500/20 text-center hover:border-cyan-400/50 transition-all">
+              <span className="text-3xl sm:text-4xl font-black text-white font-outfit tracking-tight block">
+                &lt; 48 Hours
+              </span>
+              <span className="text-xs font-mono text-cyan-400 font-semibold tracking-wider uppercase mt-1 block">
+                Orbital Revisit Rate
+              </span>
+              <span className="text-[11px] text-slate-400/70 mt-1 block">
+                Copernicus Sentinel-2 & SAR
+              </span>
             </div>
 
-            {/* Story 3 */}
-            <div className="rounded-2xl bg-slate-900/60 border border-slate-800 overflow-hidden group hover:border-slate-700 transition-all">
-              <div className="relative h-48 w-full overflow-hidden">
-                <Image
-                  src="/attenborough.jpg"
-                  alt="Sir David Attenborough Voice Story"
-                  fill
-                  className="object-cover object-top group-hover:scale-105 transition-transform duration-500"
-                />
-                <span className="absolute top-3 left-3 text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-slate-950/80 text-cyan-300 border border-cyan-500/30">
-                  Global Voice
-                </span>
-              </div>
-              <div className="p-5 space-y-2">
-                <span className="text-[11px] text-slate-500 font-mono">July 2026 • 5 min read</span>
-                <h3 className="text-base font-bold text-white group-hover:text-cyan-400 transition-colors">
-                  AI in the Bush: How Forest Rangers Use Satellite Change Alerts
-                </h3>
-                <p className="text-xs text-slate-400 line-clamp-2">
-                  Frontline patrol commanders share how priority-scored polygons reduced investigation
-                  times from weeks to under 48 hours.
-                </p>
-              </div>
+            {/* Metric 3 */}
+            <div className="p-6 rounded-2xl bg-black/45 backdrop-blur-xl border border-emerald-500/20 text-center hover:border-amber-400/50 transition-all">
+              <span className="text-3xl sm:text-4xl font-black text-white font-outfit tracking-tight block">
+                98.4%
+              </span>
+              <span className="text-xs font-mono text-amber-400 font-semibold tracking-wider uppercase mt-1 block">
+                Heuristic Precision
+              </span>
+              <span className="text-[11px] text-slate-400/70 mt-1 block">
+                Validated Incident Triage
+              </span>
+            </div>
+
+            {/* Metric 4 */}
+            <div className="p-6 rounded-2xl bg-black/45 backdrop-blur-xl border border-emerald-500/20 text-center hover:border-purple-400/50 transition-all">
+              <span className="text-3xl sm:text-4xl font-black text-white font-outfit tracking-tight block">
+                41 Habitats
+              </span>
+              <span className="text-xs font-mono text-purple-400 font-semibold tracking-wider uppercase mt-1 block">
+                Reserves & Parks
+              </span>
+              <span className="text-[11px] text-slate-400/70 mt-1 block">
+                Across India & Global Biomes
+              </span>
             </div>
           </div>
         </div>
       </section>
 
       {/* ========================================================================= */}
-      {/* 7. ABOUT & SCIENTIFIC COMMITMENT                                          */}
+      {/* 6. CALL TO ACTION & STUDIO LAUNCH PAD                                     */}
       {/* ========================================================================= */}
-      <section id="about" className="w-full py-20 bg-[#0b0f14] border-t border-slate-800/80">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 text-center">
-          <span className="text-xs font-mono font-bold tracking-widest text-[#48e596] uppercase">
-            About Our Mission
-          </span>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            Scientific Rigor Meets Autonomous Satellite Intelligence
-          </h2>
-          <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-            VANYORA was conceived to bridge the gap between orbital satellite telemetry and on-the-ground
-            conservation enforcement. By combining European Space Agency Copernicus Sentinel-2 surface
-            reflectance with AI-powered multi-factor spatial heuristics, we provide an open, transparent,
-            and privacy-conscious system dedicated to protecting our planet&apos;s biodiversity.
-          </p>
+      <section className="relative z-10 w-full py-24 px-6 lg:px-12 bg-[#060c09]">
+        <div className="max-w-4xl mx-auto rounded-3xl p-10 sm:p-14 bg-gradient-to-tr from-emerald-950/60 via-black/80 to-[#06140b] border border-emerald-500/30 text-center relative overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.7)]">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 blur-[100px] pointer-events-none" />
 
-          <div className="pt-4 flex flex-wrap justify-center gap-4">
-            <Link
-              href="/explore"
-              className="px-6 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white text-xs sm:text-sm font-semibold border border-slate-700 flex items-center gap-2"
-            >
-              <span>Explore Spatial Engine</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href="/login"
-              className="px-6 py-3 rounded-full bg-[#48e596] hover:bg-[#3cd084] text-slate-950 text-xs sm:text-sm font-bold flex items-center gap-2"
-            >
-              <span>Sign In as Ranger</span>
-              <ShieldCheck className="w-4 h-4" />
-            </Link>
+          <div className="relative space-y-6">
+            <span className="text-xs font-mono font-bold tracking-widest text-emerald-400 uppercase">
+              Mission Readiness • Autonomous Earth Observation
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight font-outfit">
+              Ready to Inspect Wildlife Habitats Worldwide?
+            </h2>
+            <p className="text-slate-300 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+              Launch our deep analytical studios to run temporal comparisons, inspect active NASA FIRMS fires, and explore protected reserves across India and globally.
+            </p>
+
+            <div className="pt-4 flex flex-wrap items-center justify-center gap-4">
+              <Link
+                href="/compare"
+                className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-bold text-sm font-mono tracking-wide shadow-xl shadow-emerald-500/25 transition-all hover:scale-105 flex items-center gap-2"
+              >
+                <span>Open Satellite Comparison Slider</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                href="/change-analysis"
+                className="px-6 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-emerald-500/30 text-white font-semibold text-sm font-mono transition-all hover:border-emerald-400 flex items-center gap-2"
+              >
+                <span>Change Analysis Studio</span>
+                <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ========================================================================= */}
-      {/* 8. CONTACT & CLEARANCE REQUEST                                            */}
+      {/* 7. CLEAN MINIMALIST FOOTER                                                */}
       {/* ========================================================================= */}
-      <section id="contact" className="w-full py-16 bg-slate-950 border-t border-slate-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
-          <h3 className="text-2xl font-bold text-white">Join the Conservation Telemetry Network</h3>
-          <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
-            Are you a protected area warden, wildlife NGO, or GIS researcher? Request authorized telemetry
-            access or register your reserve boundary for continuous automated monitoring.
-          </p>
-          <div className="pt-2 flex justify-center">
-            <Link
-              href="/login"
-              className="px-6 py-2.5 rounded-full bg-[#48e596] hover:bg-[#3cd084] text-slate-950 text-xs sm:text-sm font-bold shadow-lg shadow-emerald-500/20"
-            >
-              Request Ranger Clearance
+      <footer className="relative z-10 w-full bg-[#040805] border-t border-emerald-500/15 py-12 px-6 lg:px-12 text-xs font-mono text-slate-400">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/primary logo 1.png"
+              alt="VANYORA Logo"
+              width={28}
+              height={34}
+              className="h-8 w-auto object-contain"
+            />
+            <div className="flex flex-col">
+              <span className="font-outfit font-black text-base text-white tracking-widest uppercase">
+                VANYORA
+              </span>
+              <span className="text-[10px] text-emerald-400">Planetary Habitat Intelligence</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-6 text-slate-400">
+            <Link href="/about" className="hover:text-emerald-400 transition-colors">
+              About Platform
+            </Link>
+            <Link href="/features" className="hover:text-emerald-400 transition-colors">
+              Full Specs
+            </Link>
+            <Link href="/compare" className="hover:text-emerald-400 transition-colors">
+              Satellite Compare
+            </Link>
+            <Link href="/login" className="hover:text-emerald-400 transition-colors">
+              Ranger Portal
             </Link>
           </div>
-        </div>
-      </section>
 
-      {/* ========================================================================= */}
-      {/* 9. PUBLIC FOOTER                                                          */}
-      {/* ========================================================================= */}
-      <footer className="border-t border-slate-800 bg-[#070a0e] px-6 lg:px-12 py-8 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-full bg-emerald-950 border border-emerald-500/50 flex items-center justify-center text-emerald-400">
-            <TreePine className="w-4 h-4" />
+          <div className="text-[11px] text-slate-500 text-center md:text-right">
+            <span>Anti-poaching differential privacy enabled.</span>
+            <div className="text-slate-600 mt-0.5">© 2026 VANYORA Wildlife Sentinel.</div>
           </div>
-          <span>VANYORA • Habitat Monitoring & Change Detection System v1.0</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-4 text-slate-400">
-          <button onClick={() => scrollToSection('home')} className="hover:text-white transition-colors">
-            Back to Top
-          </button>
-          <span>•</span>
-          <Link href="/login" className="hover:text-white transition-colors">
-            Ranger Portal
-          </Link>
-          <span>•</span>
-          <Link href="/explore" className="hover:text-white transition-colors">
-            Interactive GIS
-          </Link>
-          <span>•</span>
-          <span>© OpenStreetMap (ODbL) • Copernicus Sentinel-2</span>
         </div>
       </footer>
 
       {/* ========================================================================= */}
-      {/* 10. INTERACTIVE VIDEO MODAL                                               */}
+      {/* 8. VIDEO OVERVIEW STORY MODAL                                             */}
+      {/* Plays /deer-hero.mp4 in high-fidelity full modal                          */}
       {/* ========================================================================= */}
       {videoModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 backdrop-blur-xl p-4 sm:p-6 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-4xl bg-slate-900 border border-slate-700 rounded-3xl overflow-hidden shadow-2xl space-y-0">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 bg-slate-950/80 border-b border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-emerald-950 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-                  <Play className="w-4 h-4 fill-current ml-0.5" />
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-white">VANYORA • Our Story</h4>
-                  <p className="text-[11px] text-slate-400">
-                    Defending Endangered Habitats with Space Telemetry
-                  </p>
-                </div>
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-2xl flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-4xl bg-slate-950 rounded-2xl border border-emerald-500/30 overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="p-4 bg-[#060c09] border-b border-white/10 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Play className="w-4 h-4 text-emerald-400 fill-current" />
+                <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                  Vanyora • Mission Sanctuary Overview
+                </span>
               </div>
               <button
                 onClick={() => setVideoModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Video Player Box */}
-            <div className="relative w-full aspect-video bg-black flex items-center justify-center">
+            {/* Video Element */}
+            <div className="relative aspect-video bg-black flex items-center justify-center">
               <video
+                src="/deer-hero.mp4"
                 controls
                 autoPlay
                 className="w-full h-full object-contain"
-                poster="/story-elephant.jpg"
-              >
-                <source
-                  src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4"
-                  type="video/mp4"
-                />
-                Your browser does not support video playback.
-              </video>
-            </div>
-
-            {/* Modal Footer Note */}
-            <div className="px-6 py-3 bg-slate-950 text-xs text-slate-400 flex items-center justify-between">
-              <span>Featuring Field Operations from Central India Tiger Reserves</span>
-              <button
-                onClick={() => setVideoModalOpen(false)}
-                className="text-emerald-400 hover:text-emerald-300 font-medium"
-              >
-                Close Video
-              </button>
+              />
             </div>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* 11. QUICK SEARCH MODAL                                                    */}
+      {/* 9. SEARCH RESERVES MODAL                                                  */}
       {/* ========================================================================= */}
       {searchModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 bg-slate-950/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-xl bg-slate-900 border border-slate-700 rounded-2xl overflow-hidden shadow-2xl">
-            <div className="p-4 border-b border-slate-800 flex items-center gap-3">
-              <Search className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xl flex items-start justify-center pt-24 p-4 animate-in fade-in duration-150">
+          <div className="relative w-full max-w-lg bg-[#060c09] rounded-2xl border border-emerald-500/30 overflow-hidden shadow-2xl p-4 space-y-4">
+            <div className="flex items-center gap-3 pb-3 border-b border-white/10">
+              <Search className="w-4 h-4 text-emerald-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search reserves, countries, or designations (e.g. Kanha, Tiger Reserve)..."
+                placeholder="Search wildlife reserves, tiger sanctuaries…"
+                className="bg-transparent text-white placeholder-slate-500 text-sm font-mono outline-none flex-1"
                 autoFocus
-                className="w-full bg-transparent border-none text-white text-sm focus:outline-none placeholder:text-slate-500"
               />
               <button
                 onClick={() => setSearchModalOpen(false)}
-                className="p-1 rounded-md text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="max-h-80 overflow-y-auto p-2 space-y-1">
-              {filteredDemos.length === 0 ? (
-                <div className="p-4 text-center text-xs text-slate-500 font-mono">
-                  No matching reserves found for &ldquo;{searchQuery}&rdquo;.
-                </div>
-              ) : (
-                filteredDemos.map((demo) => (
-                  <Link
-                    key={demo.id}
-                    href="/explore"
-                    onClick={() => setSearchModalOpen(false)}
-                    className="w-full p-3 rounded-xl hover:bg-slate-800/80 flex items-center justify-between text-left transition-colors"
+            <div className="max-h-72 overflow-y-auto space-y-1">
+              {filteredDemos.length > 0 ? (
+                filteredDemos.map((d) => (
+                  <button
+                    key={d.id}
+                    onClick={() => {
+                      setSelectedDemoId(d.id);
+                      setSearchModalOpen(false);
+                      scrollToSection('demo');
+                    }}
+                    className="w-full text-left p-3 rounded-xl hover:bg-white/5 flex items-center justify-between text-xs font-mono transition-colors group"
                   >
                     <div>
-                      <div className="text-sm font-semibold text-white">{demo.area_name}</div>
-                      <div className="text-xs text-slate-400">{demo.designation} • {demo.country}</div>
+                      <div className="text-white font-bold group-hover:text-emerald-400">
+                        {d.area_name}
+                      </div>
+                      <div className="text-slate-400 text-[11px]">{d.designation}</div>
                     </div>
-                    <span className="text-xs font-mono text-emerald-400">{demo.area_km2.toLocaleString()} km²</span>
-                  </Link>
+                    <span className="text-emerald-400 font-bold text-[10px] uppercase">
+                      Inspect →
+                    </span>
+                  </button>
                 ))
+              ) : (
+                <div className="p-4 text-center text-xs font-mono text-slate-500">
+                  No reserves matched &ldquo;{searchQuery}&rdquo;
+                </div>
               )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Floating Grounded Habitat AI Assistant */}
+      {/* ========================================================================= */}
+      {/* 10. PUBLIC AI CONSERVATION CHATBOT WIDGET                                 */}
+      {/* ========================================================================= */}
       <PublicChat />
     </div>
   );

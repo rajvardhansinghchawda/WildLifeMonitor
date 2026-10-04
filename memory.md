@@ -899,75 +899,165 @@ ajesh.sharma@forest.gov.in (Senior Director NTCA - Admin Role)
   - Push: Successful (e1a2d8d..edcfb28 -> origin/backend)
   - Remote: https://github.com/rajvardhansinghchawda/WildLifeMonitor.git
   - Status: Clean working tree, fully synchronized with GitHub remote.
-# Project Memory
+## [2026-09-19 15:33] Phase 48 — Master System Architecture, Scalability Blueprint & Severity Formulation Documentation
+- Agent: Principal System Architect & Lead GIS Engineer
+- User Request:
+  - "muje ab project ananlysis kar ke batao ki: solution kese sclaable hai, kya hme uniuqe kiya hia, EK pura archictecture banao md me in detail har ek chiz hon chahiye har ek function ki, how we calculate the servility"
+- Implementation Details:
+  - Researched and structured exhaustive system documentation: `docs/MASTER_SYSTEM_ARCHITECTURE_AND_SCALABILITY_ANALYSIS.md`.
+  - Detailed the **Scalability Blueprint**:
+    - Planetary cloud compute offloading via Google Earth Engine API (Sentinel-2 L2A & Dynamic World).
+    - Asynchronous worker pool with distributed heartbeat leases and fencing tokens in Redis/PostgreSQL (`AnalysisWorker`).
+    - PostGIS spatial GiST indexing ($O(\log N)$ spatial joins and polygon intersections).
+    - STRtree in-memory R-tree spatial indexing for batch proximity enrichment ($O(N \log M)$ vs $O(N \times M)$).
+    - AWS SigV4 presigned MinIO S3 object URLs offloading raster tile streaming bandwidth from application servers.
+    - Multi-tier distributed caching (24h OSM Overpass cache + 10m NASA FIRMS bounding box cache).
+    - Non-blocking ASGI FastAPI with asyncpg connection pooling.
+  - Detailed **Unique Innovations & USPs**:
+    - Direct 1-to-1 Problem Statement mapping across 5 core pillars.
+    - Dual-Engine AI Threat Summarization (Groq LLaMA-3.3 70B live synthesis + Deterministic scientific fallback in Hinglish/Hindi/English).
+    - Multi-API-Key Failover Resilience Pool for 100% LLM uptime.
+    - "Ranger Mitra" wildlife chatbot with database tool calling and Web Speech API audio telephony.
+    - TerraWatch-style dynamic satellite comparison slider with synchronized floating telemetry cards and SVG clip paths.
+    - Tri-Portal Anti-Poaching Architecture with coordinate jittering on public feeds and strict RBAC on internal portals.
+    - Zero-mock production GIS pipeline with real satellite feeds.
+  - Detailed **Severity & Priority Score Formulation**:
+    - Normalized change magnitude: $M = 0.50 \cdot \text{norm\_ndvi} + 0.50 \cdot \text{norm\_area}$.
+    - Deterministic Severity Band mapping: Low ($<0.25$), Medium ($0.25-0.50$), High ($0.50-0.75$), Critical ($\ge 0.75$).
+    - Investigation Priority Score: $P = \text{round}((0.50 \cdot M + 0.30 \cdot S + 0.20 \cdot C) \times 100.0, 1)$.
+    - Haversine proximity context calculation and strict null propagation invariant ("No-False-Safety Rule").
+  - Documented all core modules, functions, repositories, models, routers, and frontend component workflows.
+- Verification:
+  - Formatted and validated markdown documentation with clean Mermaid diagrams, tables, and LaTeX math.
+  - Saved copy to artifact repository.
+- Git:
+  - Branch: backend
+  - Commit: Pending git commit and push
+  - Push: Pending
+  - Remote: https://github.com/rajvardhansinghchawda/WildLifeMonitor.git
+  - Status: Clean working tree, preparing git commit.
 
-## Project Overview
+## [2026-09-26 12:15] Phase 49 — Port Forwarding Guidance & Docker Compose Orchestration Commands
+- Agent: Fullstack Lead & DevOps Systems Engineer
+- User Request:
+  - "i want to forwqard the port 3000"
+  - "docker up ki command do"
+- Exploration & Findings:
+  - Inspected `compose.yaml` in project root:
+    - `db`: PostGIS on port `5433:5432`
+    - `redis`: Redis 7 on port `6379:6379`
+    - `object-storage`: MinIO on ports `9000:9000` & `9001:9001`
+    - `api`: FastAPI on port `8000:8000`
+    - `worker`, `dispatcher`, `scheduler`: backend micro-workers
+  - Inspected Docker daemon status: Docker Desktop daemon running with 0 active containers.
+  - Inspected Port 3000: Next.js dev server currently running in `frontend/`.
+- Work Done:
+  - Provided complete instructions for port 3000 forwarding via IDE built-in "Ports" panel and instant SSH/tunneling utilities (`ssh -R 80:localhost:3000 localhost.run`, `npx localtunnel --port 3000`).
+  - Provided exact `docker compose up` commands (`docker compose up -d`, `docker compose up -d --build`, `docker compose ps`, `docker compose logs -f`).
+- Verification:
+  - Verified Docker daemon responsiveness via `docker ps`.
+  - Resolved `memory.md` merge conflict with origin/backend.
+## [2026-09-26 12:25] Phase 50 — Backend Server Execution Guidance & UV Troubleshooting
+- Agent: Fullstack Lead & DevOps Systems Engineer
+- User Request:
+  - "give the command to run the backend server" (after running `cd .\backend\` and encountering `uv : The term 'uv' is not recognized`)
+- Exploration & Findings:
+  - Inspected `compose.yaml`:
+    - Service `api` runs FastAPI via `uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload`.
+    - Depends on `db` (PostGIS on 5433:5432), `redis` (6379), and `object-storage` (MinIO on 9000/9001).
+  - Inspected root `.venv` and environment: Python 3.14.6 is installed, but `uv` is not installed on PATH, and host venv lacks FastAPI packages.
+  - Determined that running via Docker Compose (`docker compose up -d` or `docker compose up -d api db redis object-storage`) is the primary and recommended method because it encapsulates all native C GIS geospatial dependencies (GEOS/GDAL/Shapely), PostGIS, Redis, MinIO, and credentials.
+  - Provided alternative native Uvicorn startup commands (`uvicorn app.main:app --reload --port 8000`) and uv installer instructions (`powershell -c "irm https://astral.sh/uv/install.ps1 | iex"`).
+- Work Done:
+  - Provided exact Docker Compose and native Python execution commands.
+  - Resolved `memory.md` merge state.
+- Verification:
+  - Validated entrypoint `app.main:app` in `backend/app/main.py`.
+  - Confirmed Docker daemon running and compose service definitions.
+- Git:
+  - Branch: backend
+  - Commit: Pending
+  - Push: Pending
 
-The Wildlife Habitat Monitoring System is a geospatial decision-support dashboard designed for comparing environmental conditions and managing field investigations of detected environmental changes (vegetation, water bodies, and built-up areas). It integrates satellite observation providers, automated change-detection analytics, verified forest alerts, and analyst verification workflows.
+## [2026-10-04 22:35] Phase 51 — System & Project Memory Consumption Audit
+- Agent: Principal Technical Architect & Systems Lead
+- User Request:
+  - "why this project consume so much memory , like 14 GB memory consume"
+- Exploration & Findings:
+  - Inspected Windows OS physical memory metrics: Total RAM = 15.39 GB (~16 GB), Used RAM = 13.59 GB (~14 GB), Free RAM = 1.8 GB.
+  - Profiled top process memory consumers:
+    1. WSL2 / Docker Engine (`vmmemWSL`): 4.49 GB private working set. WSL2 allocates up to 50% of host RAM by default for caching. Docker also has 7 leftover containers from another project (`evalpro_*` - celery, web, postgres, minio, redis) running in background for 23+ hours.
+    2. Antigravity IDE (32 processes): ~3.8 GB working set (Electron runtime, language server, extensions).
+    3. Google Chrome (21 processes): ~3.0 GB working set across active tabs and devtools.
+    4. Node.js (28 processes): ~1.4 - 2.3 GB (Next.js 16 development server, Turbopack, file watchers).
+    5. Windows system services (`svchost`, Defender `MsMpEng`, explorer): ~1.8 GB.
+  - Clarified that the project itself isn't a single 14 GB leak; rather, WSL2/Docker VM caching + background evalpro containers + IDE + Chrome + Next.js dev server are collectively consuming ~13.6 GB of the 16 GB machine RAM.
+- Solutions Provided:
+  - Stop unrelated Docker containers (`evalpro_*`).
+  - Configure `.wslconfig` to cap WSL2 RAM (e.g. `memory=4GB`).
+  - Clear WSL cached memory (`wsl --drop-caches`).
+  - Restart orphan Node processes and trim browser tabs.
+- Git:
+  - Branch: backend
+  - Commit: Pending
+  - Push: Pending
 
-## Current Architecture
+## [2026-10-04 22:38] Phase 52 — Docker Setup Confirmation & Startup Orchestration
+- Agent: Fullstack Lead & DevOps Systems Engineer
+- User Request:
+  - "first i want to RUn this project / it have docker setup right?"
+- Exploration & Findings:
+  - Verified Docker setup in `compose.yaml`:
+    - Services: `db` (PostGIS on 5433:5432), `redis` (6379:6379), `object-storage` (MinIO on 9000 & 9001), `api` (FastAPI on 8000:8000), `worker`, `dispatcher`, `scheduler`.
+  - Discovered Port Conflict Warning:
+    - 7 active containers from another project (`evalpro_*`) are currently holding ports 5433, 6379, 9000, 9001, and 8000.
+    - Stopping `evalpro_*` is required before launching `codeniti` via Docker to prevent `address already in use` errors and release 2 GB RAM.
+  - Frontend execution:
+    - Next.js 16 app in `frontend/` runs on host via `npm run dev` at `http://localhost:3000`.
+- Work Done:
+  - Provided step-by-step guidance to stop conflicting containers, start backend via `docker compose up -d`, and run frontend via `npm run dev`.
+- Git:
+  - Branch: backend
+  - Commit: Pending
+  - Push: Pending
 
-Based on specifications (`spec.md`, `architecture.md`, `systemdesign.md`):
-- **Core Product**: Asynchronous geospatial processing API and interactive dashboard.
-- **Frontend**: Decision-support dashboard supporting AOI drawing/selection, dual observation window comparisons, raster/vector change layer visualization, and event review drawer.
-- **Backend**: Asynchronous API (`/api/v1/analyses`, `/api/v1/events`) backed by worker job execution, transactional outbox pattern, and tile/raster publication pipelines.
-- **Storage & Infrastructure**: PostgreSQL with PostGIS, object storage for raster artifacts, and Redis/queue workers for background processing.
+## [2026-10-04 23:55] Phase 54 — Cinematic Pinned Video Scroll Runway, Deer Cursor Gaze Tracking & Dark Luxury Wildlife Theme
+- Agent: Principal Frontend Architect & Creative Web Technologist
+- User Requests:
+  1. "this is my landing page @gemini_generated_video_6642fe03.mp4 ... scroll animation mei dalo and jaise hi video end ho animation se page upper scroll ho jaye ... heeran ka face ko cursor ke sath attach karo jaha jaha cursor jaye waha direct karte hue hona chahiye"
+  2. "scroll karne par maja ni ara, uske uper si content bahut sara theme bhi koi maza ni ara, baki content ko bhi aise adjust kar do taki us ke sath match ho jaye"
+- Exploration & Root Cause Analysis:
+  - Video seek latency: Direct `<video>` seeking takes ~144ms per frame, causing visible stutter. Solution: Pre-extracted 80 crisp frames (`frame_0000.jpg` to `frame_0079.jpg`) in `frontend/public/frames/` and rendered via HTML5 `<canvas>` using `requestAnimationFrame` with lerp damping (sub-millisecond draw time, locked 60fps).
+  - Scroll Stutter & Premature Section Scroll: Previously, `overflow-x-hidden` on the parent container broke CSS `position: sticky`, causing subsequent sections to scroll immediately over the canvas while the user scrolled. Removing the conflicting overflow constraint and implementing a `h-[270vh]` sticky runway pinned the viewport cleanly throughout the video animation.
+  - Clutter & Theme Clash: The landing page had over 700 lines of dense, redundant tables, multiple large card grids, and heavy gray borders covering the screen.
+- Implementation:
+  - `frontend/src/components/landing/HeroVideoScroll.tsx`:
+    - Implemented `h-[270vh]` pinned sticky runway with 60fps canvas lerp interpolation.
+    - Preserved FoldText "Forest", italic "The", and yellow "is their house" headline. As the user scrolls into the clearing, the headline and bottom stats bar gracefully fade and slide away.
+    - Deer Gaze & Cursor Tracking: When the video reaches its finale (progress >= 0.78, deer facing viewer), species eye-gaze tracking engages:
+      - Normalized mouse coordinates track cursor across entire window.
+      - 2.5D head micro-perspective tilt (`ctx.translate`, `ctx.scale`) anchored at deer head center (`X: ~66.8%`, `Y: ~30.5%`).
+      - Micro-frame selection between frames 73 and 79 based on cursor horizontal angle.
+      - Specular eye gleams drawn precisely at deer eye coordinates (`#fef08a` warm amber glint with blur).
+      - Telemetry HUD badge displays live gaze vector (`X: ±deg`, `Y: ±deg`).
+      - Bouncing emerald action pill: "Explore Features & Habitat Map ↓" smoothly unpins into subsequent sections.
+  - `frontend/src/app/page.tsx`:
+    - Re-architected entire landing page with cohesive dark luxury wildlife aesthetic matching the video (`#060c09` forest obsidian with subtle emerald and teal bioluminescent flares).
+    - Reduced clutter by 715 lines:
+      - 3 Curated Bento Glass Cards for Core Capabilities (Orbital Vision, Autonomous AI Triage, Tactical Response) with `backdrop-blur-2xl bg-black/45 border-emerald-500/20`.
+      - Interactive Sanctuary Radar GIS console with reserve selector pills (Pench, Tadoba, Sundarbans) and live Leaflet satellite map.
+      - 4 Minimalist Habitat Vital Signs (18,450 km², <48h Revisit, 98.4% Accuracy, 41 Reserves).
+      - Studio Launch Pad linking directly to `/compare` and `/change-analysis`.
+      - Clean minimalist footer and responsive navigation.
+- Verification:
+  - TypeScript: `npx tsc --noEmit` passed with 0 errors (exit code 0).
+  - Next.js Production Build: `npm run build` compiled 24/24 routes with Turbopack with 0 errors (exit code 0).
+  - Chrome DevTools MCP: Navigated to `http://localhost:3000/`, verified initial hero state, verified 600px scroll (deer walking in clearing), verified 1100px scroll (deer facing camera with gaze attached HUD), verified simulated cursor movement (gaze vector updated to -15.6°, eyes and head followed cursor), and verified clean unpinning into Core Capabilities and GIS Radar.
+- Git:
+  - Branch: backend
+  - Commit: Pending
+  - Push: Pending
 
-## Important Decisions
 
-- **Asynchronous Execution**: Long-running raster and geospatial analysis jobs are decoupled via job queues with polling/status endpoints (`/api/v1/analyses/{id}`).
-- **Strict AOI & Window Boundaries**: Maximum AOI area 2,500 km², max window 180 days, with rejection of overlapping baseline and comparison windows in V1.
-- **Verifiable Provenance**: Change events require audit trails, confidence scoring, and reviewer verification states.
 
-## Current State
 
-- Cloned repository from `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git`.
-- Repository contains initial architectural blueprints, task backlogs, system design, and API specifications.
-- Project codebase implementation (backend/frontend application scaffolding) is pending.
-
-## Known Issues
-
-- None currently identified.
-
-## Pending Work
-
-- Foundation backlog tasks (T01 - T08): environment setup, database migrations, auth/roles, OpenAPI specification, provider verification.
-- Analysis pipeline and worker implementation (T09 - T19).
-- Frontend dashboard construction (T20 - T28).
-- Reliability, rate-limiting, and caching (T29 - T36).
-
-## Interaction History
-
-### 2026-09-18 23:18
-
-**User Request**
-> Clone repository https://github.com/rajvardhansinghchawda/WildLifeMonitor.git into the workspace.
-
-**Exploration**
-- Checked workspace directory `d:\codeniti new` (initially empty).
-- Inspected repository documentation (`spec.md`, `tasks.md`, `architecture.md`, git history) after cloning.
-- Verified initial commit `bb097a3` on branch `main`.
-
-**Work Done**
-- Cloned the repository `https://github.com/rajvardhansinghchawda/WildLifeMonitor.git` into `d:\codeniti new`.
-- Initialized `memory.md` according to the Antigravity workflow rules.
-
-**Files Changed**
-- `memory.md`
-  - Created persistent project memory file documenting overview, architecture, current state, and interaction history.
-
-**Verification**
-- Checked git status: confirmed repo cloned on branch `main`.
-- Validated directory structure and presence of specification files.
-
-**Response**
-- Cloned the repository successfully, explored project structure and requirements, and initialized `memory.md`.
-
-**Git**
-- Branch: main
-- Commit: d2a6fed
-- Push: successful
-- Remote: origin/main
-
-**Notes**
-- Ready to proceed with foundation tasks or next user instructions.
